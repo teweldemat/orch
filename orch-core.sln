@@ -29,6 +29,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "funcscript", "..\function-s
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "funcscript.sql", "..\function-script\funcscript.sql\funcscript.sql.csproj", "{1120C492-376B-4A26-8BDA-2272CF78370B}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "fsstudio", "fsstudio\fsstudio.csproj", "{7B4D2759-5F2C-4119-9BDC-19963A1DF971}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -83,6 +85,10 @@ Global
 		{1120C492-376B-4A26-8BDA-2272CF78370B}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{1120C492-376B-4A26-8BDA-2272CF78370B}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{1120C492-376B-4A26-8BDA-2272CF78370B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7B4D2759-5F2C-4119-9BDC-19963A1DF971}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7B4D2759-5F2C-4119-9BDC-19963A1DF971}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7B4D2759-5F2C-4119-9BDC-19963A1DF971}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7B4D2759-5F2C-4119-9BDC-19963A1DF971}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
