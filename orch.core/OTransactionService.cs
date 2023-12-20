@@ -173,7 +173,7 @@ namespace orch.core
 
                 Db.UpdateSystemInformation(command, sysInfo, emptySystem); // Update SystemInfo
 
-                if (Db.InTransaction)
+                if (!Db.InTransaction)
                     Db.CommitTransaction();
 
                 // Call PostExecute only if the transaction is no longer active,
