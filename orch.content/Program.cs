@@ -1,9 +1,10 @@
 using Microsoft.EntityFrameworkCore;
 using orch.content;
+using orch.core.ef;
 
 var builder = WebApplication.CreateBuilder(args);
 
-ContentServerConfig.Config = builder.Configuration.GetSection("ContentServerConfig").Get<ContentServerConfig>();
+ContentServerConfig Config = builder.Configuration.GetSection("ContentServerConfig").Get<ContentServerConfig>();
 // Add services to the container.
 string conStr = builder.Configuration.GetConnectionString("pgcon");
 
