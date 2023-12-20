@@ -1,0 +1,74 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>orch.common</name>
+    </assembly>
+    <members>
+        <member name="T:orch.common.Coordinate">
+            <summary>
+            Represents a geographical coordinate with a latitude and longitude.
+            </summary>
+        </member>
+        <member name="F:orch.common.Coordinate.Latitude">
+            <summary>
+            The latitude in degrees.
+            </summary>
+        </member>
+        <member name="F:orch.common.Coordinate.Longitude">
+            <summary>
+            The longitude in degrees.
+            </summary>
+        </member>
+        <member name="T:orch.common.DistanceCalculator">
+            <summary>
+            Provides methods for calculating distances between geographical coordinates.
+            </summary>
+        </member>
+        <member name="M:orch.common.DistanceCalculator.ToRadians(System.Double)">
+            <summary>
+            Helper method to convert angles from degrees to radians.
+            </summary>
+            <param name="angle">The angle in degrees.</param>
+            <returns>The angle in radians.</returns>
+        </member>
+        <member name="M:orch.common.DistanceCalculator.CalculateDistanceHaversine(orch.common.Coordinate,orch.common.Coordinate)">
+            <summary>
+            Calculates the distance between two coordinates using the Haversine formula.
+            </summary>
+            <param name="start">The starting coordinate.</param>
+            <param name="end">The ending coordinate.</param>
+            <returns>The distance in meters.</returns>
+        </member>
+        <member name="M:orch.common.DistanceCalculator.CalculateDistanceVincenty(orch.common.Coordinate,orch.common.Coordinate)">
+            <summary>
+            Calculates the distance between two coordinates using the Vincenty formula.
+            </summary>
+            <param name="coord1">The first coordinate.</param>
+            <param name="coord2">The second coordinate.</param>
+            <returns>The distance in meters.</returns>
+        </member>
+        <member name="M:orch.common.Helpers.GetFormattedName(System.Type)">
+            <summary>
+            Returns the type name. If this is a generic type, appends
+            the list of generic type arguments between angle brackets.
+            (Does not account for embedded / inner generic arguments.)
+            </summary>
+            <param name="type">The type.</param>
+            <returns>System.String.</returns>
+        </member>
+        <member name="M:orch.common.Helpers.ToSnakeCase(System.String)">
+            <summary>
+            Converts a string to snake_case.
+            </summary>
+            <param name="input">The string to convert.</param>
+            <returns>The snake_case representation of the input string.</returns>
+        </member>
+        <member name="M:orch.common.Helpers.StripDALPrefix(System.String)">
+            <summary>
+            Returns the entity name with the "DAL" prefix removed.
+            </summary>
+            <param name="entityName">The entity name.</param>
+            <returns>The entity name with the "DAL" prefix removed.</returns>
+        </member>
+    </members>
+</doc>

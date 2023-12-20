@@ -1,0 +1,74 @@
+﻿using Microsoft.EntityFrameworkCore;
+using orch.core.ef.Transaction.Entities;
+using orch.core.ef.Transaction.EntityConfigurations;
+using orch.ef.Core;
+using System.Data.Common;
+
+namespace orch.core.ef.Transaction
+{
+    /// <summary>
+    /// Represents the database context used for managing transactions in the application.
+    ///
+    /// This base class is intended to be inherited by concrete classes in other projects,
+    /// primarily for the purpose of creating database migrations in the consuming project rather
+    /// than in the core project.
+    /// </summary>
+    public class OTransactionDbContext : ODbContext
+    {
+        protected internal static readonly string CORE_SECHMA = "core";
+
+        protected OTransactionDbContext(DbConnection connection) : base(connection)
+        {
+        }
+
+        public DbSet<DALCommand> Commands { get; protected internal set; }
+        protected internal DbSet<DALContentReference> ContentReferences { get; set; }
+        protected internal DbSet<DALOTransaction> Transactions { get; set; }
+        public DbSet<DALOrganizationData> Organizations { get; protected internal set; }
+        protected internal DbSet<DALPermission> Permissions { get; set; }
+        protected internal DbSet<DALPermissionAdminInfo> PermssionAdmins { get; set; }
+        protected internal DbSet<DALRole> Roles { get; set; }
+        protected internal DbSet<DALRolePermission> PermissionRoles { get; set; }
+        protected internal DbSet<DALSerialBatch> SerialBatches { get; set; }
+        protected internal DbSet<DALSerialNo> UsedSerials { get; set; }
+        protected internal DbSet<DALSerialType> SerialTypes { get; set; }
+        protected internal DbSet<DALTransactionSystemInformation> TransactionSystemInformation { get; set; }
+        public DbSet<DALUserInfo> Users { get; protected internal set; }
+        protected internal DbSet<DALUserRole> UserRoles { get; set; }
+        protected internal DbSet<DALUserHistory> UserHistory { get; set; }
+
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            #region Transaction
+            modelBuilder.ApplyConfiguration(new DALCommandConfiguration());
+            modelBuilder.ApplyConfiguration(new DALOTransactionConfiguration());
+            modelBuilder.ApplyConfiguration(new DALTransactionSystemInformationConfiguration());
+            #endregion
+
+            modelBuilder.ApplyConfiguration(new DALContentReferenceConfiguration());
+            modelBuilder.ApplyConfiguration(new DALOrganizationDataConfiguration());
+
+            #region Permission
+            modelBuilder.ApplyConfiguration(new DALPermissionAdminInfoConfiguration());
+            modelBuilder.ApplyConfiguration(new DALPermissionConfiguration());
+            #endregion
+
+            #region Role
+            modelBuilder.ApplyConfiguration(new DALRoleConfiguration());
+            modelBuilder.ApplyConfiguration(new DALRolePermissionConfiguration());
+            #endregion
+
+            #region Serial
+            modelBuilder.ApplyConfiguration(new DALSerialBatchConfiguration());
+            modelBuilder.ApplyConfiguration(new DALSerialNoConfiguration());
+            modelBuilder.ApplyConfiguration(new DALSerialTypeConfiguration());
+            #endregion
+
+            #region User
+            modelBuilder.ApplyConfiguration(new DALUserHistoryConfiguration());
+            modelBuilder.ApplyConfiguration(new DALUserInfoConfigurationConfiguration());
+            modelBuilder.ApplyConfiguration(new DALUserRoleConfiguration());
+            #endregion
+        }
+    }
+}

@@ -1,0 +1,32 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>orch.core</name>
+    </assembly>
+    <members>
+        <member name="T:orch.core.IApplicationScopeFactory">
+            <summary>
+            Represents a factory that creates an instance of OTransactionService for use within
+            contexts other than ASP.NET.
+            </summary>
+        </member>
+        <member name="M:orch.core.IApplicationScopeFactory.LoadFromAssembly(System.String,System.String)">
+            <summary>
+            Loads an implementation of IApplicationScopeFactory from the specified assembly file
+            </summary>
+            <returns>An instance of OTransactionService</returns>
+        </member>
+        <member name="P:orch.core.model.OCommand.SystemID">
+            <summary>
+            The unique id of the transaction system. This id must match the system id set at the first ever transaction
+            This data is not persisted as all valid transactions should have the same id as the system
+            </summary>
+        </member>
+        <member name="T:orch.core.OTransactionService">
+            <summary>
+            The core service of the transaction framework
+            This instance methods of this object are trade unsafe!
+            </summary>
+        </member>
+    </members>
+</doc>

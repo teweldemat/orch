@@ -1,0 +1,31 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <style>
+        .center-div {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 20px;
+        }
+
+        .content-box {
+            text-align: center;
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 10px;
+        }
+
+    </style>
+</head>
+<body>
+    <div class="center-div">
+        <div class="content-box">
+            <h1>Test Report</h1>
+            <h4>Sample Text</h4>
+            <h4>ይህ አማርኛ ጽሑፍ ነው ለመርዳት</h4>
+            <img src="@Url.Action("GetFile", "Content", new { file_id = Guid.NewGuid().ToString() }, Context.Request.Scheme)" height="200px" />
+        </div>
+    </div>
+</body>
+</html>

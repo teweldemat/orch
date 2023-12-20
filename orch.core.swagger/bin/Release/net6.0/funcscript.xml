@@ -1,0 +1,156 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>funcscript</name>
+    </assembly>
+    <members>
+        <member name="T:funcscript.core.ExpressionBlock">
+            <summary>
+            Represents is FuncScript expression block
+            </summary>
+        </member>
+        <member name="F:funcscript.core.ExpressionBlock.Pos">
+             <summary>
+            The position in the parsed exprssion string where the block starts
+             </summary>
+        </member>
+        <member name="F:funcscript.core.ExpressionBlock.Length">
+             <summary>
+            The the number of charadcters in the parsed exprssion string block consists of
+             </summary>
+        </member>
+        <member name="M:funcscript.core.ExpressionBlock.Evaluate(funcscript.core.IFsDataProvider)">
+            <summary>
+            Evaluates the expression block
+            </summary>
+            <param name="provider">Source data for variables references in the expression block</param>
+            <returns></returns>
+        </member>
+        <member name="M:funcscript.core.ExpressionBlock.GetChilds">
+            <summary>
+            Gets list of child expression blocks
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:funcscript.core.ExpressionBlock.AsExpString(funcscript.core.IFsDataProvider)">
+            <summary>
+            Builds a string expression representing the expression block.
+            The string that is built will not neccessarily be identical 
+            to the epxression that is parsed
+            </summary>
+            <param name="provider"></param>
+            <returns></returns>
+        </member>
+        <member name="M:funcscript.core.FuncScriptParser.GetLiteralMatch(System.String,System.Int32,System.String[])">
+            <summary>
+            Checks if any provided keywords are present in the input string, starting from the specified index.
+            </summary>
+            <param name="exp">The input string to search for keywords.</param>
+            <param name="index">The starting index to search for keywords.</param>
+            <param name="keyWord">Keywords to search for within the input string.</param>
+            <returns>The index after the end of the matched keyword if found, or the same `index` if no match is found.</returns>
+            <exception cref="T:System.ArgumentNullException">Thrown when the input expression is null.</exception>
+            <remarks>
+            This method uses a nested for loop for character comparison, providing better performance.
+            </remarks>
+        </member>
+        <member name="T:funcscript.FSDataType">
+            <summary>
+            FuncScript data types
+            </summary>
+        </member>
+        <member name="M:funcscript.FuncScript.NormalizeDataType(System.Object)">
+            <summary>
+            Converts a .net value into type that is compatible with FuncScript
+            </summary>
+            <param name="value">value to convert</param>
+            <returns></returns>
+        </member>
+        <member name="M:funcscript.FuncScript.Format(System.Text.StringBuilder,System.Object,System.String,System.Boolean,System.Boolean)">
+            <summary>
+            Formats a value into string
+            </summary>
+            <param name="sb">A string builder object</param>
+            <param name="val">Value to format</param>
+            <param name="format">Optional formatting parameter </param>
+            <param name="asFuncScriptLiteral">Format as FuncScript literal</param>
+            <param name="asJsonLiteral">Format as JSON literal</param>
+        </member>
+        <member name="M:funcscript.FuncScript.GetFsDataType(System.Object)">
+            <summary>
+            Gets the data type of a value as FSDataType
+            </summary>
+            <param name="value"></param>
+            <returns></returns>
+            <exception cref="T:funcscript.error.UnsupportedUnderlyingType"></exception>
+        </member>
+        <member name="T:funcscript.KvcProvider">
+            <summary>
+            IFSDataProvider backed by KeyValueCollection
+            </summary>
+        </member>
+        <member name="T:funcscript.model.KeyValueCollection">
+            <summary>
+            Abstract base class for KeyValueCollection FuncScript data type
+            </summary>
+        </member>
+        <member name="M:funcscript.model.KeyValueCollection.Get(System.String)">
+            <summary>
+            Gets value for a given key
+            </summary>
+            <param name="key">key in small letters</param>
+            <returns></returns>
+        </member>
+        <member name="M:funcscript.model.KeyValueCollection.ContainsKey(System.String)">
+            <summary>
+            Checks if key exists
+            </summary>
+            <param name="key">Key in small letters</param>
+            <returns></returns>
+        </member>
+        <member name="M:funcscript.model.KeyValueCollection.ConvertTo``1">
+            <summary>
+            Converts the KVC to a .net type
+            </summary>
+            <typeparam name="T"></typeparam>
+            <returns></returns>
+        </member>
+        <member name="M:funcscript.model.KeyValueCollection.ConvertTo(System.Type)">
+            <summary>
+            Converst a KVC to a .net type
+            </summary>
+            <param name="t"></param>
+            <returns></returns>
+        </member>
+        <member name="M:funcscript.model.KeyValueCollection.GetAll">
+            <summary>
+            Returns list of all Key-Value-Pairs in the KVC
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:funcscript.model.KeyValueCollection.Equals(System.Object)">
+            <summary>
+            Checks if the KVC equals with another object
+            </summary>
+            <param name="otherkv"></param>
+            <returns></returns>
+        </member>
+        <member name="M:funcscript.model.KeyValueCollection.ToString">
+            <summary>
+            Returns the string representation of the KVC
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:funcscript.model.KeyValueCollection.Merge(funcscript.model.KeyValueCollection,funcscript.model.KeyValueCollection)">
+            <summary>
+            Merges to key value pairs. The merged KVC will have keys from both collections
+            If a key exists in both KVCs the value in the merged KVC is determined as follows
+                if both values are KVCs themselves, the values are themselves merged
+                Otherwise the value from the second KVC is taken
+            </summary>
+            <param name="col1">First KVC</param>
+            <param name="col2">Second KVC</param>
+            <returns></returns>
+        </member>
+    </members>
+</doc>

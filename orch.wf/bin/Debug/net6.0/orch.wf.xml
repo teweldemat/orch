@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>orch.wf</name>
+    </assembly>
+    <members>
+        <member name="M:orch.wf.WfNotificationService.SendNotifications(System.Guid[])">
+            <summary>
+            Enqueues a notification to be sent asynchronously to the specified targets.
+            </summary>
+            <param name="Ids">The Ids of the notifications to be sent.</param>
+            <returns>The Id of the background job.</returns>
+        </member>
+        <member name="M:orch.wf.WfNotificationService.EnqueueNotificationsJob(System.Guid[])">
+            <summary>
+            Background job to send multiple notifications. A failure in sending one notification
+            does not prevent the others from being sent.
+            </summary>
+            <param name="Ids">An array of notification Ids to send.</param>
+        </member>
+    </members>
+</doc>
