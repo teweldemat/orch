@@ -118,7 +118,8 @@ namespace orch.core
             object data,
             out Guid tranId)
         {
-            if (!Db.InTransaction)
+            var inTrans = Db.InTransaction;
+            if (!inTrans)
                 Db.BeginTransaction();
             try
             {
@@ -173,7 +174,7 @@ namespace orch.core
 
                 Db.UpdateSystemInformation(command, sysInfo, emptySystem); // Update SystemInfo
 
-                if (Db.InTransaction)
+                if (!inTrans)
                     Db.CommitTransaction();
 
                 // Call PostExecute only if the transaction is no longer active,
@@ -201,7 +202,7 @@ namespace orch.core
             }
             catch
             {
-                if (Db.InTransaction)
+                if (!inTrans)
                     Db.RollbackTransaction();
 
                 throw;
