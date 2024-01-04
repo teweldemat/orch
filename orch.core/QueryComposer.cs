@@ -311,6 +311,18 @@ namespace orch.core
         }
 
         [OViewFunction]
+        public long DoubleToMoney(double val)
+        {
+            return orch.common.Helpers.DoubleToMoney(val);
+        }
+
+        [OViewFunction]
+        public double MoneyToDouble(long val)
+        {
+            return orch.common.Helpers.MoneyToDouble(val);
+        }
+
+        [OViewFunction]
         public long DateToInt(DateTime date)
         {
             return orch.common.Helpers.TimeToLong(date);
