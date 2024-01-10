@@ -30,7 +30,7 @@ namespace orch.core
             }
         }
 
-        public override void ReplayTransaction(OTransaction transaction, List<OCommand> commands)
+        public void ReplayTransaction(OTransaction transaction, List<OCommand> commands)
         {
             if (transaction == null)
                 throw new ArgumentNullException(nameof(transaction));
