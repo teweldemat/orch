@@ -1,4 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using orch.core.ef.Configuration;
+using orch.core.ef.Logging.Entities;
+using orch.core.ef.Logging.EntityConfigurations;
 using orch.core.ef.Transaction.Entities;
 using orch.core.ef.Transaction.EntityConfigurations;
 using orch.ef.Core;
@@ -21,44 +24,66 @@ namespace orch.core.ef.Transaction
         {
         }
 
-        public DbSet<DALCommand> Commands { get; protected internal set; }
-        protected internal DbSet<DALContentReference> ContentReferences { get; set; }
+
+        #region transaction
         protected internal DbSet<DALOTransaction> Transactions { get; set; }
-        public DbSet<DALOrganizationData> Organizations { get; protected internal set; }
+        public DbSet<DALCommand> Commands { get; protected internal set; }
+        protected internal DbSet<DALTransactionSystemInformation> TransactionSystemInformation { get; set; }
+        #endregion
+
+        #region job
+        protected internal DbSet<DALOJob> Jobs { get; set; }
+        #endregion
+
+        #region role & permission
         protected internal DbSet<DALPermission> Permissions { get; set; }
         protected internal DbSet<DALPermissionAdminInfo> PermssionAdmins { get; set; }
         protected internal DbSet<DALRole> Roles { get; set; }
         protected internal DbSet<DALRolePermission> PermissionRoles { get; set; }
+        #endregion
+
+        protected internal DbSet<DALContentReference> ContentReferences { get; set; }
+        public DbSet<DALOrganizationData> Organizations { get; protected internal set; }
+
+        #region serial
         protected internal DbSet<DALSerialBatch> SerialBatches { get; set; }
         protected internal DbSet<DALSerialNo> UsedSerials { get; set; }
         protected internal DbSet<DALSerialType> SerialTypes { get; set; }
-        protected internal DbSet<DALTransactionSystemInformation> TransactionSystemInformation { get; set; }
+        #endregion
+
+        #region user
         public DbSet<DALUserInfo> Users { get; protected internal set; }
         protected internal DbSet<DALUserRole> UserRoles { get; set; }
         protected internal DbSet<DALUserHistory> UserHistory { get; set; }
+        #endregion
+
+        #region logging
+        internal DbSet<DALEventLog> EventLogs { get; set; }
+        #endregion
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-            #region Transaction
+            #region transaction
             modelBuilder.ApplyConfiguration(new DALCommandConfiguration());
             modelBuilder.ApplyConfiguration(new DALOTransactionConfiguration());
             modelBuilder.ApplyConfiguration(new DALTransactionSystemInformationConfiguration());
             #endregion
 
+            #region job
+            modelBuilder.ApplyConfiguration(new DALOJobConfiguration());
+            #endregion
+
             modelBuilder.ApplyConfiguration(new DALContentReferenceConfiguration());
             modelBuilder.ApplyConfiguration(new DALOrganizationDataConfiguration());
 
-            #region Permission
+            #region role & permission
+            modelBuilder.ApplyConfiguration(new DALRoleConfiguration());
+            modelBuilder.ApplyConfiguration(new DALRolePermissionConfiguration());
             modelBuilder.ApplyConfiguration(new DALPermissionAdminInfoConfiguration());
             modelBuilder.ApplyConfiguration(new DALPermissionConfiguration());
             #endregion
 
-            #region Role
-            modelBuilder.ApplyConfiguration(new DALRoleConfiguration());
-            modelBuilder.ApplyConfiguration(new DALRolePermissionConfiguration());
-            #endregion
-
-            #region Serial
+            #region serial
             modelBuilder.ApplyConfiguration(new DALSerialBatchConfiguration());
             modelBuilder.ApplyConfiguration(new DALSerialNoConfiguration());
             modelBuilder.ApplyConfiguration(new DALSerialTypeConfiguration());
@@ -68,6 +93,10 @@ namespace orch.core.ef.Transaction
             modelBuilder.ApplyConfiguration(new DALUserHistoryConfiguration());
             modelBuilder.ApplyConfiguration(new DALUserInfoConfigurationConfiguration());
             modelBuilder.ApplyConfiguration(new DALUserRoleConfiguration());
+            #endregion
+
+            #region logging
+            modelBuilder.ApplyConfiguration(new DALEventLogConfiguration());
             #endregion
         }
     }

@@ -20,6 +20,8 @@ namespace orch.core
 
         void AddTransaction(OTransaction tranSet);
 
+        void AddJob(OJob job);
+
         OCommand GetHeadTransaction();
 
         TransactionSystemInformation GetCurrentSystemInformation();
@@ -67,9 +69,6 @@ namespace orch.core
 
         public PagedList<UserInfo> GetUsers(int index, int count);
 
-        public bool IsUserNameExist(string userName, Guid Id);
-
-
         public PagedList<UserInfo> SearchUsers(string query, int index, int count, bool? enabled = null);
 
         List<Guid> GetUserPermissions(Guid agentId);
@@ -103,6 +102,8 @@ namespace orch.core
         void UpdateSystemInformation(OCommand command, TransactionSystemInformation sysInfo, bool insert);
 
         List<Permission> GetAllPermissions();
+
+        List<Permission> GetPermissionsByRoleId(Guid roleId);
 
         List<Permission> GetAllPermissionsByModule(string module);
 
