@@ -7,7 +7,7 @@ using orch.core.model;
 
 namespace orch.core.ef.Logging
 {
-    [OView("EventLogs")]
+    [OView("event_logs")]
     public class EFEventLogDatabase : IEventLogDatabase
     {
         private readonly OTransactionDbContext _context;
