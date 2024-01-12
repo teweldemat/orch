@@ -1,9 +1,12 @@
-﻿using orch.common;
+﻿using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
+using orch.common;
 
 namespace orch.core.model
 {
     public class EventLogProps
     {
+        [JsonConverter(typeof(StringEnumConverter))]
         public enum LogLevel
         {
             Trace,
