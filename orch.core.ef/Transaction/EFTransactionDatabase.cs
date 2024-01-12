@@ -1328,10 +1328,5 @@ namespace orch.core.ef.System
             _db.Dispose();
             _systemDatabase.Dispose();
         }
-
-        public bool IsUserNameExist(string username)
-        {
-            throw new NotImplementedException();
-        }
     }
 }

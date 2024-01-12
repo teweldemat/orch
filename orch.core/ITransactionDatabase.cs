@@ -67,9 +67,6 @@ namespace orch.core
 
         public PagedList<UserInfo> GetUsers(int index, int count);
 
-        public bool IsUserNameExist(string userName, Guid Id);
-
-
         public PagedList<UserInfo> SearchUsers(string query, int index, int count, bool? enabled = null);
 
         List<Guid> GetUserPermissions(Guid agentId);
