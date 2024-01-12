@@ -38,7 +38,6 @@ namespace orch.core
             }
         }
 
-
         private static readonly ConcurrentDictionary<Guid, string> singletonJobsByTypeId = new();
         private static readonly ConcurrentDictionary<string, Guid> concurrentJobsByJobId = new();
         private static readonly ConcurrentDictionary<string, CancellationTokenSource> cancellationTokenSources = new();
@@ -59,10 +58,7 @@ namespace orch.core
 
         public string EnqueueJob(Guid userId, Guid systemId, Guid typeId, object data)
         {
-            var typeInfo = GetTypeInfoById(typeId);
-
-            if (typeInfo == null)
-                throw new JobTypeIdNotFoundException(typeId);
+            var typeInfo = GetTypeInfoById(typeId) ?? throw new JobTypeIdNotFoundException(typeId);
 
             Authorize(typeInfo, userId);
 
@@ -111,6 +107,8 @@ namespace orch.core
 
                 job.TextSummary = handler.Summarize();
 
+                _transactionService.Db.AddJob(job);
+
             }
             finally
             {
@@ -128,8 +126,8 @@ namespace orch.core
         public bool CancelJob(Guid userId, string jobId)
         {
             Guid typeId = GetTypeIdForJobId(jobId);
-            var typeInfo = GetTypeInfoById(typeId)
-                ?? throw new JobTypeIdNotFoundException(typeId);
+
+            var typeInfo = GetTypeInfoById(typeId) ?? throw new JobTypeIdNotFoundException(typeId);
 
             Authorize(typeInfo, userId);
 

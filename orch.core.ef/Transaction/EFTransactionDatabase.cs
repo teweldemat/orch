@@ -164,6 +164,13 @@ namespace orch.core.ef.System
             _db.SaveChanges();
         }
 
+        public void AddJob(OJob job)
+        {
+
+            _db.Jobs.Add(new DALOJob(job));
+            _db.SaveChanges();
+        }
+
         /// <summary>
         /// Retrieves the head transaction from the transaction database,
         /// which is the most recent transaction that was added to the database.

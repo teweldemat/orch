@@ -1,6 +1,8 @@
 ﻿using Microsoft.AspNetCore.SignalR;
+using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
+using orch.core.logging;
 using orch.core.model;
 
 namespace orch.core.job
@@ -8,6 +10,7 @@ namespace orch.core.job
     public abstract class JobHandlerBase<T, P> : IJobHandler where P : JobProgress
     {
         protected TransactionServiceCollection _services;
+        protected IEventLogDatabase _eventLogDb;
 
         protected OJob _jobInfo;
         protected T _jobData;
@@ -16,6 +19,7 @@ namespace orch.core.job
         protected JobHandlerBase(TransactionServiceCollection services)
         {
             _services = services;
+            _eventLogDb = services.TranService.Services.GetRequiredService<IEventLogDatabase>();
         }
 
         public IHubContext<JobProgressHub> HubContext { get; set; }
@@ -77,6 +81,26 @@ namespace orch.core.job
             HubContext.Clients.Group(_jobInfo.Id).SendAsync(
                 JobProgressHub.ProgressMethod,
                 JsonConvert.SerializeObject(progress, settings)).Wait();
+        }
+
+        protected void AddEventLog(
+            EventLogProps.LogLevel level,
+            string message,
+            string reference = null,
+            object data = null)
+        {
+            var eventLog = new EventLog
+            {
+                Id = _services.Host.NextGuid(),
+                Time = _services.Host.CurrentTime(),
+                Message = message,
+                Level = level,
+                Reference = reference,
+                JobId = _jobInfo.Id,
+                Data = data is null ? null : JsonConvert.SerializeObject(data)
+            };
+
+            _eventLogDb.Add(eventLog);
         }
 
         public abstract Task Execute();

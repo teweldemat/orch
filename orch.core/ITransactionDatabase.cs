@@ -20,6 +20,8 @@ namespace orch.core
 
         void AddTransaction(OTransaction tranSet);
 
+        void AddJob(OJob job);
+
         OCommand GetHeadTransaction();
 
         TransactionSystemInformation GetCurrentSystemInformation();
