@@ -101,6 +101,8 @@ namespace orch.core
 
         List<Permission> GetAllPermissions();
 
+        List<Permission> GetPermissionsByRoleId(Guid roleId);
+
         List<Permission> GetAllPermissionsByModule(string module);
 
         void DeleteUser(OCommand command, Guid userId);

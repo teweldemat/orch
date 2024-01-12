@@ -14,6 +14,7 @@ namespace orch.core.command
     {
         public const string COMMAND_TYPE_KEY = "SYS_UPDATE_USER";
         public const string TYPE_ID = "a1d9bef1-0d8c-4573-811b-f61e9e0aa153";
+
         public UserInfo UserInfo { get; set; }
     }
 
@@ -58,34 +59,31 @@ namespace orch.core.command
             existing = _services.TranDb.GetUserInfo(_commandData.UserInfo.Id);
 
             if (existing == null)
-                throw new InvalidOperationException($"User id {_commandData.UserInfo.Id} not valid");
+                throw new InvalidOperationException($"User with Id '{_commandData.UserInfo.Id}' does not exist.");
+
 
             if (existing.UserName != _commandData.UserInfo.UserName)
             {
-                var chek = _services.TranDb.IsUserNameExist(_commandData.UserInfo.UserName, _commandData.UserInfo.Id);
-                if (chek)
-                    throw new InvalidOperationException("The User name is already exist!");
-
+                throw new InvalidOperationException("Updating the username is not permitted.");
             }
         }
 
         public override string Summarize(out bool html)
         {
             html = false;
-            return $"User information updated for {_commandData.UserInfo.UserName}.";
+            return $"User information updated for '{_commandData.UserInfo.UserName}'.";
         }
 
         protected override void Execute()
         {
-            existing.UserName = _commandData.UserInfo.UserName;
-            existing.EmployeeId = _commandData.UserInfo.EmployeeId;
-            existing.ReaderId = _commandData.UserInfo.ReaderId;
-            existing.Email = _commandData.UserInfo.Email;
             existing.FullName = _commandData.UserInfo.FullName;
             existing.PhoneNo = _commandData.UserInfo.PhoneNo;
+            existing.Email = _commandData.UserInfo.Email;
+
+            existing.EmployeeId = _commandData.UserInfo.EmployeeId;
+            existing.ReaderId = _commandData.UserInfo.ReaderId;
 
             _services.TranDb.UpdateUserInfo(existing);
         }
-
     }
 }
