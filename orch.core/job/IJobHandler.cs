@@ -8,7 +8,7 @@ namespace orch.core.job
         internal IHubContext<JobProgressHub> HubContext { get; set; }
         internal CancellationTokenSource Cts { get; set; }
         public void SetData(OJob job, object data);
-        public void Execute();
+        public Task Execute();
         public string Summarize();
     }
 }

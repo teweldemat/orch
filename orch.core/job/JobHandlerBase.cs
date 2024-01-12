@@ -24,10 +24,10 @@ namespace orch.core.job
 
         public bool IsCancelled => Cts?.IsCancellationRequested ?? false;
 
-        void IJobHandler.Execute()
+        async Task IJobHandler.Execute()
         {
 
-            Execute();
+            await Execute();
 
             if (IsCancelled)
             {
@@ -36,7 +36,7 @@ namespace orch.core.job
             }
             else
             {
-                HubContext.Clients.Group(_jobInfo.Id).SendAsync(JobProgressHub.SuccessMethod).Wait();
+                await HubContext.Clients.Group(_jobInfo.Id).SendAsync(JobProgressHub.SuccessMethod);
             }
 
         }
@@ -64,7 +64,7 @@ namespace orch.core.job
                 _jobData = (T)data;
         }
 
-        private static readonly JsonSerializerSettings settings = new()
+        private readonly JsonSerializerSettings settings = new()
         {
             ContractResolver = new DefaultContractResolver
             {
@@ -79,11 +79,10 @@ namespace orch.core.job
                 JsonConvert.SerializeObject(progress, settings)).Wait();
         }
 
-        public abstract void Execute();
-        public virtual void OnCancelled()
-        {
+        public abstract Task Execute();
 
-        }
+        public virtual void OnCancelled() { }
+
         public abstract string Summarize(out bool html);
     }
 }
