@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.SignalR;
 using Newtonsoft.Json;
 using orch.core.errors;
 using orch.core.job;
+using orch.core.logging;
 using orch.core.model;
 using System.Collections.Concurrent;
 
@@ -14,17 +15,20 @@ namespace orch.core
         private readonly IApplicationScopeFactory _scopeFactory;
 
         private readonly OTransactionService _transactionService;
+        private readonly IEventLogDatabase _eventLogDb;
         private readonly IHubContext<JobProgressHub> _hubContext;
         private readonly IOHost _host;
 
         public OJobService(
             IApplicationScopeFactory scopeFactory,
             OTransactionService transactionService,
+            IEventLogDatabase eventLogDb,
             IHubContext<JobProgressHub> hubContext,
             IOHost host)
         {
             _scopeFactory = scopeFactory;
             _transactionService = transactionService;
+            _eventLogDb = eventLogDb;
             _hubContext = hubContext;
             _host = host;
         }
@@ -110,16 +114,39 @@ namespace orch.core
                 _transactionService.Db.AddJob(job);
 
             }
+            catch (Exception ex)
+            {
+                LogErrorEvent(context, job, ex);
+
+                throw;
+            }
             finally
             {
                 if (singletonJobsByTypeId.ContainsKey(job.DataTypeID))
                 {
                     singletonJobsByTypeId.TryRemove(job.DataTypeID, out _);
                 }
-                else if (concurrentJobsByJobId.ContainsKey(job.Id))
+                else if (job.Id is not null && concurrentJobsByJobId.ContainsKey(job.Id))
                 {
                     concurrentJobsByJobId.TryRemove(job.Id, out _);
                 }
+            }
+
+            void LogErrorEvent(PerformContext context, OJob job, Exception ex)
+            {
+                var typeInfo = GetTypeInfoById(job.DataTypeID) ?? throw new JobTypeIdNotFoundException(job.DataTypeID);
+
+                var eventLog = new EventLog
+                {
+                    Id = _host.NextGuid(),
+                    Time = _host.CurrentTime(),
+                    Message = $"An error occured while running Job {context.BackgroundJob.Id} - '{typeInfo.Key}': {ex.Message}",
+                    Level = EventLogProps.LogLevel.Error,
+                    JobId = context.BackgroundJob.Id,
+                    Data = null
+                };
+
+                _eventLogDb.Add(eventLog);
             }
         }
 
