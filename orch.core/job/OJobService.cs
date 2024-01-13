@@ -77,14 +77,14 @@ namespace orch.core
                         if (singletonJobsByTypeId.TryGetValue(typeId, out var existingJobId))
                             return existingJobId;
 
-                        var jobId = BackgroundJob.Schedule(() => EnqueueJob(null, job, data), TimeSpan.FromSeconds(3));
+                        var jobId = BackgroundJob.Schedule(() => EnqueueJob(default, job, data), TimeSpan.FromSeconds(3));
                         singletonJobsByTypeId.TryAdd(typeId, jobId);
 
                         return jobId;
                     }
                 case JobProcessType.Concurrent:
                     {
-                        var jobId = BackgroundJob.Enqueue(() => EnqueueJob(null, job, data));
+                        var jobId = BackgroundJob.Enqueue(() => EnqueueJob(default, job, data));
                         concurrentJobsByJobId.TryAdd(jobId, typeId);
                         return jobId;
                     }
@@ -96,14 +96,14 @@ namespace orch.core
 
 
         [AutomaticRetry(Attempts = 0)]
-        public void EnqueueJob(PerformContext context, OJob job, object data)
+        public async Task EnqueueJob(PerformContext context, OJob job, object data)
         {
             try
             {
                 ProcessJob(context, job, data, out IJobHandler handler);
 
                 // PerformContext is a special argument type which Hangfire will substitute automatically
-                handler.Execute();
+                await handler.Execute();
 
                 job.TextSummary = handler.Summarize();
 
