@@ -138,6 +138,8 @@ namespace orch.core.ef.Logging
 
         private static PagedList<EventLog> GetPagedList(IQueryable<EventLog> query, int index, int count)
         {
+            query = query.OrderByDescending(e => e.Time);
+
             var total = query.Count();
             var items = query.Skip(index * count).Take(count).ToList();
             return new PagedList<EventLog>
