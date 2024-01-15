@@ -103,7 +103,7 @@ namespace orch.core
 
         List<Permission> GetAllPermissions();
 
-        List<Permission> GetPermissionsByRoleId(Guid roleId);
+        PagedList<Permission> GetPermissionsByRoleId(Guid roleId, int pageIndex, int pageSize);
 
         List<Permission> GetAllPermissionsByModule(string module);
 

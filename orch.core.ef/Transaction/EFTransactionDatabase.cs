@@ -789,16 +789,31 @@ namespace orch.core.ef.System
         }
 
         [OViewFunction]
-        public List<Permission> GetPermissionsByRoleId(Guid roleId)
+        public PagedList<Permission> GetPermissionsByRoleId(Guid roleId, int pageIndex, int pageSize)
         {
             var role = _db.Roles.Include(r => r.Permissions)
                                     .ThenInclude(rp => rp.Permission)
                                 .FirstOrDefault(r => r.Id == roleId)
-                                ?? throw new InvalidOperationException($"Role with ID '{roleId}' does not exist."); ;
+                                    ?? throw new InvalidOperationException($"Role with ID '{roleId}' does not exist.");
 
+            var permissionsQuery = role.Permissions.AsQueryable();
 
-            return role.Permissions.Select(rp => new Permission(rp.Permission)).ToList();
+            var totalPermissionsCount = permissionsQuery.Count();
+
+            var permissions = permissionsQuery
+                                .OrderBy(rp => rp.Order)
+                                .Skip(pageIndex * pageSize)
+                                .Take(pageSize)
+                                .Select(rp => new Permission(rp.Permission))
+                                .ToList();
+
+            return new PagedList<Permission>
+            {
+                List = permissions,
+                Count = totalPermissionsCount
+            };
         }
+
 
         public void DeleteUser(OCommand command, Guid userId)
         {
