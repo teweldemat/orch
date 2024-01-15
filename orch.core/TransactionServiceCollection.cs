@@ -13,8 +13,7 @@ namespace orch.core
             _tranService.Services.GetService<ITransactionDatabase>()
             ?? throw new NullReferenceException($"{nameof(ITransactionDatabase)} service couldn't be retrieved");
 
-        public TransactionServiceCollection(
-            IOHost host, OTransactionService tranService)
+        public TransactionServiceCollection(IOHost host, OTransactionService tranService)
         {
             _tranService = tranService;
             Host = host;

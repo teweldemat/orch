@@ -164,6 +164,13 @@ namespace orch.core.ef.System
             _db.SaveChanges();
         }
 
+        public void AddJob(OJob job)
+        {
+
+            _db.Jobs.Add(new DALOJob(job));
+            _db.SaveChanges();
+        }
+
         /// <summary>
         /// Retrieves the head transaction from the transaction database,
         /// which is the most recent transaction that was added to the database.
@@ -302,16 +309,14 @@ namespace orch.core.ef.System
             {
                 throw new InvalidOperationException($"User with ID:{agent.Id} doesn't exist");
             }
-            existing.UserName = agent.UserName;
             existing.FullName = agent.FullName;
             existing.EmployeeId = agent.EmployeeId;
             existing.ReaderId = agent.ReaderId;
             existing.Email = agent.Email;
             existing.PhoneNo = agent.PhoneNo;
+
             _db.Users.Update(new DALUserInfo(existing));
             _db.SaveChanges();
-            //systemDatabase.g(new DALAccessToken(accessToken));
-            //_db.SaveChanges();
         }
 
         public void CreateUser(OCommand command, UserInfo agentInfo)
@@ -773,6 +778,7 @@ namespace orch.core.ef.System
                         .Select(permission => new Permission(permission))
                         .ToList();
         }
+
         [OViewFunction]
         public List<Permission> GetAllPermissionsByModule(string module)
         {
@@ -781,6 +787,34 @@ namespace orch.core.ef.System
                         .Select(permission => new Permission(permission))
                         .ToList();
         }
+
+        [OViewFunction]
+        public PagedList<Permission> GetPermissionsByRoleId(Guid roleId, int pageIndex, int pageSize)
+        {
+            var role = _db.Roles.Include(r => r.Permissions)
+                                    .ThenInclude(rp => rp.Permission)
+                                .FirstOrDefault(r => r.Id == roleId)
+                                    ?? throw new InvalidOperationException($"Role with ID '{roleId}' does not exist.");
+
+            var permissionsQuery = role.Permissions.AsQueryable();
+
+            var totalPermissionsCount = permissionsQuery.Count();
+
+            var permissions = permissionsQuery
+                                .OrderBy(rp => rp.Order)
+                                .Skip(pageIndex * pageSize)
+                                .Take(pageSize)
+                                .Select(rp => new Permission(rp.Permission))
+                                .ToList();
+
+            return new PagedList<Permission>
+            {
+                List = permissions,
+                Count = totalPermissionsCount
+            };
+        }
+
+
         public void DeleteUser(OCommand command, Guid userId)
         {
             if (_db.Commands.Where(command => command.UserId == userId).Any())
@@ -1327,11 +1361,6 @@ namespace orch.core.ef.System
             _dbTransaction?.Dispose();
             _db.Dispose();
             _systemDatabase.Dispose();
-        }
-
-        public bool IsUserNameExist(string username)
-        {
-            throw new NotImplementedException();
         }
     }
 }

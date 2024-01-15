@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.SignalR;
 using Newtonsoft.Json;
 using orch.core.errors;
 using orch.core.job;
+using orch.core.logging;
 using orch.core.model;
 using System.Collections.Concurrent;
 
@@ -14,17 +15,20 @@ namespace orch.core
         private readonly IApplicationScopeFactory _scopeFactory;
 
         private readonly OTransactionService _transactionService;
+        private readonly IEventLogDatabase _eventLogDb;
         private readonly IHubContext<JobProgressHub> _hubContext;
         private readonly IOHost _host;
 
         public OJobService(
             IApplicationScopeFactory scopeFactory,
             OTransactionService transactionService,
+            IEventLogDatabase eventLogDb,
             IHubContext<JobProgressHub> hubContext,
             IOHost host)
         {
             _scopeFactory = scopeFactory;
             _transactionService = transactionService;
+            _eventLogDb = eventLogDb;
             _hubContext = hubContext;
             _host = host;
         }
@@ -37,7 +41,6 @@ namespace orch.core
                 return _services ??= _scopeFactory.CreateApplicationScope().Services;
             }
         }
-
 
         private static readonly ConcurrentDictionary<Guid, string> singletonJobsByTypeId = new();
         private static readonly ConcurrentDictionary<string, Guid> concurrentJobsByJobId = new();
@@ -59,10 +62,7 @@ namespace orch.core
 
         public string EnqueueJob(Guid userId, Guid systemId, Guid typeId, object data)
         {
-            var typeInfo = GetTypeInfoById(typeId);
-
-            if (typeInfo == null)
-                throw new JobTypeIdNotFoundException(typeId);
+            var typeInfo = GetTypeInfoById(typeId) ?? throw new JobTypeIdNotFoundException(typeId);
 
             Authorize(typeInfo, userId);
 
@@ -81,14 +81,14 @@ namespace orch.core
                         if (singletonJobsByTypeId.TryGetValue(typeId, out var existingJobId))
                             return existingJobId;
 
-                        var jobId = BackgroundJob.Schedule(() => EnqueueJob(null, job, data), TimeSpan.FromSeconds(3));
+                        var jobId = BackgroundJob.Schedule(() => EnqueueJob(default, job, data), TimeSpan.FromSeconds(3));
                         singletonJobsByTypeId.TryAdd(typeId, jobId);
 
                         return jobId;
                     }
                 case JobProcessType.Concurrent:
                     {
-                        var jobId = BackgroundJob.Enqueue(() => EnqueueJob(null, job, data));
+                        var jobId = BackgroundJob.Enqueue(() => EnqueueJob(default, job, data));
                         concurrentJobsByJobId.TryAdd(jobId, typeId);
                         return jobId;
                     }
@@ -100,17 +100,25 @@ namespace orch.core
 
 
         [AutomaticRetry(Attempts = 0)]
-        public void EnqueueJob(PerformContext context, OJob job, object data)
+        public async Task EnqueueJob(PerformContext context, OJob job, object data)
         {
             try
             {
                 ProcessJob(context, job, data, out IJobHandler handler);
 
                 // PerformContext is a special argument type which Hangfire will substitute automatically
-                handler.Execute();
+                await handler.Execute();
 
                 job.TextSummary = handler.Summarize();
 
+                _transactionService.Db.AddJob(job);
+
+            }
+            catch (Exception ex)
+            {
+                LogErrorEvent(context, job, ex);
+
+                throw;
             }
             finally
             {
@@ -118,18 +126,35 @@ namespace orch.core
                 {
                     singletonJobsByTypeId.TryRemove(job.DataTypeID, out _);
                 }
-                else if (concurrentJobsByJobId.ContainsKey(job.Id))
+                else if (job.Id is not null && concurrentJobsByJobId.ContainsKey(job.Id))
                 {
                     concurrentJobsByJobId.TryRemove(job.Id, out _);
                 }
+            }
+
+            void LogErrorEvent(PerformContext context, OJob job, Exception ex)
+            {
+                var typeInfo = GetTypeInfoById(job.DataTypeID) ?? throw new JobTypeIdNotFoundException(job.DataTypeID);
+
+                var eventLog = new EventLog
+                {
+                    Id = _host.NextGuid(),
+                    Time = _host.CurrentTime(),
+                    Message = $"An error occured while running Job {context.BackgroundJob.Id} - '{typeInfo.Key}': {ex.Message}",
+                    Level = EventLogProps.LogLevel.Error,
+                    JobId = context.BackgroundJob.Id,
+                    Data = null
+                };
+
+                _eventLogDb.Add(eventLog);
             }
         }
 
         public bool CancelJob(Guid userId, string jobId)
         {
             Guid typeId = GetTypeIdForJobId(jobId);
-            var typeInfo = GetTypeInfoById(typeId)
-                ?? throw new JobTypeIdNotFoundException(typeId);
+
+            var typeInfo = GetTypeInfoById(typeId) ?? throw new JobTypeIdNotFoundException(typeId);
 
             Authorize(typeInfo, userId);
 

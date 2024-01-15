@@ -62,11 +62,12 @@ namespace orch.core
 
             if (cmdAtr == null) return;
 
+            cmdAtr.ttInfo.Type = t;
+            cmdAtr.ttInfo.TypeName ??= t.FullName;
+
             ValidateAttribute(cmdAtr);
 
             s_transacticonTypes.Add(cmdAtr.ttInfo.TypeId, cmdAtr.ttInfo);
-            cmdAtr.ttInfo.Type = t;
-            cmdAtr.ttInfo.TypeName ??= t.FullName;
 
             s_transactionTypesByType[t] = cmdAtr.ttInfo;
             s_transactionTypesByKey[cmdAtr.ttInfo.Key] = cmdAtr.ttInfo;

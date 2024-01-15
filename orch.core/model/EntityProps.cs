@@ -143,6 +143,7 @@ namespace orch.core.model
         public string TextSummary { get; set; }
         public Guid DataTypeID { get; set; }
         public string TextData { get; set; }
+        public Guid? SystemID { get; set; }
     }
 
     public abstract class OTransactionProps
