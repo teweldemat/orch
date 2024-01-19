@@ -223,29 +223,6 @@ namespace orch.ef.workflow
             return ret;
         }
 
-        public IList<Guid> GetUserTaskIds(
-            Guid userId,
-            List<OTaskStatus>? filterStatuses = null,
-            List<Guid>? taskTypeIds = null)
-        {
-            var query = _dbContext.TaskAssignee
-                .AsNoTracking()
-                .Where(assignee => assignee.UserId == userId)
-                .Select(assignee => assignee.Task);
-
-            if (filterStatuses != null && filterStatuses.Count > 0)
-            {
-                query = query.Where(task => filterStatuses.Contains(task.Status));
-            }
-
-            if (taskTypeIds != null && taskTypeIds.Count > 0)
-            {
-                query = query.Where(task => taskTypeIds.Contains(task.TaskTypeId));
-            }
-
-            return query.Select(task => task.Id).ToList();
-        }
-
         [OViewFunction(name: "GetUserTasksPaged")]
         public PagedList<OTask> GetUserTasksPaged(
             Guid userId,

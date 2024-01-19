@@ -8,7 +8,7 @@ namespace orch.ef.workflow
 {
     public class OWorkFlowDbContext : ODbContext
     {
-        internal const string WORKFLOW_SCHEMA = "wf";
+        public const string WORKFLOW_SCHEMA = "wf";
 
         protected OWorkFlowDbContext(DbConnection connection) : base(connection)
         {
