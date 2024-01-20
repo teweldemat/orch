@@ -13,21 +13,23 @@ namespace orch.core
     public sealed partial class OJobService
     {
         private readonly IApplicationScopeFactory _scopeFactory;
-
-        private readonly OTransactionService _transactionService;
+        private readonly OTransactionService _tranService;
+        private readonly ITransactionDatabase _tranDb;
         private readonly IEventLogDatabase _eventLogDb;
         private readonly IHubContext<JobProgressHub> _hubContext;
         private readonly IOHost _host;
 
         public OJobService(
             IApplicationScopeFactory scopeFactory,
-            OTransactionService transactionService,
+            OTransactionService tranService,
+            ITransactionDatabase tranDb,
             IEventLogDatabase eventLogDb,
             IHubContext<JobProgressHub> hubContext,
             IOHost host)
         {
             _scopeFactory = scopeFactory;
-            _transactionService = transactionService;
+            _tranService = tranService;
+            _tranDb = tranDb;
             _eventLogDb = eventLogDb;
             _hubContext = hubContext;
             _host = host;
@@ -44,6 +46,7 @@ namespace orch.core
 
         private static readonly ConcurrentDictionary<Guid, string> singletonJobsByTypeId = new();
         private static readonly ConcurrentDictionary<string, Guid> concurrentJobsByJobId = new();
+
         private static readonly ConcurrentDictionary<string, CancellationTokenSource> cancellationTokenSources = new();
 
         private void ProcessJob(PerformContext context, OJob job, object data, out IJobHandler handler)
@@ -51,13 +54,13 @@ namespace orch.core
             CancellationTokenSource cts = new();
             cancellationTokenSources.TryAdd(context.BackgroundJob.Id, cts);
 
+            job.Id = context.BackgroundJob.Id;
+            job.TextData = JsonConvert.SerializeObject(data);
+
             handler = GetHandler(job.DataTypeID);
             handler.SetData(job, data);
             handler.HubContext = _hubContext;
             handler.Cts = cts;
-
-            job.Id = context.BackgroundJob.Id;
-            job.TextData = JsonConvert.SerializeObject(data);
         }
 
         public string EnqueueJob(Guid userId, Guid systemId, Guid typeId, object data)
@@ -81,26 +84,27 @@ namespace orch.core
                         if (singletonJobsByTypeId.TryGetValue(typeId, out var existingJobId))
                             return existingJobId;
 
-                        var jobId = BackgroundJob.Schedule(() => EnqueueJob(default, job, data), TimeSpan.FromSeconds(3));
+                        // TODO: hack - it shoudln't need to be scheduled
+                        var jobId = BackgroundJob.Schedule(() => ExecuteJob(default, job, data), TimeSpan.FromSeconds(3));
                         singletonJobsByTypeId.TryAdd(typeId, jobId);
 
                         return jobId;
                     }
                 case JobProcessType.Concurrent:
                     {
-                        var jobId = BackgroundJob.Enqueue(() => EnqueueJob(default, job, data));
+                        var jobId = BackgroundJob.Enqueue(() => ExecuteJob(default, job, data));
                         concurrentJobsByJobId.TryAdd(jobId, typeId);
                         return jobId;
                     }
                 default:
-                    throw new InvalidOperationException("Invalid ProcessType");
+                    throw new InvalidOperationException($"Job Type '{nameof(JobProcessType)}' not supported.");
             }
 
         }
 
 
         [AutomaticRetry(Attempts = 0)]
-        public async Task EnqueueJob(PerformContext context, OJob job, object data)
+        public async Task ExecuteJob(PerformContext context, OJob job, object data)
         {
             try
             {
@@ -111,7 +115,7 @@ namespace orch.core
 
                 job.TextSummary = handler.Summarize();
 
-                _transactionService.Db.AddJob(job);
+                _tranService.Db.AddJob(job);
 
             }
             catch (Exception ex)
@@ -158,22 +162,26 @@ namespace orch.core
 
             Authorize(typeInfo, userId);
 
-            if (concurrentJobsByJobId.ContainsKey(jobId) || singletonJobsByTypeId.Values.Contains(jobId))
+            if (!concurrentJobsByJobId.ContainsKey(jobId) && !singletonJobsByTypeId.Values.Contains(jobId))
             {
-                if (BackgroundJob.Delete(jobId))
-                {
-                    if (cancellationTokenSources.TryGetValue(jobId, out var cts))
-                    {
-                        cts.Cancel();
-                    }
-
-                    concurrentJobsByJobId.TryRemove(jobId, out _);
-                    singletonJobsByTypeId.TryRemove(singletonJobsByTypeId.FirstOrDefault(x => x.Value == jobId).Key, out _);
-                    return true;
-                }
+                throw new InvalidOperationException($"Cannot cancel job '{jobId}' as it does not exist or has already been cancelled.");
             }
 
-            return false;
+            var cancelled = BackgroundJob.Delete(jobId);
+
+            if (!cancelled)
+            {
+                throw new ApplicationException($"Failed to cancel job '{jobId}'.");
+            }
+
+            if (cancellationTokenSources.TryGetValue(jobId, out var cts))
+            {
+                cts.Cancel();
+            }
+
+            concurrentJobsByJobId.TryRemove(jobId, out _);
+            singletonJobsByTypeId.TryRemove(singletonJobsByTypeId.FirstOrDefault(x => x.Value == jobId).Key, out _);
+            return true;
         }
 
         public static string? GetActiveSingletonJobId(Guid typeId)
@@ -190,10 +198,11 @@ namespace orch.core
 
         private void Authorize(JobTypeInfo typeInfo, Guid userId)
         {
-            if (typeInfo?.Permissions?.Length != null
-                && typeInfo.Permissions.Length > 0 && !_transactionService.IsRootUser(userId))
+            if (typeInfo?.Permissions?.Length is not null
+                && typeInfo.Permissions.Any()
+                    && !_tranService.IsRootUser(userId))
             {
-                if (!_transactionService.Db.IsPermitted(userId, typeInfo.Permissions, out var notGrantedPermissions))
+                if (!_tranService.Db.IsPermitted(userId, typeInfo.Permissions, out var notGrantedPermissions))
                 {
                     var notGrantedPermissionsStr = string.Join(", ", notGrantedPermissions);
                     throw new UnauthorizedAccessException($"You are not authorized to initiate or cancel job: '{typeInfo.TypeName}'. Missing permissions: {notGrantedPermissionsStr}");
@@ -214,6 +223,31 @@ namespace orch.core
             }
 
             throw new InvalidOperationException("Job ID does not exist or is not active.");
+        }
+
+        public static void AddOrUpdateRecurringJobs()
+        {
+            foreach (var typeInfo in GetJobTypesByProcessType(JobProcessType.Recurring))
+            {
+
+                RecurringJob.AddOrUpdate<OJobService>(
+                    typeInfo.Key,
+                    (service) => service.ExecuteRecurringJob(default, typeInfo),
+                    typeInfo.Cron);
+            }
+        }
+
+        private Task ExecuteRecurringJob(PerformContext context, JobTypeInfo typeInfo)
+        {
+            var job = new OJob()
+            {
+                UserId = _tranDb.GetUserInfo(UserInfoProps.USER_NAME_SYSTEM).Id,
+                SystemID = _tranDb.GetCurrentSystemInformation().SystemId,
+                Time = _host.CurrentTime(),
+                DataTypeID = typeInfo.TypeId,
+            };
+
+            return ExecuteJob(context, job, null);
         }
     }
 }

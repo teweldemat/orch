@@ -130,9 +130,8 @@ namespace orch.wf
             var wf = StateData;
             foreach (var p in RequiredPermissions(_commandInfo, wf))
             {
-                var permission = _services.TranDb.GetPermission(p);
-                if (permission == null)
-                    throw new InvalidOperationException($"Permission {p} not found.");
+                var permission = _services.TranDb.GetPermission(p)
+                    ?? throw new InvalidOperationException($"Permission '{p}' not found.");
 
                 if (!_services.TranDb.IsPermitted(_commandInfo.UserId.Value, permission.Id))
                     throw new UnauthorizedAccessException($"User is not authorized. Missing permission: {p}");

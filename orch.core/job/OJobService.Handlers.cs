@@ -128,21 +128,21 @@ namespace orch.core
         public static JobTypeInfo? GetTypeInfoById(Guid id)
             => s_jobTypes.GetValueOrDefault(id);
 
-        public static IList<string> GetAllTransactionTypeKeys()
+        public static IList<string> GetAllJobTypeKeys()
             => s_jobTypes.Values.Select(x => x.Key).ToList();
 
-        public static IList<JobTypeInfo> GetAllCommandTypes()
+        public static IList<JobTypeInfo> GetAllJobTypes()
             => s_jobTypes.Values.ToList();
 
+        public static IList<JobTypeInfo> GetJobTypesByProcessType(JobProcessType processType)
+            => s_jobTypes.Values.Where(x => x.ProcessType == processType).ToList();
 
         public static IList<string> GetAllAssemblyNames()
             => s_jobTypesByAssembly.Keys.ToList();
 
-        public static IList<JobTypeInfo> GetTransactionTypesByAssembly(string assemblyName)
+        public static IList<JobTypeInfo> GetJobTypesByAssembly(string assemblyName)
             => s_jobTypesByAssembly.ContainsKey(assemblyName)
                 ? s_jobTypesByAssembly[assemblyName]
                     : throw new ArgumentException($"No types found for assembly {assemblyName}");
-
-
     }
 }
