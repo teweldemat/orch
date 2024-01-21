@@ -134,9 +134,6 @@ namespace orch.core
         public static IList<JobTypeInfo> GetAllJobTypes()
             => s_jobTypes.Values.ToList();
 
-        public static IList<JobTypeInfo> GetJobTypesByProcessType(JobProcessType processType)
-            => s_jobTypes.Values.Where(x => x.ProcessType == processType).ToList();
-
         public static IList<string> GetAllAssemblyNames()
             => s_jobTypesByAssembly.Keys.ToList();
 

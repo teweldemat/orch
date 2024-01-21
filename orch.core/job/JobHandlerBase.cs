@@ -7,6 +7,13 @@ using orch.core.model;
 
 namespace orch.core.job
 {
+    public abstract class JobHandlerBase<T> : JobHandlerBase<T, JobProgress>
+    {
+        protected JobHandlerBase(TransactionServiceCollection services) : base(services)
+        {
+        }
+    }
+
     public abstract class JobHandlerBase<T, P> : IJobHandler where P : JobProgress
     {
         protected TransactionServiceCollection _services;
@@ -46,9 +53,6 @@ namespace orch.core.job
         }
         string IJobHandler.Summarize()
         {
-            if (_jobData is null)
-                return string.Empty;
-
             var ret = Summarize(out var html);
 
             if (html)

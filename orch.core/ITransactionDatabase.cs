@@ -34,7 +34,9 @@ namespace orch.core
 
         long CountByDataTypeIds(List<Guid> dataTypeIds);
 
-        UserInfo GetRootUser();
+        UserInfo? GetRootUser();
+
+        UserInfo? GetSystemUser();
 
         UserInfo GetUserInfo(string userName, bool includePassword = false);
 

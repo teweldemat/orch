@@ -1,6 +1,7 @@
 ﻿using Hangfire;
 using Hangfire.Server;
 using Microsoft.AspNetCore.SignalR;
+using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json;
 using orch.core.errors;
 using orch.core.job;
@@ -120,7 +121,17 @@ namespace orch.core
             }
             catch (Exception ex)
             {
-                LogErrorEvent(context, job, ex);
+                var typeInfo = GetTypeInfoById(job.DataTypeID);
+
+                _eventLogDb.Add(new EventLog
+                {
+                    Id = _host.NextGuid(),
+                    Time = _host.CurrentTime(),
+                    Message = $"An error occured while running Job {context.BackgroundJob.Id} - '{typeInfo.Key}': {ex.Message}",
+                    Level = EventLogProps.LogLevel.Error,
+                    JobId = context.BackgroundJob.Id,
+                    Data = null
+                });
 
                 throw;
             }
@@ -134,23 +145,6 @@ namespace orch.core
                 {
                     concurrentJobsByJobId.TryRemove(job.Id, out _);
                 }
-            }
-
-            void LogErrorEvent(PerformContext context, OJob job, Exception ex)
-            {
-                var typeInfo = GetTypeInfoById(job.DataTypeID) ?? throw new JobTypeIdNotFoundException(job.DataTypeID);
-
-                var eventLog = new EventLog
-                {
-                    Id = _host.NextGuid(),
-                    Time = _host.CurrentTime(),
-                    Message = $"An error occured while running Job {context.BackgroundJob.Id} - '{typeInfo.Key}': {ex.Message}",
-                    Level = EventLogProps.LogLevel.Error,
-                    JobId = context.BackgroundJob.Id,
-                    Data = null
-                };
-
-                _eventLogDb.Add(eventLog);
             }
         }
 
@@ -224,30 +218,34 @@ namespace orch.core
 
             throw new InvalidOperationException("Job ID does not exist or is not active.");
         }
+    }
 
-        public static void AddOrUpdateRecurringJobs()
+    public static class OJobServiceHelpers
+    {
+        public static void AddRecurringJobs(this IServiceCollection services)
         {
-            foreach (var typeInfo in GetJobTypesByProcessType(JobProcessType.Recurring))
+            using var serviceProvider = services.BuildServiceProvider();
+
+            _ = serviceProvider.GetRequiredService<IRecurringJobManager>();
+            var tranDb = serviceProvider.GetRequiredService<ITransactionDatabase>();
+            var host = serviceProvider.GetRequiredService<IOHost>();
+
+            foreach (var typeInfo in OJobService.GetAllJobTypes().Where(jt => jt.ProcessType is JobProcessType.Recurring))
             {
+                var job = new OJob()
+                {
+                    UserId = tranDb.GetSystemUser().Id,
+                    SystemID = tranDb.GetCurrentSystemInformation().SystemId,
+                    Time = host.CurrentTime(),
+                    DataTypeID = typeInfo.TypeId,
+                };
 
                 RecurringJob.AddOrUpdate<OJobService>(
                     typeInfo.Key,
-                    (service) => service.ExecuteRecurringJob(default, typeInfo),
+                    (service) => service.ExecuteJob(default, job, null),
                     typeInfo.Cron);
             }
         }
-
-        private Task ExecuteRecurringJob(PerformContext context, JobTypeInfo typeInfo)
-        {
-            var job = new OJob()
-            {
-                UserId = _tranDb.GetUserInfo(UserInfoProps.USER_NAME_SYSTEM).Id,
-                SystemID = _tranDb.GetCurrentSystemInformation().SystemId,
-                Time = _host.CurrentTime(),
-                DataTypeID = typeInfo.TypeId,
-            };
-
-            return ExecuteJob(context, job, null);
-        }
     }
 }
+

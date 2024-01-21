@@ -1,6 +1,4 @@
-﻿using NCrontab;
-
-namespace orch.core.job
+﻿namespace orch.core.job
 {
     public enum JobProcessType
     {
@@ -35,17 +33,18 @@ namespace orch.core.job
             string[] permissions = null,
             string? cron = null)
         {
-            TypeInfo = new JobTypeInfo();
-
             if (!Guid.TryParse(typeId, out Guid parsedTypeId))
             {
-                throw new ArgumentException($"Failed to parse '{typeId}' as a GUID for the job type '{typeName}'. Please ensure that the provided typeId is a valid GUID.");
+                throw new ArgumentException($"Failed to parse '{typeId}' as a GUID for the job '{key}'.");
             }
 
-            TypeInfo.TypeId = parsedTypeId;
-            TypeInfo.TypeName = typeName;
-            TypeInfo.Key = key;
-            TypeInfo.ProcessType = processType;
+            TypeInfo = new JobTypeInfo
+            {
+                TypeId = parsedTypeId,
+                TypeName = typeName,
+                Key = key,
+                ProcessType = processType
+            };
 
             if (permissions is not null)
             {
@@ -60,13 +59,11 @@ namespace orch.core.job
                 if (string.IsNullOrEmpty(cron))
                     throw new ArgumentException($"Cron expression should be provided for recurring job '{TypeInfo.Key}'.");
 
-                _ = CrontabSchedule.TryParse(cron) ?? throw new ArgumentException($"Invalid cron expression '{cron}' provided for recurring job '{TypeInfo.Key}'.");
-
                 TypeInfo.Cron = cron;
             }
             else
             {
-                if (!string.IsNullOrEmpty(cron))
+                if (cron is not null)
                     throw new ArgumentException($"Cron expression should not be provided for non-recurring job '{TypeInfo.Key}'.");
             }
 

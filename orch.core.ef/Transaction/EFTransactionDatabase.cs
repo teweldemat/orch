@@ -246,6 +246,11 @@ namespace orch.core.ef.System
                         .FirstOrDefault();
         }
 
+        public UserInfo? GetSystemUser()
+        {
+            return GetUserInfo(UserInfo.USER_NAME_SYSTEM, false);
+        }
+
         public UserInfo? GetUserInfo(string userName, bool includePassword = false)
         {
 
