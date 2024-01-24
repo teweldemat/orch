@@ -1,5 +1,6 @@
 ﻿using Hangfire;
 using Hangfire.Server;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json;
@@ -222,10 +223,9 @@ namespace orch.core
 
     public static class OJobServiceHelpers
     {
-        public static void AddRecurringJobs(this IServiceCollection services)
+        public static void AddRecurringJobs(this IApplicationBuilder app)
         {
-            using var serviceProvider = services.BuildServiceProvider();
-
+            var serviceProvider = app.ApplicationServices;
             _ = serviceProvider.GetRequiredService<IRecurringJobManager>();
             var tranDb = serviceProvider.GetRequiredService<ITransactionDatabase>();
             var host = serviceProvider.GetRequiredService<IOHost>();
