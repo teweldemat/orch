@@ -35,6 +35,9 @@ namespace orch.core.model
 
         [ProtoMember(4)]
         public string MimeType { get; set; }
+
+        [ProtoMember(5)]
+        public long CreateTime { get; set; }
     }
     public class ContentReferenceProps : ChangeProps
     {
