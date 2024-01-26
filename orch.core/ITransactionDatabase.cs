@@ -1,5 +1,6 @@
 ﻿using orch.common;
 using orch.core.model;
+using orch.core.model.dto;
 
 namespace orch.core
 {
@@ -69,7 +70,7 @@ namespace orch.core
 
         public List<Guid> GetUsersWithRoles(List<Guid> roleIds);
 
-        public PagedList<UserInfo> GetUsers(int index, int count);
+        public PagedList<UserInfo> GetUsers(int index, int count, UserInfoFilter? filter = null);
 
         public PagedList<UserInfo> SearchUsers(string query, int index, int count, bool? enabled = null);
 
