@@ -1,6 +1,5 @@
 ﻿using Hangfire;
 using Hangfire.Server;
-using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json;
@@ -99,7 +98,7 @@ namespace orch.core
                         return jobId;
                     }
                 default:
-                    throw new InvalidOperationException($"Job Type '{nameof(JobProcessType)}' not supported.");
+                    throw new InvalidOperationException($"Job Type '{typeInfo.ProcessType}' cannot be enqueued.");
             }
 
         }
@@ -223,19 +222,28 @@ namespace orch.core
 
     public static class OJobServiceHelpers
     {
-        public static void AddRecurringJobs(this IApplicationBuilder app)
+        public static void AddRecurringJobs(this IServiceCollection services)
         {
-            var serviceProvider = app.ApplicationServices;
+            using var serviceProvider = services.BuildServiceProvider();
+
             _ = serviceProvider.GetRequiredService<IRecurringJobManager>();
             var tranDb = serviceProvider.GetRequiredService<ITransactionDatabase>();
             var host = serviceProvider.GetRequiredService<IOHost>();
+
+            var systemUser = tranDb.GetSystemUser();
+            var sysInfo = tranDb.GetCurrentSystemInformation();
+
+            if (sysInfo is null)
+            {
+                return;
+            }
 
             foreach (var typeInfo in OJobService.GetAllJobTypes().Where(jt => jt.ProcessType is JobProcessType.Recurring))
             {
                 var job = new OJob()
                 {
-                    UserId = tranDb.GetSystemUser().Id,
-                    SystemID = tranDb.GetCurrentSystemInformation().SystemId,
+                    UserId = systemUser.Id,
+                    SystemID = sysInfo.SystemId,
                     Time = host.CurrentTime(),
                     DataTypeID = typeInfo.TypeId,
                 };

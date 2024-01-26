@@ -1,7 +1,9 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
+using orch.common;
 using orch.core.ef.System.Entities;
 using orch.core.model;
+using orch.core.model.dto;
 using System.Security.Cryptography;
 
 namespace orch.core.ef.System
@@ -78,6 +80,30 @@ namespace orch.core.ef.System
                           .FirstOrDefault();
         }
 
+        public PagedList<ContentFile> GetFiles(int pageNumber, int pageSize, ContentFileFilter? filter = null)
+        {
+            var queryable = _dbContext.Files.AsQueryable();
+
+            if (filter != null)
+            {
+                if (filter.FromCreateTime != null)
+                    queryable = queryable.Where(f => f.CreateTime >= filter.FromCreateTime.Value);
+            }
+
+            var totalItemCount = queryable.Count();
+            var contentFiles = queryable.OrderBy(f => f.CreateTime)
+                                    .Skip((pageNumber - 1) * pageSize)
+                                    .Take(pageSize)
+                                    .Select(file => new ContentFile(file))
+                                    .ToList();
+
+            return new PagedList<ContentFile>
+            {
+                List = contentFiles,
+                Count = totalItemCount
+            };
+        }
+
         public AccessToken? PingAccessToken(Guid tokenId)
         {
             var token = _dbContext.AccessTokens.AsNoTracking().Where(accessToken => accessToken.Token == tokenId)
@@ -100,8 +126,6 @@ namespace orch.core.ef.System
 
         public List<AccessToken> GetTokensByUserId(Guid userId)
         {
-            var now = _host.CurrentTime();
-
             return _dbContext.AccessTokens
                 .Where(t => t.UserId == userId && (t.ExpiryTime == null))
                 .OrderBy(t => t.CreatedTime)
@@ -116,9 +140,10 @@ namespace orch.core.ef.System
 
             var item = new ContentFile
             {
-                FileId = fileId ?? Guid.NewGuid(),
+                FileId = fileId ?? _host.NextGuid(),
                 FileName = fileName,
-                MimeType = MimeMapping.MimeUtility.GetMimeMapping(fileName) //TODO: check if we can use f.ContentType
+                MimeType = MimeMapping.MimeUtility.GetMimeMapping(fileName), //TODO: check if we can use f.ContentType
+                CreateTime = _host.CurrentTime()
             };
 
             // Create directory if it does not already exist
