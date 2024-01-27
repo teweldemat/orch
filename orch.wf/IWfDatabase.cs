@@ -9,8 +9,6 @@ namespace orch.wf
     {
         IList<OTask> GetUserTasks(Guid userId, List<OTaskStatus>? filterStatuses = null);
 
-        IList<Guid> GetUserTaskIds(Guid userId, List<OTaskStatus>? filterStatuses = null, List<Guid>? taskTypeIds = null);
-
         PagedList<OTask> GetUserTasksPaged(
             Guid userId,
             int index = 0,
