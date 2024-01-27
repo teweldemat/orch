@@ -46,6 +46,11 @@ namespace orch.core.command
 
             if (_commandData.DeletedUser.Id.Equals(root.Id))
                 throw new InvalidOperationException("Root user cannot be deleted.");
+
+            var systemUser = _services.TranDb.GetUserInfo(UserInfoProps.USER_NAME_SYSTEM);
+
+            if (_commandData.DeletedUser.Id.Equals(systemUser.Id))
+                throw new InvalidOperationException("System user cannot be deleted.");
         }
 
         public override string Summarize(out bool html)

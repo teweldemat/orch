@@ -12,8 +12,9 @@
         public const string TYPE_ID = "cbacc7d6-1ff4-483c-96d9-c4d3162c4c2f";
         public Guid UserId { get; set; }
         public string Password { get; set; }
+
         [OGeneratedData]
-        public String UserName { get; set; }
+        public string UserName { get; set; }
     }
 
     public class SetPasswordCommandInitializer : CommandInitializerBase<SetPasswordCommand>

@@ -5,6 +5,7 @@ using orch.core.ef.Transaction;
 using orch.core.ef.Transaction.Entities;
 using orch.core.errors;
 using orch.core.model;
+using orch.core.model.dto;
 using orch.ef.Core;
 using System.Data;
 using System.Data.Common;
@@ -244,6 +245,11 @@ namespace orch.core.ef.System
                             .Select(userRole => userRole.RoleId).ToList()
                         })
                         .FirstOrDefault();
+        }
+
+        public UserInfo? GetSystemUser()
+        {
+            return GetUserInfo(UserInfo.USER_NAME_SYSTEM, false);
         }
 
         public UserInfo? GetUserInfo(string userName, bool includePassword = false)
@@ -637,16 +643,27 @@ namespace orch.core.ef.System
         public UserInfo? GetUser(string userName) => GetUserInfo(userName: userName, false);
 
         [OViewFunction]
-        public UserInfo GetUserById(Guid userId) => GetUserInfo(userId, false);
+        public UserInfo? GetUserById(Guid userId) => GetUserInfo(userId, false);
+
 
         [OViewFunction(permissions: new string[] { CoreModule.PERMISSION_GET_USER })]
-        public PagedList<UserInfo> GetUsers(int index, int count)
+        public PagedList<UserInfo> GetUsers(int index, int count, UserInfoFilter? filter = null)
         {
-            var enabledUserInfoList = _db.Users.Include(userInfo => userInfo.Roles);
+            var queryable = _db.Users.AsQueryable();
 
-            var size = enabledUserInfoList.Count();
+            if (filter != null)
+            {
+                if (filter.Enabled is bool enabled)
+                {
+                    queryable = queryable.Where(userInfo => userInfo.Enabled == enabled);
+                }
+            }
 
-            var slicedUserInfoList = enabledUserInfoList
+            queryable = queryable.Include(userInfo => userInfo.Roles);
+
+            var size = queryable.Count();
+
+            var slicedUserInfoList = queryable
                 .OrderBy(userInfo => userInfo.UserName)
                 .Skip(index).Take(count).ToList();
 

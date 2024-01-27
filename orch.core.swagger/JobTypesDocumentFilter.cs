@@ -20,7 +20,7 @@ namespace orch.core.swagger
 
         public override IList<JobTypeInfo> GetTypesByTag(string assemblyName)
         {
-            return OJobService.GetTransactionTypesByAssembly(assemblyName);
+            return OJobService.GetJobTypesByAssembly(assemblyName);
         }
 
         public override void AddOperation(OpenApiDocument swaggerDoc, JobTypeInfo typeInfo, string assemblyName)
