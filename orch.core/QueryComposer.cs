@@ -3,7 +3,6 @@ using funcscript.core;
 using funcscript.model;
 using Microsoft.Extensions.DependencyInjection;
 using System.Collections;
-using System.Collections.Generic;
 using System.Reflection;
 using System.Text;
 using System.Web;
@@ -151,7 +150,7 @@ namespace orch.core
                         var listType = typeof(List<>).MakeGenericType(elementType);
                         var list = (IList)Activator.CreateInstance(listType);
 
-                  
+
                         foreach (var x in listData)
                         {
                             if (elementType.IsEnum && x is string xStr)
@@ -247,7 +246,7 @@ namespace orch.core
 
         private void Authorize(ViewFunction vf)
         {
-            if (vf?.Permissions?.Length != null && vf.Permissions.Length > 0 && !_tranService.IsRootUser(_userId))
+            if (vf?.Permissions?.Any() == true && !_tranService.IsRootUser(_userId))
             {
                 if (!_tranService.Db.IsPermitted(_userId, vf.Permissions, out var notGrantedPermissions))
                 {

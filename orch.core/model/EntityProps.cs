@@ -26,8 +26,6 @@
         public Guid FileId { get; set; }
         public string FileName { get; set; }
         public string MimeType { get; set; }
-
-        [ProtoMember(5)]
         public long CreateTime { get; set; }
     }
 

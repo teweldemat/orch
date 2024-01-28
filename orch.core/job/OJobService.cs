@@ -1,7 +1,6 @@
 ﻿using Hangfire;
 using Hangfire.Server;
 using Microsoft.AspNetCore.SignalR;
-using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json;
 using orch.core.errors;
 using orch.core.job;
@@ -13,27 +12,30 @@ namespace orch.core
 {
     public sealed partial class OJobService
     {
-        private readonly IApplicationScopeFactory _scopeFactory;
-        private readonly OTransactionService _tranService;
-        private readonly ITransactionDatabase _tranDb;
-        private readonly IEventLogDatabase _eventLogDb;
-        private readonly IHubContext<JobProgressHub> _hubContext;
-        private readonly IOHost _host;
+        private IApplicationScopeFactory ScopeFactory { get; }
+        private IOHost Host { get; }
+        private OTransactionService TranService { get; }
+        private ITransactionDatabase TranDb { get; }
+        private IEventLogDatabase EventLogDb { get; }
+        private IHubContext<JobProgressHub> HubContext { get; }
+        private IRecurringJobManager RecurringJobManager { get; }
 
         public OJobService(
             IApplicationScopeFactory scopeFactory,
+            IOHost host,
             OTransactionService tranService,
             ITransactionDatabase tranDb,
             IEventLogDatabase eventLogDb,
             IHubContext<JobProgressHub> hubContext,
-            IOHost host)
+            IRecurringJobManager recurringJobManager)
         {
-            _scopeFactory = scopeFactory;
-            _tranService = tranService;
-            _tranDb = tranDb;
-            _eventLogDb = eventLogDb;
-            _hubContext = hubContext;
-            _host = host;
+            ScopeFactory = scopeFactory;
+            TranService = tranService;
+            TranDb = tranDb;
+            EventLogDb = eventLogDb;
+            HubContext = hubContext;
+            Host = host;
+            this.RecurringJobManager = recurringJobManager;
         }
 
         private IServiceProvider? _services;
@@ -41,7 +43,7 @@ namespace orch.core
         {
             get
             {
-                return _services ??= _scopeFactory.CreateApplicationScope().Services;
+                return _services ??= ScopeFactory.CreateApplicationScope().Services;
             }
         }
 
@@ -60,7 +62,7 @@ namespace orch.core
 
             handler = GetHandler(job.DataTypeID);
             handler.SetData(job, data);
-            handler.HubContext = _hubContext;
+            handler.HubContext = HubContext;
             handler.Cts = cts;
         }
 
@@ -74,7 +76,7 @@ namespace orch.core
             {
                 UserId = userId,
                 SystemID = systemId,
-                Time = _host.CurrentTime(),
+                Time = Host.CurrentTime(),
                 DataTypeID = typeId,
             };
 
@@ -103,7 +105,7 @@ namespace orch.core
 
         }
 
-
+        /// <param name="context">PerformContext is a special argument type which Hangfire will substitute automatically</param>
         [AutomaticRetry(Attempts = 0)]
         public async Task ExecuteJob(PerformContext context, OJob job, object data)
         {
@@ -111,22 +113,21 @@ namespace orch.core
             {
                 ProcessJob(context, job, data, out IJobHandler handler);
 
-                // PerformContext is a special argument type which Hangfire will substitute automatically
                 await handler.Execute();
 
                 job.TextSummary = handler.Summarize();
 
-                _tranService.Db.AddJob(job);
+                TranService.Db.AddJob(job);
 
             }
             catch (Exception ex)
             {
                 var typeInfo = GetTypeInfoById(job.DataTypeID);
 
-                _eventLogDb.Add(new EventLog
+                EventLogDb.Add(new EventLog
                 {
-                    Id = _host.NextGuid(),
-                    Time = _host.CurrentTime(),
+                    Id = Host.NextGuid(),
+                    Time = Host.CurrentTime(),
                     Message = $"An error occured while running Job {context.BackgroundJob.Id} - '{typeInfo.Key}': {ex.Message}",
                     Level = EventLogProps.LogLevel.Error,
                     JobId = context.BackgroundJob.Id,
@@ -194,9 +195,9 @@ namespace orch.core
         {
             if (typeInfo?.Permissions?.Length is not null
                 && typeInfo.Permissions.Any()
-                    && !_tranService.IsRootUser(userId))
+                    && !TranService.IsRootUser(userId))
             {
-                if (!_tranService.Db.IsPermitted(userId, typeInfo.Permissions, out var notGrantedPermissions))
+                if (!TranService.Db.IsPermitted(userId, typeInfo.Permissions, out var notGrantedPermissions))
                 {
                     var notGrantedPermissionsStr = string.Join(", ", notGrantedPermissions);
                     throw new UnauthorizedAccessException($"You are not authorized to initiate or cancel job: '{typeInfo.TypeName}'. Missing permissions: {notGrantedPermissionsStr}");
@@ -218,33 +219,22 @@ namespace orch.core
 
             throw new InvalidOperationException("Job ID does not exist or is not active.");
         }
-    }
 
-    public static class OJobServiceHelpers
-    {
-        public static void AddRecurringJobs(this IServiceCollection services)
+        public void AddOrUpdateRecurringJobs()
         {
-            using var serviceProvider = services.BuildServiceProvider();
+            var systemUser = TranDb.GetSystemUser()
+             ?? throw new InvalidOperationException("Unable to retrieve system user information.");
 
-            _ = serviceProvider.GetRequiredService<IRecurringJobManager>();
-            var tranDb = serviceProvider.GetRequiredService<ITransactionDatabase>();
-            var host = serviceProvider.GetRequiredService<IOHost>();
+            var sysInfo = TranDb.GetCurrentSystemInformation()
+                ?? throw new InvalidOperationException("Unable to retrieve current system information.");
 
-            var systemUser = tranDb.GetSystemUser();
-            var sysInfo = tranDb.GetCurrentSystemInformation();
-
-            if (sysInfo is null)
-            {
-                return;
-            }
-
-            foreach (var typeInfo in OJobService.GetAllJobTypes().Where(jt => jt.ProcessType is JobProcessType.Recurring))
+            foreach (var typeInfo in GetAllJobTypes().Where(jt => jt.ProcessType is JobProcessType.Recurring))
             {
                 var job = new OJob()
                 {
                     UserId = systemUser.Id,
                     SystemID = sysInfo.SystemId,
-                    Time = host.CurrentTime(),
+                    Time = Host.CurrentTime(),
                     DataTypeID = typeInfo.TypeId,
                 };
 
