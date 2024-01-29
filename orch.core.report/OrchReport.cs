@@ -4,7 +4,6 @@ using Microsoft.Extensions.DependencyInjection;
 using orch.report.Generators;
 using orch.report.libwkhtmltox;
 using System.Reflection;
-using System.Runtime.InteropServices;
 
 namespace orch.report
 {
@@ -22,11 +21,9 @@ namespace orch.report
 
         public static void AddOrchReport(this IServiceCollection services)
         {
-            if (RuntimeInformation.ProcessArchitecture == Architecture.X86
-                    || RuntimeInformation.ProcessArchitecture == Architecture.X64)
-            {
-                DinkToPdfLibrary.Load();
-            }
+
+            DinkToPdfLibrary.Load();
+
 
             services.AddSingleton(typeof(IConverter), new STASynchronizedConverter(new PdfTools()));
             services.AddSingleton<PdfGenerator>();
