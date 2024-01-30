@@ -87,7 +87,7 @@ namespace orch.core
                             return existingJobId;
 
                         // TODO: hack - it shoudln't need to be scheduled
-                        var jobId = BackgroundJob.Schedule(() => ExecuteJob(default, job, data), TimeSpan.FromSeconds(3));
+                        var jobId = BackgroundJob.Enqueue(() => ExecuteJob(default, job, data));
                         singletonJobsByTypeId.TryAdd(typeId, jobId);
 
                         return jobId;
