@@ -87,7 +87,6 @@ namespace orch.core
                         if (singletonJobsByTypeId.TryGetValue(typeId, out var existingJobId))
                             return existingJobId;
 
-                        // TODO: hack - it shoudln't need to be scheduled
                         var jobId = BackgroundJob.Enqueue(() => ExecuteJob(default, job, data));
                         singletonJobsByTypeId.TryAdd(typeId, jobId);
 
