@@ -38,11 +38,8 @@ namespace orch.report
 
             Authorize(reportTypeInfo, userId);
 
-            var handler = GetHandler(reportTypeInfo.Key);
-            if (handler is null)
-            {
-                throw new InvalidOperationException($"Handler for report {reportTypeInfo.Key} has not be implemented");
-            }
+            var handler = GetHandler(reportTypeInfo.Key)
+                ?? throw new InvalidOperationException($"Handler for report {reportTypeInfo.Key} has not be implemented");
 
             handler.SetData(data);
 
@@ -84,7 +81,7 @@ namespace orch.report
             return report_format switch
             {
                 ReportFormat.CSV => Task.FromResult(handler.GenerateCSV()),
-                ReportFormat.PDF => handler.GeneratePDF(httpContext),
+                ReportFormat.PDF => handler.GeneratePDF(),
                 _ => throw notSupportedException,
             };
         }

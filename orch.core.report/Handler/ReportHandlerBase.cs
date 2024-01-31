@@ -1,25 +1,22 @@
-﻿using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.DependencyInjection;
 using orch.core;
+using orch.core.report.Generators;
 using orch.report.Generators;
 
 namespace orch.report.Handler
 {
-    /// <summary>
-    /// Base class for report handlers that provides common functionality and implements the IReportHandler interface.
-    /// </summary>
-    /// <typeparam name="ParamsType">The type of data used for generating the report.</typeparam>
     public abstract class ReportHandlerBase<ParamsType> : IReportHandler
     {
         protected readonly TransactionServiceCollection _services;
-        protected readonly PdfGenerator _pdfGenerator;
+        protected readonly IHtmlToPdfConverter _converter;
 
-        public ParamsType? _paramsData;
+        protected ParamsType? _paramsData;
 
-        protected ReportHandlerBase(TransactionServiceCollection services, PdfGenerator pdfGenerator)
+        protected ReportHandlerBase(TransactionServiceCollection services)
         {
             _services = services;
-            _pdfGenerator = pdfGenerator;
+            _converter = _services.TranService.Services.GetRequiredService<IHtmlToPdfConverter>();
         }
 
         public void SetData(object? data) => _paramsData = (ParamsType?)data;
@@ -39,12 +36,12 @@ namespace orch.report.Handler
             return PreviewGenerator.Generate(GeneratePreview());
         }
 
-        Task<FileContentResult> IReportHandler.GeneratePDF(HttpContext httpContext)
+        Task<FileContentResult> IReportHandler.GeneratePDF()
         {
-            return _pdfGenerator.Generate(GeneratePDF(httpContext));
+            return _converter.ConvertToPdfAsync(GeneratePDF());
         }
 
-        public virtual ReportPdf GeneratePDF(HttpContext httpContext)
+        public virtual PdfConversionArgs GeneratePDF()
         {
             throw new NotSupportedException($"PDF format is not supported.");
         }

@@ -1,8 +1,9 @@
-﻿using DinkToPdf;
-using DinkToPdf.Contracts;
+﻿using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using orch.report.Generators;
-using orch.report.libwkhtmltox;
+using Microsoft.Extensions.DependencyInjection.Extensions;
+using orch.core.report.Generators;
+using orch.core.report.Generators.ChromiumPdf;
 using System.Reflection;
 
 namespace orch.report
@@ -19,14 +20,15 @@ namespace orch.report
             OReportService.Reset();
         }
 
-        public static void AddOrchReport(this IServiceCollection services)
+        public static void AddOrchReport(this IServiceCollection services, IConfiguration configuration)
         {
+            services.TryAddSingleton<IHttpContextAccessor, HttpContextAccessor>();
 
-            DinkToPdfLibrary.Load();
+            var chromiumSettings = new ChromiumSettings();
+            configuration.GetSection(nameof(ChromiumSettings)).Bind(chromiumSettings);
+            services.AddSingleton(chromiumSettings);
 
-
-            services.AddSingleton(typeof(IConverter), new STASynchronizedConverter(new PdfTools()));
-            services.AddSingleton<PdfGenerator>();
+            services.AddScoped<IHtmlToPdfConverter, ChromiumHtmlToPdfConverter>();
             services.AddScoped<OReportService>();
         }
     }

@@ -75,12 +75,12 @@ namespace orch.report.Generators
             return stringBuilder.ToString();
         }
 
-        private static string GenerateCsvFromDataTable(DataTable dataTable )
+        private static string GenerateCsvFromDataTable(DataTable dataTable)
         {
             var stringBuilder = new StringBuilder();
             var properties = dataTable.Columns.Cast<DataColumn>().Select(column => column.ColumnName);
             stringBuilder.AppendLine(string.Join(",", properties));
-            
+
 
             stringBuilder.AppendLine();
             foreach (DataRow row in dataTable.Rows)
@@ -89,7 +89,7 @@ namespace orch.report.Generators
                 stringBuilder.AppendLine(string.Join(",", fields));
             }
 
-           
+
 
             return stringBuilder.ToString();
         }

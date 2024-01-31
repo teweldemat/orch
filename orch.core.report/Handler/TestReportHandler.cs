@@ -1,5 +1,4 @@
-﻿using DinkToPdf;
-using Microsoft.AspNetCore.Http;
+﻿using orch.core.report.Generators;
 using orch.report;
 using orch.report.Generators;
 using orch.report.Handler;
@@ -22,7 +21,7 @@ namespace orch.core.report.Handler
 
         public class TestReportHandler : ReportHandlerBase<TestReport>
         {
-            public TestReportHandler(TransactionServiceCollection services, PdfGenerator pdfGenerator) : base(services, pdfGenerator)
+            public TestReportHandler(TransactionServiceCollection services) : base(services)
             {
             }
 
@@ -31,15 +30,14 @@ namespace orch.core.report.Handler
                 return new ReportPreview(VIEW_NAME, new Dictionary<string, object>());
             }
 
-            public override ReportPdf GeneratePDF(HttpContext httpContext)
+            public override PdfConversionArgs GeneratePDF()
             {
-                return new ReportPdf(
-                    REPORT_TYPE_NAME,
-                    VIEW_NAME,
-                    new Dictionary<string, object>(),
-                    httpContext,
-                    orientation: Orientation.Portrait,
-                    customPaperSize: new PechkinPaperSize("80mm", "500mm"));
+                return new PdfConversionArgs()
+                {
+                    RazorViewPath = VIEW_NAME,
+                    FileDownloadName = REPORT_TYPE_NAME,
+                    PageOrientation = Generators.Orientation.Portrait
+                };
             }
         }
     }

@@ -1,5 +1,4 @@
-﻿using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 
 namespace orch.report.Handler
 {
@@ -26,7 +25,7 @@ namespace orch.report.Handler
         /// </summary>
         /// <param name="httpContext">The HttpContext object that represents the current HTTP request.</param>
         /// <returns>A FileContentResult object that represents the report's PDF file.</returns>
-        public abstract Task<FileContentResult> GeneratePDF(HttpContext httpContext);
+        public abstract Task<FileContentResult> GeneratePDF();
 
         /// <summary>
         /// Generates a CSV file of the report.
