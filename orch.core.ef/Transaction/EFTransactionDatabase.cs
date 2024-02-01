@@ -723,7 +723,10 @@ namespace orch.core.ef.System
                         role => role.Id, userRole => userRole.RoleId, (role, userRole) =>
                         new { a = role, b = userRole })
                   .OrderBy(x => x.b.Order)
-                  .Select(x => new Role(x.a))
+                  .Select(x => new Role(x.a)
+                  {
+                      Permissions = x.a.Permissions.Select(p => p.PermissionId).ToList()
+                  })
                   .ToList();
         }
 
