@@ -133,7 +133,7 @@
         public string Id { get; set; }
         public long Time { get; set; }
         public Guid UserId { get; set; }
-        public string TextSummary { get; set; }
+        public string TextSummary { get; internal set; }
         public Guid DataTypeID { get; set; }
         public string TextData { get; set; }
         public Guid? SystemID { get; set; }
