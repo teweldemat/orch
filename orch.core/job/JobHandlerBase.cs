@@ -37,17 +37,20 @@ namespace orch.core.job
 
         async Task IJobHandler.Execute()
         {
-
-            await Execute();
-
-            if (IsCancelled)
+            try
             {
-                OnCancelled();
-                HubContext.Clients.Group(_jobInfo.Id)?.SendAsync(JobProgressHub.CancelledMethod, _jobInfo.Id);
-            }
-            else
-            {
+                await Execute();
+
                 await HubContext.Clients.Group(_jobInfo.Id).SendAsync(JobProgressHub.SuccessMethod);
+            }
+            finally
+            {
+
+                if (IsCancelled)
+                {
+                    HubContext.Clients.Group(_jobInfo.Id)?.SendAsync(JobProgressHub.CancelledMethod, _jobInfo.Id);
+                    OnCancelled();
+                }
             }
 
         }
