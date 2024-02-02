@@ -95,6 +95,8 @@ namespace orch.core
         [AutomaticRetry(Attempts = 0)]
         public async Task ExecuteJob(PerformContext context, OJob job, object data, CancellationToken cancellationToken)
         {
+            var typeInfo = GetTypeInfoById(job.DataTypeID);
+
             try
             {
                 ProcessJob(context, job, data, out IJobHandler handler, cancellationToken);
@@ -108,8 +110,6 @@ namespace orch.core
             }
             catch (Exception ex)
             {
-                var typeInfo = GetTypeInfoById(job.DataTypeID);
-
                 EventLogDb.Add(new EventLog
                 {
                     Id = Host.NextGuid(),
@@ -124,13 +124,13 @@ namespace orch.core
             }
             finally
             {
-                if (singletonJobsByTypeId.ContainsKey(job.DataTypeID))
+                if (typeInfo.ProcessType == JobProcessType.Singleton)
                 {
                     singletonJobsByTypeId.TryRemove(job.DataTypeID, out _);
                 }
-                else if (job.Id is not null && concurrentJobsByJobId.ContainsKey(job.Id))
+                else if (typeInfo.ProcessType == JobProcessType.Concurrent)
                 {
-                    concurrentJobsByJobId.TryRemove(job.Id, out _);
+                    concurrentJobsByJobId.TryRemove(context.BackgroundJob.Id, out _);
                 }
             }
         }
@@ -161,9 +161,6 @@ namespace orch.core
             {
                 throw new ApplicationException($"An error occured while cancelling job '{jobId}'.");
             }
-
-            concurrentJobsByJobId.TryRemove(jobId, out _);
-            singletonJobsByTypeId.TryRemove(typeId, out _);
 
             return true;
         }
