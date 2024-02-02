@@ -31,9 +31,9 @@ namespace orch.core.job
 
         public IHubContext<JobProgressHub> HubContext { get; set; }
 
-        public CancellationTokenSource Cts { get; set; }
+        public CancellationToken CancellationToken { get; set; }
 
-        public bool IsCancelled => Cts?.IsCancellationRequested ?? false;
+        public bool IsCancelled => CancellationToken.IsCancellationRequested;
 
         async Task IJobHandler.Execute()
         {
