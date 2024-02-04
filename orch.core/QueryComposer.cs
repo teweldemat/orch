@@ -334,13 +334,29 @@ namespace orch.core
                 return null;
             return FuncScript.FromJson(System.IO.File.ReadAllText(fileName));
         }
+
         [OViewFunction]
-        public object GetCommandTypeInfo(String key)
+        public CommandTypeInfo GetCommandTypeInfo(String key)
         {
             var ret = OTransactionService.GetTypeIdByKey(key);
-            if (ret == null)
+
+            if (ret is null)
                 return null;
-            return new { ret.TypeName, ret.Key, ret.TypeId };
+
+            ret.Type = null;
+            return ret;
+        }
+
+        [OViewFunction(name: "GetCommandTypeInfoById")]
+        public CommandTypeInfo GetCommandTypeInfo(Guid id)
+        {
+            var ret = OTransactionService.GetTypeInfoById(id);
+
+            if (ret is null)
+                return null;
+
+            ret.Type = null;
+            return ret;
         }
     }
 

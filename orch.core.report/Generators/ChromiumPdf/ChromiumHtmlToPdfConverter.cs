@@ -46,15 +46,21 @@ namespace orch.core.report.Generators.ChromiumPdf
             using var browser = await PuppeteerSharp.Puppeteer.LaunchAsync(new LaunchOptions { Headless = true, ExecutablePath = chromiumPath, Args = new[] { "--no-sandbox" } });
             using var page = await browser.NewPageAsync();
 
-            await page.EmulateMediaTypeAsync(PuppeteerSharp.Media.MediaType.Print);
+            await page.EmulateMediaTypeAsync((args.MediaType) switch
+            {
+                MediaType.Screen => PuppeteerSharp.Media.MediaType.Screen,
+                MediaType.Print => PuppeteerSharp.Media.MediaType.Print,
+                _ => throw new InvalidDataException($"Unsupported media type: {args.MediaType}")
+            });
 
             await page.SetContentAsync(htmlContent);
 
             var pdfOptions = new PdfOptions
             {
-                Format = PaperFormat.A4,
-                PrintBackground = false,
-                MarginOptions = new MarginOptions
+                Format = SizeToFormat(args.PaperSize),
+                PrintBackground = args.PrintBackground,
+                PreferCSSPageSize = false,
+                MarginOptions = args.Margins is null ? new() : new MarginOptions
                 {
                     Top = args.Margins.Top,
                     Bottom = args.Margins.Bottom,
@@ -220,6 +226,19 @@ namespace orch.core.report.Generators.ChromiumPdf
             }
 
             return htmlDoc.DocumentNode.OuterHtml;
+        }
+
+        static PaperFormat SizeToFormat(PaperSize size)
+        {
+            return size switch
+            {
+                PaperSize.A3 => PaperFormat.A3,
+                PaperSize.A4 => PaperFormat.A4,
+                PaperSize.A5 => PaperFormat.A5,
+                PaperSize.Legal => PaperFormat.Legal,
+                PaperSize.Letter => PaperFormat.Letter,
+                _ => throw new ArgumentOutOfRangeException(nameof(size), size, null)
+            };
         }
     }
 }
