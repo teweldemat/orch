@@ -1,10 +1,10 @@
-﻿namespace orch.core.report.Generators.ChromiumPdf
+﻿namespace orch.core.report.Converters.ChromiumPdf
 {
     public class ChromiumSettings
     {
-        public string WindowsPath { get; set; }
-        public string MacOSPath { get; set; }
-        public string LinuxPath { get; set; }
+        public string WindowsPath { get; set; } = string.Empty;
+        public string MacOSPath { get; set; } = string.Empty;
+        public string LinuxPath { get; set; } = string.Empty;
 
         public string GetChromiumPath()
         {

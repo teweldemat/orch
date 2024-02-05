@@ -1,4 +1,5 @@
-﻿using orch.core.report.Generators;
+﻿using Microsoft.AspNetCore.Mvc;
+using orch.core.report.Converters;
 using orch.report;
 using orch.report.Generators;
 using orch.report.Handler;
@@ -30,13 +31,20 @@ namespace orch.core.report.Handler
                 return new ReportPreview(VIEW_NAME, new Dictionary<string, object>());
             }
 
-            public override PdfConversionArgs GeneratePDF()
+            public Task<FileContentResult> GeneratePDF()
             {
-                return new PdfConversionArgs()
+                return Task.FromResult(new FileContentResult(new byte[0], "application/pdf"));
+            }
+
+            public override PdfRequest GeneratePDF()
+            {
+                return new PdfRequest()
                 {
                     RazorViewPath = VIEW_NAME,
                     FileDownloadName = REPORT_TYPE_NAME,
-                    PageOrientation = Generators.Orientation.Portrait
+                    PageOrientation = Converters.Orientation.Portrait,
+                    PaperSize = PaperSize.A4
+
                 };
             }
         }
