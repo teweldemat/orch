@@ -12,7 +12,6 @@ using Microsoft.AspNetCore.Mvc.ViewFeatures;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.FileProviders;
 using orch.core.report.Converters;
-using orch.core.report.Converters.ChromiumPdf;
 
 namespace orch.report.Generators
 {
@@ -30,8 +29,7 @@ namespace orch.report.Generators
             IConverter pdfConverter,
             ICompositeViewEngine viewEngine,
             ITempDataProvider tempDataProvider,
-            IWebHostEnvironment webHostEnvironment,
-            ChromiumHelpers chromiumHelpers)
+            IWebHostEnvironment webHostEnvironment)
         {
             _httpContextAccessor = httpContextAccessor;
             _pdfConverter = pdfConverter;

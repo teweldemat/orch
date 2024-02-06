@@ -11,7 +11,7 @@ namespace orch.report.Handler
         /// Sets the data used for generating the report.
         /// </summary>
         /// <param name="data">The data used for generating the report.</param>
-        internal void SetData(object? data);
+        internal protected void SetData(object? data);
         public void Preprocess();
 
         public abstract ViewResult GeneratePreview();
