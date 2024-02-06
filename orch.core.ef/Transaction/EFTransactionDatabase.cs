@@ -327,6 +327,11 @@ namespace orch.core.ef.System
 
         public void CreateUser(OCommand command, UserInfo agentInfo)
         {
+            if (_db.Users.AsNoTracking().Any(userInfo => userInfo.UserName.ToUpper() == agentInfo.UserName.ToUpper()))
+            {
+                throw new InvalidOperationException($"Username '{agentInfo.UserName}' is already in use. Please choose a different username.");
+            }
+
             agentInfo.SetCreate<ChangeProps>(command);
             _db.Users.Add(new DALUserInfo(agentInfo));
             if (agentInfo.Roles != null)

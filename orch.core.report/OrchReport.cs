@@ -40,13 +40,12 @@ namespace orch.report
             services.AddScoped<OReportService>();
             services.TryAddSingleton<IHttpContextAccessor, HttpContextAccessor>();
 
-            var settings = configuration.GetSection(nameof(ChromiumSettings)).Get<ChromiumSettings>()
-                ?? throw new InvalidOperationException("'ChromiumSettings' are not configured");
-
-            services.AddSingleton(settings!);
-
             if (options.Converter == PdfConverter.Chromium)
             {
+                var settings = configuration.GetSection(nameof(ChromiumSettings)).Get<ChromiumSettings>()
+                ?? throw new InvalidOperationException("'ChromiumSettings' are not configured");
+
+                services.AddSingleton(settings!);
                 services.AddScoped<IHtmlToPdfConverter, ChromiumHtmlToPdfConverter>();
             }
             else if (options.Converter == PdfConverter.wkhtmltopdf)
