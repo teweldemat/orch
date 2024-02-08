@@ -343,7 +343,6 @@ namespace orch.core
             if (ret is null)
                 return null;
 
-            ret.Type = null;
             return ret;
         }
 
@@ -355,7 +354,6 @@ namespace orch.core
             if (ret is null)
                 return null;
 
-            ret.Type = null;
             return ret;
         }
     }
