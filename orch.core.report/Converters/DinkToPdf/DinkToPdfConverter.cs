@@ -11,130 +11,64 @@ using Microsoft.AspNetCore.Mvc.ViewEngines;
 using Microsoft.AspNetCore.Mvc.ViewFeatures;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.FileProviders;
+using orch.core.report.Converters;
 
 namespace orch.report.Generators
 {
-    public class ReportPdf
+
+    public class DinkToPdfConverter : IHtmlToPdfConverter
     {
-        public string FileDownloadName { get; }
-        public string ViewName { get; }
-        public object? Data { get; }
-        public string? HeaderViewName { get; }
-        public IDictionary<string, object> HeaderViewData { get; }
-        public HttpContext HttpContext { get; }
-        public Orientation Orientation { get; }
-        public PaperKind PaperKind { get; }
-        public PechkinPaperSize? CustomPaperSize { get; set; }
-
-        public ReportPdf(
-              string fileDownloadName,
-              string viewName,
-              IDictionary<string, object> data,
-              HttpContext httpContext,
-              Orientation orientation = Orientation.Landscape,
-              PaperKind paperKind = PaperKind.A4,
-              string? headerViewName = null,
-              IDictionary<string, object>? headerViewData = null,
-              PechkinPaperSize? customPaperSize = null)
-        {
-
-            FileDownloadName = FormatFileName(fileDownloadName);
-            ViewName = viewName;
-            Data = data;
-            HttpContext = httpContext;
-            HeaderViewName = headerViewName;
-            HeaderViewData = headerViewData ?? new Dictionary<string, object>();
-            Orientation = orientation;
-            PaperKind = paperKind;
-            CustomPaperSize = customPaperSize;
-        }
-
-        public ReportPdf(
-         string fileDownloadName,
-         string viewName,
-         object data,
-         HttpContext httpContext,
-         Orientation orientation = Orientation.Landscape,
-         string? headerViewName = null,
-         PaperKind paperKind = PaperKind.A4,
-         IDictionary<string, object>? headerViewData = null,
-         PechkinPaperSize? customPaperSize = null)
-        {
-            FileDownloadName = FormatFileName(fileDownloadName);
-            ViewName = viewName;
-            Data = data;
-            HttpContext = httpContext;
-            HeaderViewName = headerViewName != null ? headerViewName : null;
-            HeaderViewData = headerViewData ?? new Dictionary<string, object>();
-            Orientation = orientation;
-            PaperKind = paperKind;
-            CustomPaperSize = customPaperSize;
-        }
-
-        private static string FormatFileName(string fileName)
-        {
-            return string.IsNullOrEmpty(fileName) || fileName.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase)
-                ? fileName
-                : fileName + ".pdf";
-        }
-    }
-
-    public class PdfGenerator
-    {
+        private readonly IHttpContextAccessor _httpContextAccessor;
         private readonly IConverter _pdfConverter;
         private readonly ICompositeViewEngine _viewEngine;
         private readonly ITempDataProvider _tempDataProvider;
         private readonly IWebHostEnvironment _webHostEnvironment;
 
-        public PdfGenerator(
+        public DinkToPdfConverter(
+            IHttpContextAccessor httpContextAccessor,
             IConverter pdfConverter,
             ICompositeViewEngine viewEngine,
             ITempDataProvider tempDataProvider,
             IWebHostEnvironment webHostEnvironment)
         {
+            _httpContextAccessor = httpContextAccessor;
             _pdfConverter = pdfConverter;
             _viewEngine = viewEngine;
             _tempDataProvider = tempDataProvider;
             _webHostEnvironment = webHostEnvironment;
         }
 
-        public async Task<FileContentResult> Generate(ReportPdf pdf)
+        public async Task<FileContentResult> ConvertToPdfAsync(PdfRequest request)
         {
+            var httpContext = (_httpContextAccessor?.HttpContext)
+                ?? throw new InvalidOperationException($"'{nameof(_httpContextAccessor.HttpContext)}' is null. Are you missing the '{nameof(IHttpContextAccessor)}' middleware?");
 
-            string originalHtml = RenderRazorViewToString(pdf.ViewName, pdf.Data, pdf.HttpContext);
-            string cssEmbeddedHtml = EmbedLinkedCssIntoHtml(originalHtml, _webHostEnvironment);
-            string fullyEmbeddedHtml = await EmbedImagesAsBase64(cssEmbeddedHtml, _webHostEnvironment, pdf.HttpContext);
+            string html = RenderRazorViewToString(request.RazorViewPath, request.Model, httpContext);
+            html = EmbedLinkedCssIntoHtml(html, _webHostEnvironment);
+            html = await EmbedImagesAsBase64(html, _webHostEnvironment, httpContext);
 
             var doc = new HtmlToPdfDocument()
             {
                 GlobalSettings = {
                         ColorMode = ColorMode.Color,
-                        Orientation = pdf.Orientation,
-                        PaperSize = pdf.PaperKind,
-                        DocumentTitle = pdf.FileDownloadName,
-
+                        Orientation = request.PageOrientation == core.report.Converters.Orientation.Portrait ? DinkToPdf.Orientation.Portrait: DinkToPdf.Orientation.Landscape,
+                        PaperSize = PaperSizeToPaperKind(request.PaperSize, request.CustomPaperSize),
+                        DocumentTitle = FormatFileName(request.FileDownloadName),
                     },
                 Objects = {
                     new ObjectSettings() {
-                        HtmlContent = fullyEmbeddedHtml,
+                        HtmlContent = html,
                         WebSettings = { DefaultEncoding = "utf-8", LoadImages = true },
                         // ! Specifying Margins may interfere with the rendering of the header HTML
-                        // Margins = new MarginSettings { Top = 10, Bottom = 10, Left = 10, Right = 10 },
-                        HeaderSettings = { HtmUrl =  RenderHeaderViewToTempFile(pdf.HeaderViewName, pdf.HeaderViewData, pdf.HttpContext) },
-                        FooterSettings = { FontSize = 9, Right = "Page [page] of [toPage]", Line = true },
+                        FooterSettings = request.ShowPageNumbers ? new FooterSettings() { FontSize = 9, Right = "Page [page] of [toPage]", Line = true } : null,
                     },
                  }
             };
 
-            if (pdf.CustomPaperSize != null)
-            {
-                doc.GlobalSettings.PaperSize = pdf.CustomPaperSize;
-            }
-
             var fileContents = _pdfConverter.Convert(doc);
             return new FileContentResult(fileContents, "application/pdf")
             {
-                FileDownloadName = pdf.FileDownloadName
+                FileDownloadName = request.FileDownloadName
             };
         }
 
@@ -159,21 +93,6 @@ namespace orch.report.Generators
 
             viewResult.View.RenderAsync(viewContext).GetAwaiter().GetResult();
             return viewContext.Writer.ToString() ?? throw new InvalidOperationException($"Error occured while rendering {viewName}.");
-        }
-
-
-
-        private string RenderHeaderViewToTempFile(string? headerViewName, IDictionary<string, object> headerViewData, HttpContext httpContext)
-        {
-            if (string.IsNullOrEmpty(headerViewName)) return string.Empty;
-
-            var headerHtml = RenderRazorViewToString(headerViewName, headerViewData, httpContext);
-
-            var tempHeaderHtmlFilePath = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName() + ".html");
-
-            File.WriteAllText(tempHeaderHtmlFilePath, headerHtml);
-
-            return tempHeaderHtmlFilePath;
         }
 
         private static string EmbedLinkedCssIntoHtml(string originalHtml, IWebHostEnvironment _webHostEnvironment)
@@ -239,8 +158,8 @@ namespace orch.report.Generators
                     {
                         try
                         {
-                            using (HttpClient httpClient = new HttpClient())
-                                imageBytes = await httpClient.GetByteArrayAsync(srcValue);
+                            using HttpClient httpClient = new();
+                            imageBytes = await httpClient.GetByteArrayAsync(srcValue);
                         }
                         catch
                         {
@@ -278,6 +197,36 @@ namespace orch.report.Generators
             }
 
             return htmlDoc.DocumentNode.OuterHtml;
+        }
+
+        private PechkinPaperSize PaperSizeToPaperKind(PaperSize paperSize, CustomPaperSize? customPaperSize)
+        {
+            if (customPaperSize is not null)
+            {
+                if (string.IsNullOrEmpty(customPaperSize.Width) || string.IsNullOrEmpty(customPaperSize.Height))
+                    throw new InvalidOperationException($"Width and Height must be provided to {nameof(CustomPaperSize)}");
+
+                return new PechkinPaperSize(customPaperSize.Width, customPaperSize.Height);
+            }
+
+            return paperSize switch
+            {
+                PaperSize.Custom => PaperKind.Custom,
+                PaperSize.A2 => PaperKind.A2,
+                PaperSize.A3 => PaperKind.A3,
+                PaperSize.A4 => PaperKind.A4,
+                PaperSize.A5 => PaperKind.A5,
+                PaperSize.Legal => PaperKind.Legal,
+                PaperSize.Letter => PaperKind.Letter,
+                _ => throw new ArgumentOutOfRangeException(nameof(paperSize), paperSize, null)
+            };
+        }
+
+        private static string FormatFileName(string fileName)
+        {
+            return string.IsNullOrEmpty(fileName) || fileName.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase)
+                ? fileName
+                : fileName + ".pdf";
         }
     }
 }

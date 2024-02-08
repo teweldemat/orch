@@ -7,11 +7,12 @@ using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.AspNetCore.Mvc.ViewEngines;
 using Microsoft.AspNetCore.Mvc.ViewFeatures;
+using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.FileProviders;
 using PuppeteerSharp;
 using PuppeteerSharp.Media;
 
-namespace orch.core.report.Generators.ChromiumPdf
+namespace orch.core.report.Converters.ChromiumPdf
 {
     public class ChromiumHtmlToPdfConverter : IHtmlToPdfConverter
     {
@@ -35,39 +36,42 @@ namespace orch.core.report.Generators.ChromiumPdf
             _webHostEnvironment = webHostEnvironment ?? throw new ArgumentNullException(nameof(webHostEnvironment));
         }
 
-        public async Task<FileContentResult> ConvertToPdfAsync(PdfConversionArgs args)
+        public async Task<FileContentResult> ConvertToPdfAsync(PdfRequest request)
         {
-            string htmlContent = await RenderRazorViewAsync(args.RazorViewPath, args.Model);
+            var httpContext = (_httpContextAccessor?.HttpContext)
+                ?? throw new InvalidOperationException($"'{nameof(_httpContextAccessor.HttpContext)}' is null. Are you missing the '{nameof(IHttpContextAccessor)}' middleware?");
+
+            string htmlContent = await RenderRazorViewAsync(httpContext, request.RazorViewPath, request.Model);
             htmlContent = InlineStylesheets(htmlContent);
-            htmlContent = await EmbedImagesAsBase64(htmlContent, _webHostEnvironment, _httpContextAccessor?.HttpContext);
+            htmlContent = await EmbedImagesAsBase64(htmlContent, _webHostEnvironment, httpContext);
 
             var chromiumPath = _chromiumSettings.GetChromiumPath();
 
-            using var browser = await PuppeteerSharp.Puppeteer.LaunchAsync(new LaunchOptions { Headless = true, ExecutablePath = chromiumPath, Args = new[] { "--no-sandbox" } });
+            using var browser = await Puppeteer.LaunchAsync(new LaunchOptions { Headless = true, ExecutablePath = chromiumPath, Args = new[] { "--no-sandbox" } });
             using var page = await browser.NewPageAsync();
 
-            await page.EmulateMediaTypeAsync((args.MediaType) switch
+            await page.EmulateMediaTypeAsync((request.MediaType) switch
             {
                 MediaType.Screen => PuppeteerSharp.Media.MediaType.Screen,
                 MediaType.Print => PuppeteerSharp.Media.MediaType.Print,
-                _ => throw new InvalidDataException($"Unsupported media type: {args.MediaType}")
+                _ => throw new InvalidDataException($"Unsupported media type: {request.MediaType}")
             });
 
             await page.SetContentAsync(htmlContent);
 
             var pdfOptions = new PdfOptions
             {
-                Format = SizeToFormat(args.PaperSize),
-                PrintBackground = args.PrintBackground,
+                Format = SizeToFormat(request.PaperSize),
+                PrintBackground = request.PrintBackground,
                 PreferCSSPageSize = false,
-                MarginOptions = args.Margins is null ? new() : new MarginOptions
+                MarginOptions = request.Margins is null ? new() : new MarginOptions
                 {
-                    Top = args.Margins.Top,
-                    Bottom = args.Margins.Bottom,
-                    Left = args.Margins.Left,
-                    Right = args.Margins.Right
+                    Top = request.Margins.Top,
+                    Bottom = request.Margins.Bottom,
+                    Left = request.Margins.Left,
+                    Right = request.Margins.Right
                 },
-                Landscape = args.PageOrientation == Orientation.Landscape
+                Landscape = request.PageOrientation == Orientation.Landscape
             };
 
             var pdfStream = await page.PdfStreamAsync(pdfOptions);
@@ -80,16 +84,13 @@ namespace orch.core.report.Generators.ChromiumPdf
 
             return new FileContentResult(pdfBytes, "application/pdf")
             {
-                FileDownloadName = args.FileDownloadName
+                FileDownloadName = request.FileDownloadName
             };
         }
 
-        private async Task<string> RenderRazorViewAsync(string viewName, object? model)
+        private async Task<string> RenderRazorViewAsync(HttpContext httpContext, string viewName, object? model)
         {
-            var httpContext = new DefaultHttpContext { RequestServices = _httpContextAccessor?.HttpContext?.RequestServices };
-            var actionDescriptor = new ActionDescriptor();
-            var routeData = new Microsoft.AspNetCore.Routing.RouteData();
-            var actionContext = new ActionContext(httpContext, routeData, actionDescriptor);
+            var actionContext = new ActionContext(httpContext, httpContext.GetRouteData(), new ActionDescriptor());
 
             var viewResult = _viewEngine.GetView(null, viewName, false);
 
@@ -232,6 +233,7 @@ namespace orch.core.report.Generators.ChromiumPdf
         {
             return size switch
             {
+                PaperSize.A2 => PaperFormat.A2,
                 PaperSize.A3 => PaperFormat.A3,
                 PaperSize.A4 => PaperFormat.A4,
                 PaperSize.A5 => PaperFormat.A5,

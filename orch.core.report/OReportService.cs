@@ -18,7 +18,8 @@ namespace orch.report
 
         private void Authorize(ReportTypeInfo typeInfo, Guid userId)
         {
-            if (typeInfo?.Permissions?.Length != null && typeInfo.Permissions.Length > 0 && !_tranService.IsRootUser(userId))
+            if (typeInfo?.Permissions?.Length != null
+                && typeInfo.Permissions.Length > 0 && !_tranService.IsRootUser(userId))
             {
                 if (!_tranService.Db.IsPermitted(userId, typeInfo.Permissions, out var notGrantedPermissions))
                 {
@@ -43,7 +44,7 @@ namespace orch.report
 
             handler.SetData(data);
 
-            handler.PreProcess();
+            handler.Preprocess();
 
             return handler.GeneratePreview();
         }
@@ -76,7 +77,7 @@ namespace orch.report
 
             handler.SetData(data);
 
-            handler.PreProcess();
+            handler.Preprocess();
 
             return report_format switch
             {

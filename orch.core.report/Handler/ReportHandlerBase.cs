@@ -1,7 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection;
 using orch.core;
-using orch.core.report.Generators;
+using orch.core.report.Converters;
 using orch.report.Generators;
 
 namespace orch.report.Handler
@@ -25,7 +25,7 @@ namespace orch.report.Handler
         {
         }
 
-        public virtual void PreProcess()
+        public virtual void Preprocess()
         {
         }
 
@@ -41,7 +41,7 @@ namespace orch.report.Handler
             return _converter.ConvertToPdfAsync(GeneratePDF());
         }
 
-        public virtual PdfConversionArgs GeneratePDF()
+        public virtual PdfRequest GeneratePDF()
         {
             throw new NotSupportedException($"PDF format is not supported.");
         }
