@@ -1,6 +1,4 @@
-﻿using Newtonsoft.Json;
-
-namespace orch.core
+﻿namespace orch.core
 {
     [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field, Inherited = false, AllowMultiple = false)]
     public class OGeneratedDataAttribute : Attribute
@@ -12,8 +10,6 @@ namespace orch.core
         public Guid TypeId;
         public string Key { get; set; }
         public string TypeName { get; set; }
-
-        [JsonIgnore]
         public Type Type { get; set; }
     }
 
