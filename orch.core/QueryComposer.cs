@@ -3,7 +3,6 @@ using funcscript.core;
 using funcscript.model;
 using Microsoft.Extensions.DependencyInjection;
 using System.Collections;
-using System.Collections.Generic;
 using System.Reflection;
 using System.Text;
 using System.Web;
@@ -151,7 +150,7 @@ namespace orch.core
                         var listType = typeof(List<>).MakeGenericType(elementType);
                         var list = (IList)Activator.CreateInstance(listType);
 
-                  
+
                         foreach (var x in listData)
                         {
                             if (elementType.IsEnum && x is string xStr)
@@ -247,7 +246,7 @@ namespace orch.core
 
         private void Authorize(ViewFunction vf)
         {
-            if (vf?.Permissions?.Length != null && vf.Permissions.Length > 0 && !_tranService.IsRootUser(_userId))
+            if (vf?.Permissions?.Any() == true && !_tranService.IsRootUser(_userId))
             {
                 if (!_tranService.Db.IsPermitted(_userId, vf.Permissions, out var notGrantedPermissions))
                 {
@@ -335,13 +334,37 @@ namespace orch.core
                 return null;
             return FuncScript.FromJson(System.IO.File.ReadAllText(fileName));
         }
+
         [OViewFunction]
-        public object GetCommandTypeInfo(String key)
+        public CommandTypeInfo GetCommandTypeInfo(String key)
         {
             var ret = OTransactionService.GetTypeIdByKey(key);
-            if (ret == null)
+
+            if (ret is null)
                 return null;
-            return new { ret.TypeName, ret.Key, ret.TypeId };
+
+            return new CommandTypeInfo()
+            {
+                TypeId = ret.TypeId,
+                Key = ret.Key,
+                TypeName = ret.TypeName,
+            };
+        }
+
+        [OViewFunction(name: "GetCommandTypeInfoById")]
+        public CommandTypeInfo GetCommandTypeInfo(Guid id)
+        {
+            var ret = OTransactionService.GetTypeInfoById(id);
+
+            if (ret is null)
+                return null;
+
+            return new CommandTypeInfo()
+            {
+                TypeId = ret.TypeId,
+                Key = ret.Key,
+                TypeName = ret.TypeName,
+            };
         }
     }
 

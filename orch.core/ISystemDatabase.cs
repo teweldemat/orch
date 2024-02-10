@@ -1,4 +1,6 @@
-﻿using orch.core.model;
+﻿using orch.common;
+using orch.core.model;
+using orch.core.model.dto;
 
 namespace orch.core
 {
@@ -11,6 +13,7 @@ namespace orch.core
         void CreateAccessToken(AccessTokenProps accessToken);
         void CreateFile(ContentFile cf);
         ContentFile GetFile(Guid file_id);
+        PagedList<ContentFile> GetFiles(int pageNumber, int pageSize, ContentFileFilter? filter = null);
         ContentFile SaveFile(string fileName, Stream r, Guid? fileId = null);
     }
 }

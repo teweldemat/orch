@@ -30,6 +30,8 @@
                 throw new InvalidOperationException("UserId should not be empty.");
             }
 
+            _commandData.Password = _commandData.Password.Trim();
+
             if (string.IsNullOrEmpty(_commandData.Password))
             {
                 throw new InvalidOperationException("Password should not be empty.");

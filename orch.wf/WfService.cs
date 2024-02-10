@@ -212,6 +212,15 @@ namespace orch.wf
         }
 
         [OViewFunction(permissions: new string[] { CoreModule.PERMISSION_SYSTEM_ROOT })]
+        public WfTypeInfoSummary? GetWorkflowTypeByKey(string key)
+        {
+            var wfTypeInfo = WfModule.GetWfTypeInfo(key);
+            if (wfTypeInfo == null)
+                return null;
+            return new WfTypeInfoSummary(wfTypeInfo);
+        }
+
+        [OViewFunction(permissions: new string[] { CoreModule.PERMISSION_SYSTEM_ROOT })]
         public IList<WfTypeInfoSummary> GetWorkflowTypes()
         {
             return WfModule.GetWorkflowTypes().Select(typeInfo => new WfTypeInfoSummary(typeInfo)).ToList();

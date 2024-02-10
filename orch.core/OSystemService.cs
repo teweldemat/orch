@@ -22,25 +22,29 @@ namespace orch.core
             return sha.ComputeHash(bytes);
         }
 
-        private IOHost host;
-        private ISystemDatabase db;
-        private ITransactionDatabase command;
+        private readonly IOHost host;
+        private readonly ISystemDatabase sysDb;
+        private readonly ITransactionDatabase tranDb;
 
         public OSystemService(IOHost host, ISystemDatabase db, ITransactionDatabase command)
         {
             this.host = host;
-            this.db = db;
-            this.command = command;
+            this.sysDb = db;
+            this.tranDb = command;
         }
 
         public Guid CreateAccessToken(string userName, string password, string clientInfo, int? maxTokens = null)
         {
+            if (maxTokens < 0)
+                throw new ArgumentException($"{nameof(maxTokens)} cannot be less than 0");
+
             var now = host.CurrentTime();
-            var user = command.GetUserInfo(userName, true);
-            var rootUser = command.GetRootUser();
+            var user = tranDb.GetUserInfo(userName, true);
+            var rootUser = tranDb.GetRootUser();
 
             if (user == null)
                 throw new InvalidOperationException($"User {userName} doesn't exist");
+
             if (!user.Enabled)
                 throw new InvalidOperationException($"User {userName} is disabled");
 
@@ -50,13 +54,13 @@ namespace orch.core
 
             if (maxTokens.HasValue && maxTokens > 0 && user.Id != rootUser.Id)
             {
-                var tokens = db.GetTokensByUserId(user.Id);
+                var tokens = sysDb.GetTokensByUserId(user.Id);
                 int excessTokens = tokens.Count - maxTokens.Value + 1;
 
                 if (excessTokens > 0)
                 {
                     var tokensToDelete = tokens.OrderBy(t => t.CreatedTime).Take(excessTokens).Select(t => t.Token).ToArray();
-                    db.DeleteAccessToken(tokensToDelete);
+                    sysDb.DeleteAccessToken(tokensToDelete);
                 }
             }
 
@@ -67,10 +71,9 @@ namespace orch.core
                 LastUsed = now,
                 Token = host.NextGuid(),
                 UserId = user.Id
-
             };
 
-            db.CreateAccessToken(accessToken);
+            sysDb.CreateAccessToken(accessToken);
             return accessToken.Token;
         }
 
@@ -78,33 +81,33 @@ namespace orch.core
         {
             if (access_token == null)
                 throw new UnauthorizedAccessException();
-            return db.PingAccessToken(access_token.Value);
+            return sysDb.PingAccessToken(access_token.Value);
         }
 
         public void DeleteAccessToken(params Guid[] accessTokens)
         {
-            db.DeleteAccessToken(accessTokens);
+            sysDb.DeleteAccessToken(accessTokens);
         }
 
         public AccessToken GetAccessTokenInfo(Guid accessToken)
         {
-            return db.GetAccessTokenInfo(accessToken);
+            return sysDb.GetAccessTokenInfo(accessToken);
         }
 
         public ContentFile SaveFile(string fileName, Stream r, Guid? fileId = null)
         {
-            return db.SaveFile(fileName, r, fileId);
+            return sysDb.SaveFile(fileName, r, fileId);
         }
 
         public ContentFile GetFile(Guid file_id)
         {
-            return db.GetFile(file_id);
+            return sysDb.GetFile(file_id);
         }
 
         public void Dispose()
         {
-            db.Dispose();
-            command.Dispose();
+            sysDb.Dispose();
+            tranDb.Dispose();
         }
     }
 }
