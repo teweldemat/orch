@@ -18,7 +18,8 @@ namespace orch.report
 
         private void Authorize(ReportTypeInfo typeInfo, Guid userId)
         {
-            if (typeInfo?.Permissions?.Length != null && typeInfo.Permissions.Length > 0 && !_tranService.IsRootUser(userId))
+            if (typeInfo?.Permissions?.Length != null
+                && typeInfo.Permissions.Length > 0 && !_tranService.IsRootUser(userId))
             {
                 if (!_tranService.Db.IsPermitted(userId, typeInfo.Permissions, out var notGrantedPermissions))
                 {
@@ -38,15 +39,12 @@ namespace orch.report
 
             Authorize(reportTypeInfo, userId);
 
-            var handler = GetHandler(reportTypeInfo.Key);
-            if (handler is null)
-            {
-                throw new InvalidOperationException($"Handler for report {reportTypeInfo.Key} has not be implemented");
-            }
+            var handler = GetHandler(reportTypeInfo.Key)
+                ?? throw new InvalidOperationException($"Handler for report {reportTypeInfo.Key} has not be implemented");
 
             handler.SetData(data);
 
-            handler.PreProcess();
+            handler.Preprocess();
 
             return handler.GeneratePreview();
         }
@@ -79,12 +77,12 @@ namespace orch.report
 
             handler.SetData(data);
 
-            handler.PreProcess();
+            handler.Preprocess();
 
             return report_format switch
             {
                 ReportFormat.CSV => Task.FromResult(handler.GenerateCSV()),
-                ReportFormat.PDF => handler.GeneratePDF(httpContext),
+                ReportFormat.PDF => handler.GeneratePDF(),
                 _ => throw notSupportedException,
             };
         }
