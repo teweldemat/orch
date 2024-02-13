@@ -30,6 +30,11 @@ namespace orch.core.command
 
         public override void Init()
         {
+            _commandData.User.UserName = _commandData.User.UserName.Trim();
+
+            if (string.IsNullOrEmpty(_commandData.User.UserName))
+                throw new InvalidOperationException("User name can't be empty");
+
             _commandData.User.Id = Host.NextGuid();
             _commandData.RootPermissionId = Host.NextGuid();
             _commandData.RootRoleId = Host.NextGuid();

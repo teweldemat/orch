@@ -1,5 +1,6 @@
 ﻿using orch.common;
 using orch.core.model;
+using orch.core.model.dto;
 
 namespace orch.core
 {
@@ -34,7 +35,9 @@ namespace orch.core
 
         long CountByDataTypeIds(List<Guid> dataTypeIds);
 
-        UserInfo GetRootUser();
+        UserInfo? GetRootUser();
+
+        UserInfo? GetSystemUser();
 
         UserInfo GetUserInfo(string userName, bool includePassword = false);
 
@@ -67,7 +70,7 @@ namespace orch.core
 
         public List<Guid> GetUsersWithRoles(List<Guid> roleIds);
 
-        public PagedList<UserInfo> GetUsers(int index, int count);
+        public PagedList<UserInfo> GetUsers(int index, int count, UserInfoFilter? filter = null);
 
         public PagedList<UserInfo> SearchUsers(string query, int index, int count, bool? enabled = null);
 
@@ -103,7 +106,7 @@ namespace orch.core
 
         List<Permission> GetAllPermissions();
 
-        List<Permission> GetPermissionsByRoleId(Guid roleId);
+        PagedList<Permission> GetPermissionsByRoleId(Guid roleId, int pageIndex, int pageSize);
 
         List<Permission> GetAllPermissionsByModule(string module);
 

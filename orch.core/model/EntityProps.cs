@@ -1,6 +1,4 @@
-﻿using ProtoBuf;
-
-namespace orch.core.model
+﻿namespace orch.core.model
 {
     public abstract class HistoryProps
     {
@@ -23,19 +21,14 @@ namespace orch.core.model
         public long LastUsed { get; set; }
     }
 
-    [ProtoContract]
-    [ProtoInclude(1, typeof(ContentFile))]
     public abstract class ContentFileProps
     {
-        [ProtoMember(2)]
         public Guid FileId { get; set; }
-
-        [ProtoMember(3)]
         public string FileName { get; set; }
-
-        [ProtoMember(4)]
         public string MimeType { get; set; }
+        public long CreateTime { get; set; }
     }
+
     public class ContentReferenceProps : ChangeProps
     {
         public Guid Id { get; set; }
@@ -140,7 +133,7 @@ namespace orch.core.model
         public string Id { get; set; }
         public long Time { get; set; }
         public Guid UserId { get; set; }
-        public string TextSummary { get; set; }
+        public string TextSummary { get; internal set; }
         public Guid DataTypeID { get; set; }
         public string TextData { get; set; }
         public Guid? SystemID { get; set; }

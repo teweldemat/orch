@@ -7,7 +7,7 @@ using orch.core.model;
 
 namespace orch.core.ef.Logging
 {
-    [OView("EventLogs")]
+    [OView("event_logs")]
     public class EFEventLogDatabase : IEventLogDatabase
     {
         private readonly OTransactionDbContext _context;
@@ -30,7 +30,8 @@ namespace orch.core.ef.Logging
         [OViewFunction]
         public PagedList<EventLog> GetAll(int index, int count)
         {
-            var query = _context.EventLogs.AsNoTracking().Select(e => new EventLog(e));
+            var query = _context.EventLogs.AsNoTracking();
+
             return GetPagedList(query, index, count);
         }
 
@@ -39,8 +40,7 @@ namespace orch.core.ef.Logging
         {
             var query = _context.EventLogs
                 .AsNoTracking()
-                .Where(e => e.Level == level)
-                .Select(e => new EventLog(e));
+                .Where(e => e.Level == level);
 
             return GetPagedList(query, index, count);
         }
@@ -56,8 +56,7 @@ namespace orch.core.ef.Logging
 
             var query = _context.EventLogs
                 .AsNoTracking()
-                .Where(e => e.TransactionId == transactionId)
-                .Select(e => new EventLog(e));
+                .Where(e => e.TransactionId == transactionId);
 
             return GetPagedList(query, index, count);
         }
@@ -73,8 +72,7 @@ namespace orch.core.ef.Logging
 
             var query = _context.EventLogs
                 .AsNoTracking()
-                .Where(e => e.CommandId == commandId)
-                .Select(e => new EventLog(e));
+                .Where(e => e.CommandId == commandId);
 
             return GetPagedList(query, index, count);
         }
@@ -90,8 +88,7 @@ namespace orch.core.ef.Logging
 
             var query = _context.EventLogs
                 .AsNoTracking()
-                .Where(e => e.JobId == jobId)
-                .Select(e => new EventLog(e));
+                .Where(e => e.JobId == jobId);
 
             return GetPagedList(query, index, count);
         }
@@ -101,8 +98,7 @@ namespace orch.core.ef.Logging
         {
             var query = _context.EventLogs
                 .AsNoTracking()
-                .Where(e => e.Reference == reference)
-                .Select(e => new EventLog(e));
+                .Where(e => e.Reference == reference);
 
             return GetPagedList(query, index, count);
         }
@@ -136,10 +132,12 @@ namespace orch.core.ef.Logging
             _context.Entry(log).State = EntityState.Detached;
         }
 
-        private static PagedList<EventLog> GetPagedList(IQueryable<EventLog> query, int index, int count)
+        private static PagedList<EventLog> GetPagedList(IQueryable<DALEventLog> query, int index, int count)
         {
+            query = query.OrderByDescending(e => e.Time);
+
             var total = query.Count();
-            var items = query.Skip(index * count).Take(count).ToList();
+            var items = query.Skip(index * count).Take(count).Select(e => new EventLog(e)).ToList();
             return new PagedList<EventLog>
             {
                 List = items,

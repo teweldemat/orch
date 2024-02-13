@@ -20,6 +20,9 @@ namespace orch.report
             {
 
                 var assemblyName = assembly.GetName().Name;
+                if (string.IsNullOrEmpty(assemblyName))
+                    throw new InvalidOperationException("Assembly name is null or empty");
+
                 if (s_reportTypesByAssembly.ContainsKey(assemblyName))
                 {
                     throw new InvalidOperationException($"Transaction Types for {assemblyName} have already registered.");

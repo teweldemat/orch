@@ -323,11 +323,5 @@ namespace orch.core
                 }
             );
         }
-
-        public virtual void ReplayTransaction(OTransaction transaction, List<OCommand> commands)
-        {
-            throw new NotSupportedException(
-                         $"'{nameof(ReplayTransaction)}' is not supported during normal execution.");
-        }
     }
 }

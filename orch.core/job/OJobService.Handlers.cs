@@ -53,11 +53,12 @@ namespace orch.core
 
             if (jobAttr == null) return;
 
+            jobAttr.TypeInfo.Type = t;
+            jobAttr.TypeInfo.TypeName ??= t.FullName;
+
             ValidateAttribute(jobAttr);
 
             s_jobTypes.Add(jobAttr.TypeInfo.TypeId, jobAttr.TypeInfo);
-            jobAttr.TypeInfo.Type = t;
-            jobAttr.TypeInfo.TypeName ??= t.FullName;
 
             s_jobTypesByType[t] = jobAttr.TypeInfo;
             s_jobTypesByKey[jobAttr.TypeInfo.Key] = jobAttr.TypeInfo;
@@ -74,7 +75,7 @@ namespace orch.core
         {
             if (s_jobTypes.ContainsKey(atr.TypeInfo.TypeId))
             {
-                throw new InvalidOperationException($"id {atr.TypeInfo.TypeId} that is assigned to {atr.TypeInfo.Type} is already assigned to {s_jobTypes[atr.TypeInfo.TypeId].TypeName}");
+                throw new InvalidOperationException($"The Id '{atr.TypeInfo.TypeId}' that is assigned to '{atr.TypeInfo.Key}' is already assigned to '{s_jobTypes[atr.TypeInfo.TypeId].Key}'");
             }
         }
 
@@ -128,21 +129,18 @@ namespace orch.core
         public static JobTypeInfo? GetTypeInfoById(Guid id)
             => s_jobTypes.GetValueOrDefault(id);
 
-        public static IList<string> GetAllTransactionTypeKeys()
+        public static IList<string> GetAllJobTypeKeys()
             => s_jobTypes.Values.Select(x => x.Key).ToList();
 
-        public static IList<JobTypeInfo> GetAllCommandTypes()
+        public static IList<JobTypeInfo> GetAllJobTypes()
             => s_jobTypes.Values.ToList();
-
 
         public static IList<string> GetAllAssemblyNames()
             => s_jobTypesByAssembly.Keys.ToList();
 
-        public static IList<JobTypeInfo> GetTransactionTypesByAssembly(string assemblyName)
+        public static IList<JobTypeInfo> GetJobTypesByAssembly(string assemblyName)
             => s_jobTypesByAssembly.ContainsKey(assemblyName)
                 ? s_jobTypesByAssembly[assemblyName]
                     : throw new ArgumentException($"No types found for assembly {assemblyName}");
-
-
     }
 }

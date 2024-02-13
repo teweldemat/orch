@@ -84,24 +84,28 @@ namespace orch.wf
                 throw new ArgumentNullException(nameof(wfStateData), "State data cannot be null during workflow assignment.");
 
             var filterdUsers = new HashSet<Guid>();
-            var wfType = WfModule.GetWfTypeInfo(wfStateData.GetType());
-            if (wfType == null)
-                throw new InvalidOperationException($"Workflow information for tyoe {wfStateData.GetType()} not found");
+
+            var wfType = WfModule.GetWfTypeInfo(wfStateData.GetType())
+                ?? throw new InvalidOperationException($"Workflow information for tyoe {wfStateData.GetType()} not found");
+
             var task = _wfDb.GetTask(wfStateData.TaskId);
             var wfHandler = GetWfHandler(task.TaskTypeId);
+
             var monitors = _wfDb.GetTaskMonitors(task.Id)
                 .Select(x =>
                 {
                     var mon = _wfDb.GetTask(x);
                     return new { task = mon, handler = GetWfHandler(mon.TaskTypeId) };
                 }).Where(x => x.handler != null);
+
             foreach (var a in wfType.AllActions)
             {
-                var commandHandler = _tranService.GetHandler(OTransactionService.GetTypeInfoById(a).TypeId);
-                if (commandHandler == null)
-                    throw new InvalidOperationException($"Tranasction handler information for for action {a} not found");
+                var commandHandler = _tranService.GetHandler(OTransactionService.GetTypeInfoById(a).TypeId)
+                    ?? throw new InvalidOperationException($"Tranasction handler information for for action {a} not found");
+
                 if (commandHandler is not IWfAction action)
-                    throw new InvalidOperationException($"Tranasction handler {commandHandler.GetType()} doesn't IWfAction interface");
+                    throw new InvalidOperationException($"Tranasction handler {commandHandler.GetType()} doesn't implement IWfAction interface");
+
                 if (!action.Assignable)
                     continue;
 
@@ -121,15 +125,17 @@ namespace orch.wf
                     .Select(x =>
                     {
                         var perm = _tranDb.GetPermission(x);
-                        if (perm == null)
-                            throw new InvalidOperationException($"Permission '{x}' returned by '{action.GetType()}' as required is not valid.");
-                        return perm.Id;
+                        return perm == null
+                            ? throw new InvalidOperationException($"Permission '{x}' returned by '{action.GetType()}' as required is not valid.")
+                            : perm.Id;
                     }
                     ).ToList();
+
                 var users = _tranDb.GetUserWithPermissions(perms);
 
                 if (DefaultFsDataProvider.Trace)
                     DefaultFsDataProvider.WriteTraceLine("Filtering applicable users");
+
                 users = users.Where(x =>
                     {
                         var user = _tranDb.GetUserInfo(x);
@@ -145,8 +151,8 @@ namespace orch.wf
                                 return false;
                         }
                         return true;
-                    }
-                    ).ToList();
+                    }).ToList();
+
                 foreach (var u in users)
                     if (!filterdUsers.Contains(u))
                         filterdUsers.Add(u);
@@ -203,6 +209,15 @@ namespace orch.wf
                     Description = actionTypeInfo.TypeName
                 };
             }).ToList();
+        }
+
+        [OViewFunction(permissions: new string[] { CoreModule.PERMISSION_SYSTEM_ROOT })]
+        public WfTypeInfoSummary? GetWorkflowTypeByKey(string key)
+        {
+            var wfTypeInfo = WfModule.GetWfTypeInfo(key);
+            if (wfTypeInfo == null)
+                return null;
+            return new WfTypeInfoSummary(wfTypeInfo);
         }
 
         [OViewFunction(permissions: new string[] { CoreModule.PERMISSION_SYSTEM_ROOT })]

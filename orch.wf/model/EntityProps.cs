@@ -71,7 +71,7 @@ namespace orch.wf.model
     public class TaskHistoryProps
     {
         public Guid TaskId { get; set; }
-        public Guid UserId { get; set; }
+        public Guid? UserId { get; set; }
         public Guid CommandId { get; set; }
         public long CommandTime { get; set; }
         public long CommandSeqNo { get; set; }
