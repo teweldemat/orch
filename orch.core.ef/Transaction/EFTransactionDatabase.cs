@@ -943,6 +943,12 @@ namespace orch.core.ef.System
         [OViewFunction("IsPermittedAll")]
         public bool IsPermitted(Guid userId, string[] permissionKeys, out string[] notGrantedPermissions)
         {
+            if (GetRootUser() is UserInfo rootUser && rootUser.Id == userId)
+            {
+                notGrantedPermissions = Array.Empty<string>();
+                return true;
+            }
+
             var permissions = _db.Permissions.Where(x => permissionKeys.Contains(x.PermissionKey)).ToList();
             if (permissions.Count != permissionKeys.Length)
             {
