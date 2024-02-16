@@ -1381,6 +1381,19 @@ namespace orch.core.ef.System
                 TypeId = x.TypeId
             }).ToList();
         }
+        public void UpdateCommandList(long updateTime)
+        {
+            _db.CommandTypeInfos.RemoveRange(_db.CommandTypeInfos);
+            _db.AddRange(
+            OTransactionService.GetAllCommandTypes().Select(x => new DALCommandTypeInfo
+            {
+                UpdateTime=updateTime,
+                CommandKey = x.Key,
+                CommandTypeId = x.TypeId,
+                CommandName = x.TypeName
+            }));
+            _db.SaveChanges();
+        }
         public void Dispose()
         {
             _dbTransaction?.Dispose();

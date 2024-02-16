@@ -172,5 +172,7 @@ namespace orch.core
 
         void SetOrganzationData(OCommand command, OrganizationData orgDat);
 
+        void UpdateCommandList(long updateTime);
+
     }
 }

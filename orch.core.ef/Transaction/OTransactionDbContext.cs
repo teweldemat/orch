@@ -51,6 +51,9 @@ namespace orch.core.ef.Transaction
         protected internal DbSet<DALSerialType> SerialTypes { get; set; }
         #endregion
 
+        #region metdata
+        public DbSet<DALCommandTypeInfo> CommandTypeInfos { get; set; }   
+        #endregion
         #region user
         public DbSet<DALUserInfo> Users { get; protected internal set; }
         protected internal DbSet<DALUserRole> UserRoles { get; set; }
@@ -63,6 +66,9 @@ namespace orch.core.ef.Transaction
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
+            #region metadata
+            modelBuilder.ApplyConfiguration(new DALCommandTypeInfoConfiugration());
+            #endregion
             #region transaction
             modelBuilder.ApplyConfiguration(new DALCommandConfiguration());
             modelBuilder.ApplyConfiguration(new DALOTransactionConfiguration());

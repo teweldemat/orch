@@ -14,6 +14,7 @@ internal partial class Program
 
         // Build the configuration
         Configuration = builder.Build();
+        
 
         if (args.Length > 1)
         {
