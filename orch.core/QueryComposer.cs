@@ -343,8 +343,12 @@ namespace orch.core
             if (ret is null)
                 return null;
 
-            ret.Type = null;
-            return ret;
+            return new CommandTypeInfo()
+            {
+                TypeId = ret.TypeId,
+                Key = ret.Key,
+                TypeName = ret.TypeName,
+            };
         }
 
         [OViewFunction(name: "GetCommandTypeInfoById")]
@@ -355,8 +359,12 @@ namespace orch.core
             if (ret is null)
                 return null;
 
-            ret.Type = null;
-            return ret;
+            return new CommandTypeInfo()
+            {
+                TypeId = ret.TypeId,
+                Key = ret.Key,
+                TypeName = ret.TypeName,
+            };
         }
     }
 
