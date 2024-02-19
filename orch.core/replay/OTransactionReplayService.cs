@@ -4,7 +4,7 @@ using orch.core.model;
 
 namespace orch.core
 {
-    public class OTransactionReplayService : OTransactionService
+    public partial class OTransactionReplayService : OTransactionService
     {
         public OTransactionReplayService(
             IServiceProvider services,
@@ -26,8 +26,6 @@ namespace orch.core
                 handler.Preprocess();
                 HandlersStack.Push(handler);
             }
-
-            // command.TextData = JsonConvert.SerializeObject(data);
         }
 
 
