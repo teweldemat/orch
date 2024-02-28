@@ -6,6 +6,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using orch.core.report.Converters;
 using orch.core.report.Converters.ChromiumPdf;
+using orch.core.report.Converters.ClosedXML;
 using orch.report.Generators;
 using orch.report.libwkhtmltox;
 using System.Reflection;
@@ -17,6 +18,11 @@ namespace orch.report
     {
         wkhtmltopdf,
         Chromium
+    }
+
+    public enum XlsGenerator
+    {
+        ClosedXML
     }
 
     public static class CoreReportModule
@@ -34,6 +40,7 @@ namespace orch.report
         public class OrchReportOptions
         {
             public PdfConverter Converter { get; set; } = PdfConverter.Chromium;
+            public XlsGenerator XlsGenerator { get; set; } = XlsGenerator.ClosedXML;
         }
 
         public static void AddReportServices(this IServiceCollection services, IConfiguration configuration, OrchReportOptions options)
@@ -61,6 +68,17 @@ namespace orch.report
                 {
                     DinkToPdfLibrary.Load();
                 }
+            }
+            #endregion
+
+            #region xls
+            if (options.XlsGenerator == XlsGenerator.ClosedXML)
+            {
+                services.AddScoped<IXlsGenerator, ClosedXmlXlsGenerator>();
+            }
+            else
+            {
+                throw new NotImplementedException($"Xls Generator {options.XlsGenerator} is not supported");
             }
             #endregion
         }

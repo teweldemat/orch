@@ -5,11 +5,12 @@ namespace orch.core.report.Converters
 {
     public class XlsRequestHeader
     {
-        public string Title { get; set; } = string.Empty;
-        public string Subtitle { get; set; } = string.Empty;
-        public string Subtitle2 { get; set; } = string.Empty;
-        public string ImagePath { get; set; } = string.Empty;
-        public int ImageHeight { get; set; } = 75;
+        public class XlsRequestHeaderCenter
+        {
+            public string Title { get; set; } = string.Empty;
+        }
+
+        public XlsRequestHeaderCenter? Center { get; set; }
     }
     public class XlsRequest
     {
