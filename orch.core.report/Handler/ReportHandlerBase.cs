@@ -10,6 +10,7 @@ namespace orch.report.Handler
     {
         protected readonly TransactionServiceCollection _services;
         protected readonly IHtmlToPdfConverter _converter;
+        protected readonly IXlsGenerator _xlsGenerator;
 
         protected ParamsType? _paramsData;
 
@@ -17,6 +18,7 @@ namespace orch.report.Handler
         {
             _services = services;
             _converter = _services.TranService.Services.GetRequiredService<IHtmlToPdfConverter>();
+            _xlsGenerator = _services.TranService.Services.GetRequiredService<IXlsGenerator>();
         }
 
         public void SetData(object? data) => _paramsData = (ParamsType?)data;
@@ -41,6 +43,11 @@ namespace orch.report.Handler
             return _converter.ConvertToPdfAsync(GeneratePDF());
         }
 
+        Task<FileContentResult> IReportHandler.GenerateXLS()
+        {
+            return _xlsGenerator.Generate(GenerateXLS());
+        }
+
         public virtual PdfRequest GeneratePDF()
         {
             throw new NotSupportedException($"PDF format is not supported.");
@@ -49,6 +56,11 @@ namespace orch.report.Handler
         public virtual FileContentResult GenerateCSV()
         {
             throw new NotSupportedException($"CSV format is not supported.");
+        }
+
+        public virtual XlsRequest GenerateXLS()
+        {
+            throw new NotSupportedException($"XLS format is not supported.");
         }
     }
 }

@@ -55,7 +55,7 @@ namespace orch.report.Generators
             foreach (var prop in properties)
             {
                 stringBuilder.Append(prop.Name);
-                stringBuilder.Append(",");
+                stringBuilder.Append(',');
             }
 
             stringBuilder.AppendLine();
@@ -64,9 +64,9 @@ namespace orch.report.Generators
             {
                 foreach (var prop in properties)
                 {
-                    var value = prop.GetValue(item)?.ToString() ?? "";
+                    var value = prop.GetValue(item)?.ToString() ?? default;
                     stringBuilder.Append(value);
-                    stringBuilder.Append(",");
+                    stringBuilder.Append(',');
                 }
 
                 stringBuilder.AppendLine();
@@ -85,7 +85,7 @@ namespace orch.report.Generators
             stringBuilder.AppendLine();
             foreach (DataRow row in dataTable.Rows)
             {
-                IEnumerable<string> fields = row.ItemArray.Select(field => field.ToString());
+                var fields = row.ItemArray.Where(field => field != null).Select(field => field!.ToString());
                 stringBuilder.AppendLine(string.Join(",", fields));
             }
 

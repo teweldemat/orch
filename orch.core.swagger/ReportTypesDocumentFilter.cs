@@ -38,7 +38,7 @@ namespace orch.core.swagger
                             : string.Empty,
                 Parameters = new List<OpenApiParameter>
                 {
-                    new OpenApiParameter
+                    new()
                     {
                         Name = "report_format",
                         In = ParameterLocation.Query,
@@ -50,8 +50,7 @@ namespace orch.core.swagger
                             Default = new OpenApiString(Enum.GetName(typeof(ReportFormat), ReportFormat.PDF))
                         }
                     },
-                    new OpenApiParameter
-                    {
+                    new() {
                         Name = "Accept-Language",
                         In = ParameterLocation.Header,
                         Required = false,
@@ -70,7 +69,8 @@ namespace orch.core.swagger
                         Content = new Dictionary<string, OpenApiMediaType>
                         {
                             ["application/pdf"] = new OpenApiMediaType(),
-                            ["text/csv"] = new OpenApiMediaType()
+                            ["text/csv"] = new OpenApiMediaType(),
+                            ["application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"] = new OpenApiMediaType() // XLSX
                         }
                     },
                     ["500"] = new OpenApiResponse

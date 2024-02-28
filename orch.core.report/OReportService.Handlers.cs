@@ -129,6 +129,11 @@ namespace orch.report
                 {
                     formats.Add(ReportFormat.PDF);
                 }
+                var generateXLSMethod = handler.GetMethod(nameof(IReportHandler.GenerateXLS), flags);
+                if (generateXLSMethod is not null)
+                {
+                    formats.Add(ReportFormat.XLS);
+                }
             }
             return formats;
         }

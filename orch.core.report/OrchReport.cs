@@ -18,6 +18,7 @@ namespace orch.report
         wkhtmltopdf,
         Chromium
     }
+
     public static class CoreReportModule
     {
         public static void InitializeModule()
@@ -40,6 +41,7 @@ namespace orch.report
             services.AddScoped<OReportService>();
             services.TryAddSingleton<IHttpContextAccessor, HttpContextAccessor>();
 
+            #region pdf
             if (options.Converter == PdfConverter.Chromium)
             {
                 var settings = configuration.GetSection(nameof(ChromiumSettings)).Get<ChromiumSettings>()
@@ -60,6 +62,7 @@ namespace orch.report
                     DinkToPdfLibrary.Load();
                 }
             }
+            #endregion
         }
     }
 }

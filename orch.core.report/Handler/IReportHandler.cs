@@ -17,5 +17,6 @@ namespace orch.report.Handler
         public abstract ViewResult GeneratePreview();
         public abstract Task<FileContentResult> GeneratePDF();
         public abstract FileContentResult GenerateCSV();
+        public abstract Task<FileContentResult> GenerateXLS();
     }
 }

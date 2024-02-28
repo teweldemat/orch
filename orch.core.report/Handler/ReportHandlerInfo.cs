@@ -7,6 +7,7 @@
     {
         CSV,
         PDF,
+        XLS
     }
 
     /// <summary>
