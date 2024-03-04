@@ -4,14 +4,12 @@ using orch.core.model;
 
 namespace orch.core
 {
-    public class OTransactionReplayService : OTransactionService
+    public partial class OTransactionReplayService : OTransactionService
     {
         public OTransactionReplayService(
             IServiceProvider services,
             IOHost host,
             ITransactionDatabase db) : base(services, host, db) { }
-
-        private Stack<OCommand> ReplayStack = new();
 
         protected override void ProcessCommand(
             OCommand command,
@@ -30,6 +28,9 @@ namespace orch.core
             }
         }
 
+
+        private Stack<OCommand> ReplayStack;
+
         public void ReplayTransaction(OTransaction transaction, List<OCommand> commands)
         {
             if (transaction == null)
@@ -40,10 +41,7 @@ namespace orch.core
             var orderedCommands = commands.OrderByDescending(c => c.SeqNo).ToList();
 
             var mainCommand =
-                orderedCommands.FirstOrDefault(c => c.MainCommand)
-                ?? throw new InvalidOperationException(
-                    "No main command found in the command list."
-                );
+                orderedCommands.FirstOrDefault(c => c.MainCommand) ?? throw new InvalidOperationException("No main command found in the command list.");
 
             ReplayStack = new Stack<OCommand>();
 
@@ -65,11 +63,18 @@ namespace orch.core
 
         private Guid ExecuteChildTransactionUntyped(OCommand command)
         {
-            if (ReplayStack.Count == 0 || ReplayStack.Peek().DataTypeID != command.DataTypeID)
+            if (!ReplayStack.Any())
             {
-                throw new InvalidOperationException(
-                    "Expected child command not found on replay stack."
-                );
+                var typeInfo = GetTypeInfoById(command.DataTypeID);
+                throw new InvalidOperationException($"Replay Stack is empty. Expected Command Type: '{command.DataTypeID}' - '{typeInfo.Key}'");
+            }
+
+            if (ReplayStack.Peek().DataTypeID != command.DataTypeID)
+            {
+                var expectedCommand = ReplayStack.Peek();
+                var expectedTypeInfo = GetTypeInfoById(expectedCommand.DataTypeID);
+                var commandTypeInfo = GetTypeInfoById(command.DataTypeID);
+                throw new InvalidOperationException($"Replay Stack is inconsistent. Expected '{command.DataTypeID}' - '{commandTypeInfo.Key}', Found: '{expectedCommand.DataTypeID}' - '{expectedTypeInfo.Key}'");
             }
 
             command = ReplayStack.Pop();
@@ -103,7 +108,9 @@ namespace orch.core
             out Guid tranId
         )
         {
-            if (!Db.InTransaction)
+            var inTrans = Db.InTransaction;
+
+            if (!inTrans)
                 Db.BeginTransaction();
             try
             {
@@ -134,6 +141,7 @@ namespace orch.core
                 ProcessCommand(command, data, true, out var h);
 
                 Db.AddTransaction(tran);
+
                 Db.AddCommand(command);
 
                 if (h != null)
@@ -153,14 +161,14 @@ namespace orch.core
 
                 Db.UpdateSystemInformation(command, sysInfo, emptySystem);
 
-                if (Db.InTransaction)
+                if (!inTrans)
                     Db.CommitTransaction();
 
                 tranId = tran.Id;
             }
             catch
             {
-                if (Db.InTransaction)
+                if (!inTrans)
                     Db.RollbackTransaction();
 
                 throw;
