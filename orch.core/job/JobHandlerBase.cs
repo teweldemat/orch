@@ -7,7 +7,7 @@ using orch.core.model;
 
 namespace orch.core.job
 {
-    public abstract class JobHandlerBase<T> : JobHandlerBase<T, JobProgress>
+    public abstract class JobHandlerBase<T> : JobHandlerBase<T, JobProgress> where T : class
     {
         protected JobHandlerBase(TransactionServiceCollection services) : base(services)
         {
