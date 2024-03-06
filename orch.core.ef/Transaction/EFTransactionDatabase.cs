@@ -1290,6 +1290,16 @@ namespace orch.core.ef.System
                      .FirstOrDefault();
         }
 
+        [OViewFunction]
+        public OJob? GetJob(string jobId)
+        {
+            return _db.Jobs
+                .AsNoTracking()
+                .Where(job => job.Id == jobId)
+                .Select(job => new OJob(job))
+                .FirstOrDefault();
+        }
+
         public void ChangePassword(OCommand command, Guid userId, byte[] passwordHash)
         {
             var existing = _db.Users.FirstOrDefault(x => x.Id == userId);
