@@ -450,6 +450,7 @@ namespace orch.ef.workflow
         public TaskStatePair<T>? GetTaskStatePair<T>(Guid taskId) where T : WfStateData
         {
             var task = _dbContext.Tasks
+                                    .AsNoTracking()
                                     .Include(t => t.Data)
                                     .Where(t => t.Id == taskId)
                                     .FirstOrDefault();
