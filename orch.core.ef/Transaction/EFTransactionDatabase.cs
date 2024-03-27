@@ -191,11 +191,7 @@ namespace orch.core.ef.System
         public TransactionSystemInformation? GetCurrentSystemInformation()
         {
             var sysInfo = _db.TransactionSystemInformation.AsNoTracking().FirstOrDefault();
-            if (sysInfo == null)
-            {
-                return null;
-            }
-            return new TransactionSystemInformation(sysInfo);
+            return sysInfo == null ? null : new TransactionSystemInformation(sysInfo);
         }
 
         public long LastTranSeqNo
@@ -211,10 +207,7 @@ namespace orch.core.ef.System
         public long Count
         {
             [OViewFunction("GetTransactionsCount")]
-            get
-            {
-                return _db.Transactions.Count();
-            }
+            get => _db.Transactions.Count();
         }
 
         [OViewFunction("GetTransactionsCountByDataTypeIds")]
@@ -224,6 +217,15 @@ namespace orch.core.ef.System
                 .AsNoTracking()
                 .Where(t => t.Commands.Any(c => c.TranId == t.Id && dataTypeIds.Contains(c.DataTypeID)))
                 .Count();
+        }
+        
+        [OViewFunction("LastSeqNoByDataTypeIds")]
+        public long LastSeqNoByDataTypeIds(List<Guid> dataTypeIds)
+        {
+            return _db.Transactions
+                .AsNoTracking()
+                .Where(t => t.Commands.Any(c => c.TranId == t.Id && dataTypeIds.Contains(c.DataTypeID)))
+                .Max(t => t.SeqNo);
         }
 
         public T? Deserialize<T>(OCommand command)
