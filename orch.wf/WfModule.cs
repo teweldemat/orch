@@ -17,7 +17,7 @@ namespace orch.wf
     {
         static private readonly Dictionary<Type, WfTypeInformation> s_workflowTypes = new();
         static private readonly Dictionary<Guid, WfTypeInformation> s_workflowTypesById = new();
-        static private readonly Dictionary<String, WfTypeInformation> s_workflowTypeByKey = new();
+        static private readonly Dictionary<string, WfTypeInformation> s_workflowTypeByKey = new();
         public static void LoadWorkflowTypes(Assembly a)
         {
 

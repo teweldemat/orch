@@ -7,9 +7,9 @@ namespace orch.wf
 {
     public class WfActionFormula
     {
-        public String ActionCheckFormula;
-        public String UserCheckFormula;
-        public String UserActionCheckFormula;
+        public string ActionCheckFormula;
+        public string UserCheckFormula;
+        public string UserActionCheckFormula;
     }
     public abstract class ActionConfigurationFormulaBase
     {
@@ -54,7 +54,8 @@ namespace orch.wf
             var f = this.Formula(actionId);
             return f;
         }
-        private RuleCheckResult EvaluateFormula(IFsDataProvider provider, String configName, String f)
+
+        private RuleCheckResult EvaluateFormula(IFsDataProvider provider, string configName, string f)
         {
             object res;
             try
@@ -79,7 +80,7 @@ namespace orch.wf
             throw new InvalidOperationException($"{configName} evaluation returned invalid result: {(res == null ? "<null>" : res.ToString())}. Boolean value expected");
         }
 
-        private TaskChange EvaluateTaskFormula(IFsDataProvider provider, String f)
+        private TaskChange EvaluateTaskFormula(IFsDataProvider provider, string f)
         {
             if (f == null)
                 return null;

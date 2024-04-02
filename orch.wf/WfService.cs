@@ -188,8 +188,8 @@ namespace orch.wf
         public class WorkFlowAction
         {
             public Guid Id;
-            public String Key;
-            public String Description;
+            public string Key;
+            public string Description;
         }
 
         [OViewFunction]
@@ -229,8 +229,8 @@ namespace orch.wf
         public class TaskTypeInformation
         {
             public Guid Id;
-            public String Key;
-            public String TypeName;
+            public string Key;
+            public string TypeName;
         }
         [OViewFunction]
         public TaskTypeInformation GetTaskTypeInfo(Guid taskTypeId)
@@ -247,7 +247,7 @@ namespace orch.wf
         internal record Monitor(OTask Task, IWfHandler Handler);
 
         [OViewFunction]
-        public bool IsActionApplicable(String taskType, Guid? taskId, Guid? userId, String actionType)
+        public bool IsActionApplicable(string taskType, Guid? taskId, Guid? userId, string actionType)
         {
             var user = userId == null ? null : _tranDb.GetUserInfo(userId.Value);
 
