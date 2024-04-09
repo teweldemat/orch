@@ -14,8 +14,9 @@ namespace orch.wf.model
         public TaskHistoryWithData() { }
         public TaskHistoryWithData(TaskHistoryProps props)
         => this.MapFromBase(props);
-        public String DataType { get; set; }
-        public String Note { get; set; }
+
+        public string DataType { get; set; }
+        public string Note { get; set; }
         public IList<Guid> Attachments { get; set; }
     }
 

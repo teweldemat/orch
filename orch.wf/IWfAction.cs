@@ -16,7 +16,8 @@ namespace orch.wf
             Yes = res;
             Reason = null;
         }
-        public RuleCheckResult(String res)
+
+        public RuleCheckResult(string res)
         {
             Yes = false;
             Reason = res;

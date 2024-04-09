@@ -5,7 +5,7 @@ namespace orch.wf.model
     public class WfNotificationProps
     {
         public Guid Id { get; set; }
-        public String Message { get; set; }
+        public string Message { get; set; }
         public Guid? TaskId { get; set; }
         public long Time { get; set; }
     }
