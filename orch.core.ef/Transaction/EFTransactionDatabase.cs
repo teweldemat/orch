@@ -43,7 +43,8 @@ namespace orch.core.ef.System
             {
                 context.Database.UseTransaction(_dbTransaction);
             }
-            _contexts.Add(context);
+            if(!_contexts.Contains(context))
+                _contexts.Add(context);
         }
         public bool InTransaction => _dbTransaction != null;
 
