@@ -302,6 +302,9 @@ namespace orch.common
             return new EthiopianDate(etDate.Day, etDate.Month, newYear);
         }
 
+        public static long AddEthiopianYears(long date, int years)
+            => AddYears(ToEth(date), years).GrigDate;
+
         public static EthiopianDate AddDays(EthiopianDate etDate, int days)
         {
             if (!etDate.isValid())
@@ -323,7 +326,11 @@ namespace orch.common
         }
         public static int FullEthiopianYearDifference(long d1, long d2, bool upperBoundInclusive, out int remainder)
         {
+
             var date1 = EthiopianDate.ToEth(d1);
+            if (date1.Month == 13 && date1.Day == 6)
+                throw new ArgumentOutOfRangeException("FullEthiopianYearDifference is not defined for date 1 set to Pagume 6");
+
             var date2 = EthiopianDate.ToEth(d2);
             if (upperBoundInclusive)
                 date2 = EthiopianDate.AddDays(date2, 1);
@@ -334,6 +341,10 @@ namespace orch.common
 
             var years = date2.Year - date1.Year - (dayNo2 >= dayNo1 ? 0 : 1);
             remainder = dayNo2 - dayNo1;
+            if(remainder<0)
+            {
+                remainder += EthiopianDate.IsLeapYearEt(date1.Year)?366:365;
+            }
             return years;
         }
         public static EthiopianDate Parse(string date)
