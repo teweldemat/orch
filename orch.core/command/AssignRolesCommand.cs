@@ -15,7 +15,7 @@ namespace orch.core.command
         public Guid UserId { get; set; }
         public List<Guid> Roles { get; set; } = new List<Guid>();
         [OGeneratedData] public string UserName { get; set; }
-    }
+    }    
 
     public class AssignRolesCommandInitializer : CommandInitializerBase<AssignRolesCommand>
     {
@@ -48,8 +48,18 @@ namespace orch.core.command
             var isRoot = command.UserId.Value == rootUser.Id;
             if (!isRoot) //if user not root he/she needs PERMSSION_ADMINISTRATOR permssion
             {
-                var userPermssions = db.GetUserPermissions(command.UserId.Value);
+                {
+                    // 'PermissionAdmin' feature is incomplete
+                    // Let's use a simple permission check for now
 
+                    if (!db.IsPermitted(command.UserId.Value, CoreModule.PERMISSION_ASSIGN_ROLE))
+                        throw new UnauthorizedAccessException("You are not authorized to assign roles");
+
+                    return;
+                }
+
+                var userPermssions = db.GetUserPermissions(command.UserId.Value);
+ 
                 var permAdminKeys = new List<string>();
                 foreach (var perm in userPermssions)
                 {

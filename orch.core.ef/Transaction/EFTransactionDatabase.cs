@@ -878,11 +878,16 @@ namespace orch.core.ef.System
 
         public bool IsPermitted(Guid userId, string permissionKey)
         {
+            if (userId == Guid.Empty)
+                throw new ArgumentException("User ID cannot be empty");
+            
             var permission = _db.Permissions.Where(permission => permission.PermissionKey == permissionKey).FirstOrDefault();
             if (permission == null)
-            {
-                throw new InvalidOperationException($"Permssion key {permissionKey} not defined");
-            }
+                throw new InvalidOperationException($"Permission key {permissionKey} not defined");
+
+            if (userId == GetRootUser()?.Id)
+                return true;
+            
             return _db.UserRoles
                 .Where(userRole => userRole.UserId == userId) //select the roles of the user
                 .Join(_db.PermissionRoles, a => a.RoleId, b => b.RoleId, (a, b) => b) //join with permssion roles table
