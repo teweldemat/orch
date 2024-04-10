@@ -12,7 +12,7 @@ namespace orch.core
 {
     public sealed partial class OJobService
     {
-        private IServiceProvider Services { get; }
+        private IApplicationScopeFactory ScopeFactory { get; set; }
         private IOHost Host { get; }
         private OTransactionService TranService { get; }
         private ITransactionDatabase TranDb { get; }
@@ -21,7 +21,7 @@ namespace orch.core
         private IRecurringJobManager RecurringJobManager { get; }
 
         public OJobService(
-            IServiceProvider services,
+            IApplicationScopeFactory scopeFactory,
             IOHost host,
             OTransactionService tranService,
             ITransactionDatabase tranDb,
@@ -29,7 +29,7 @@ namespace orch.core
             IHubContext<JobProgressHub> hubContext,
             IRecurringJobManager recurringJobManager)
         {
-            Services = services;
+            ScopeFactory = scopeFactory;
             Host = host;
             TranService = tranService;
             TranDb = tranDb;

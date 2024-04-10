@@ -23,8 +23,12 @@ namespace orch.core.ef.System
 
         private DbTransaction? _dbTransaction;
 
-        public EFTransactionDatabase(OTransactionDbContext db, ISystemDatabase systemDatabase) =>
-            (_db, _contexts, _systemDatabase) = (db, new List<ODbContext>(), systemDatabase);
+        public EFTransactionDatabase(OTransactionDbContext db, ISystemDatabase systemDatabase)
+        {
+            _db = db;
+            _contexts = new List<ODbContext>();
+            _systemDatabase = systemDatabase;
+        }
 
         /// <summary>
         /// Adds the specified <paramref name="context"/> to the list of database contexts to be included in the transaction.
@@ -39,7 +43,8 @@ namespace orch.core.ef.System
             {
                 context.Database.UseTransaction(_dbTransaction);
             }
-            _contexts.Add(context);
+            if(!_contexts.Contains(context))
+                _contexts.Add(context);
         }
         public bool InTransaction => _dbTransaction != null;
 
