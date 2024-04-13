@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Microsoft.EntityFrameworkCore.Metadata.Conventions;
 using orch.common;
 
-namespace cis10.ef.Core.Conventions
+namespace orch.core.ef.Conventions
 
 {
     /// <summary>
