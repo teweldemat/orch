@@ -31,7 +31,7 @@ namespace orch.core.job
 
         public CancellationToken CancellationToken { get; set; }
 
-        public bool IsCancelled => CancellationToken.IsCancellationRequested;
+        protected bool IsCancelled => CancellationToken.IsCancellationRequested;
 
         async Task IJobHandler.Execute()
         {
@@ -39,14 +39,16 @@ namespace orch.core.job
             {
                 await Execute();
 
-                await HubContext.Clients.Group(_jobInfo.Id).SendAsync(JobProgressHub.SuccessMethod);
+                await HubContext.Clients.Group(_jobInfo.Id)
+                    .SendAsync(JobProgressHub.SuccessMethod, cancellationToken: CancellationToken);
             }
             finally
             {
 
                 if (IsCancelled)
                 {
-                    HubContext.Clients.Group(_jobInfo.Id)?.SendAsync(JobProgressHub.CancelledMethod, _jobInfo.Id);
+                    HubContext.Clients.Group(_jobInfo.Id)?.SendAsync(JobProgressHub.CancelledMethod, _jobInfo.Id,
+                        cancellationToken: CancellationToken);
                     OnCancelled();
                 }
             }

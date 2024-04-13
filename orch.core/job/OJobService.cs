@@ -201,6 +201,15 @@ namespace orch.core
 
             foreach (var typeInfo in GetAllJobTypes().Where(jt => jt.ProcessType is JobProcessType.Recurring))
             {
+                if (GetPredicate(typeInfo.TypeId) is { } predicate)
+                {
+                    if (!predicate.CanRun())
+                    {
+                        continue;
+                    }
+                }
+
+
                 var job = new OJob()
                 {
                     UserId = systemUser.Id,
