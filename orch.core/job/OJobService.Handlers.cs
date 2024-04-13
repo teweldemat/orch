@@ -161,9 +161,7 @@ namespace orch.core
         public IJobPredicate GetPredicate(Guid typeId)
         {
             if (!s_jobPredicateInfos.ContainsKey(typeId)) return null;
-
-            var service = ScopeFactory.CreateApplicationScope().Services;
-
+            
             var predicateInfo = s_jobPredicateInfos[typeId];
             var parameters = predicateInfo.ConstructorParameters.Select(x =>
             {
@@ -172,7 +170,7 @@ namespace orch.core
                     return this;
                 }
 
-                return service.GetService(x);
+                return this.TranService.Services.GetService(x);
             }).ToArray();
 
             return Activator.CreateInstance(predicateInfo.PredicateType, parameters) as IJobPredicate;

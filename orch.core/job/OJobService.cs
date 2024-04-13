@@ -205,11 +205,12 @@ namespace orch.core
                 {
                     if (!predicate.CanRun())
                     {
+                        RecurringJob.RemoveIfExists(typeInfo.Key);
                         continue;
                     }
+
                 }
-
-
+                
                 var job = new OJob()
                 {
                     UserId = systemUser.Id,
