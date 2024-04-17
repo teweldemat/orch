@@ -53,13 +53,13 @@ namespace orch.wf
                 {
                     var res = mon.handler.IsActionTypeAvialableForUser(mon.task.Id, task, wfStateData, user, actionTypeId);
                     if (!res.Yes)
-                        throw new UnauthorizedAccessException($"You are not allowed to to perform action '{OTransactionService.GetTypeInfoById(actionTypeId).TypeName}'. {res.Reason}");
+                        throw new UnauthorizedAccessException($"You are not allowed to perform action '{OTransactionService.GetTypeInfoById(actionTypeId).TypeName}'. {res.Reason}");
                 }
             if (wfHandler != null)
             {
                 var res = wfHandler.IsActionTypeAvialableForUser(wfStateData?.TaskId, task, wfStateData, user, actionTypeId);
                 if (!res.Yes)
-                    throw new UnauthorizedAccessException($"You are not allowed to to perform action '{OTransactionService.GetTypeInfoById(actionTypeId).TypeName}'. {res.Reason}");
+                    throw new UnauthorizedAccessException($"You are not allowed to perform action '{OTransactionService.GetTypeInfoById(actionTypeId).TypeName}'. {res.Reason}");
             }
 
 
@@ -69,13 +69,13 @@ namespace orch.wf
                 {
                     var res = mon.handler.IsActionAvialableForUser(mon.task.Id, task, wfStateData, user, actionTypeId, action);
                     if (!res.Yes)
-                        throw new UnauthorizedAccessException($"You are not allowed to to perform action '{OTransactionService.GetTypeInfoById(actionTypeId).TypeName}'. {res.Reason}");
+                        throw new UnauthorizedAccessException($"You are not allowed to perform action '{OTransactionService.GetTypeInfoById(actionTypeId).TypeName}'. {res.Reason}");
                 }
             if (wfHandler != null)
             {
                 var res = wfHandler.IsActionAvialableForUser(wfStateData?.TaskId, task, wfStateData, user, actionTypeId, action);
                 if (!res.Yes)
-                    throw new UnauthorizedAccessException($"You are not allowed to to perform action '{OTransactionService.GetTypeInfoById(actionTypeId).TypeName}'. {res.Reason}");
+                    throw new UnauthorizedAccessException($"You are not allowed to perform action '{OTransactionService.GetTypeInfoById(actionTypeId).TypeName}'. {res.Reason}");
             }
         }
         public void AssignWorkflow(OCommand command, WfStateData wfStateData)
@@ -188,8 +188,8 @@ namespace orch.wf
         public class WorkFlowAction
         {
             public Guid Id;
-            public String Key;
-            public String Description;
+            public string Key;
+            public string Description;
         }
 
         [OViewFunction]
@@ -229,8 +229,8 @@ namespace orch.wf
         public class TaskTypeInformation
         {
             public Guid Id;
-            public String Key;
-            public String TypeName;
+            public string Key;
+            public string TypeName;
         }
         [OViewFunction]
         public TaskTypeInformation GetTaskTypeInfo(Guid taskTypeId)
@@ -247,7 +247,7 @@ namespace orch.wf
         internal record Monitor(OTask Task, IWfHandler Handler);
 
         [OViewFunction]
-        public bool IsActionApplicable(String taskType, Guid? taskId, Guid? userId, String actionType)
+        public bool IsActionApplicable(string taskType, Guid? taskId, Guid? userId, string actionType)
         {
             var user = userId == null ? null : _tranDb.GetUserInfo(userId.Value);
 

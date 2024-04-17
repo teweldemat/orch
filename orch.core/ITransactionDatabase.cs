@@ -164,6 +164,8 @@ namespace orch.core
 
         OCommand GetMainCommand(Guid tranId);
 
+        OJob? GetJob(string jobId);
+
         void ChangePassword(OCommand command, Guid userId, byte[] passwordHash);
 
         OrganizationData GetOrganizationData();

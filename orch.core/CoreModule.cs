@@ -8,6 +8,8 @@ namespace orch.core
         public const string PERMISSION_GET_ROLES = "GET_ROLES";
         public const string PERMISSION_GET_USER = "GET_USER";
         public const string PERMISSION_SYSTEM_ROOT = "SYSTEM_ROOT";
+        public const string PERMISSION_CREATE_USER = "CREATE_USER";
+        public const string PERMISSION_ASSIGN_ROLE = "ASSIGN_ROLE";
 
         public static void InitializeModule()
         {
