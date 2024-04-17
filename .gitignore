@@ -48,3 +48,4 @@ msbuild.err
 msbuild.wrn
 
 **/pattern/
+/fsstudio/App.config

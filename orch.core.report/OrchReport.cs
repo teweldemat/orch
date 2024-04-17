@@ -40,26 +40,37 @@ namespace orch.report
             services.AddScoped<OReportService>();
             services.TryAddSingleton<IHttpContextAccessor, HttpContextAccessor>();
 
-            if (options.Converter == PdfConverter.Chromium)
+            switch (options.Converter)
             {
-                var settings = configuration.GetSection(nameof(ChromiumSettings)).Get<ChromiumSettings>()
-                ?? throw new InvalidOperationException("'ChromiumSettings' are not configured");
+                case PdfConverter.wkhtmltopdf:
 
-                services.AddSingleton(settings!);
-                services.AddScoped<IHtmlToPdfConverter, ChromiumHtmlToPdfConverter>();
-            }
-            else if (options.Converter == PdfConverter.wkhtmltopdf)
-            {
-                services.AddSingleton(typeof(IConverter), new STASynchronizedConverter(new PdfTools()));
-                services.AddScoped<IHtmlToPdfConverter, DinkToPdfConverter>();
+                    if (RuntimeInformation.ProcessArchitecture is not (Architecture.X86 or Architecture.X64))
+                    {
+                        // throw new InvalidOperationException(
+                        //     "wkhtmltopdf is supported only on x86 and x64 architectures");
 
-                // DinkToPdf is supported only on x86 and x64 architectures
-                var architecture = RuntimeInformation.ProcessArchitecture;
-                if (architecture is (Architecture.X86 or Architecture.X64))
-                {
+                        // ! Temporary solution to allow the application to run on other architectures without PDF support
+                        break;
+                    }
+                    
+                    services.AddSingleton(typeof(IConverter), new STASynchronizedConverter(new PdfTools()));
+                    services.AddScoped<IHtmlToPdfConverter, DinkToPdfConverter>();
+
                     DinkToPdfLibrary.Load();
+                    break;
+                case PdfConverter.Chromium:
+                {
+                    var settings = configuration.GetSection(nameof(ChromiumSettings)).Get<ChromiumSettings>()
+                                   ?? throw new InvalidOperationException("'ChromiumSettings' are not configured");
+
+                    services.AddSingleton(settings!);
+                    services.AddScoped<IHtmlToPdfConverter, ChromiumHtmlToPdfConverter>();
+                    break;
                 }
+                default:
+                    throw new ArgumentOutOfRangeException();
             }
+
         }
     }
 }

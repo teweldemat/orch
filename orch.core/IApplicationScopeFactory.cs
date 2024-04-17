@@ -34,6 +34,7 @@ namespace orch.core
                 }
 
                 var factory = (IApplicationScopeFactory)Activator.CreateInstance(type);
+                
                 return factory.CreateApplicationScope();
             }
             finally

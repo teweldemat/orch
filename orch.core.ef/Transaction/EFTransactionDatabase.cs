@@ -23,8 +23,12 @@ namespace orch.core.ef.System
 
         private DbTransaction? _dbTransaction;
 
-        public EFTransactionDatabase(OTransactionDbContext db, ISystemDatabase systemDatabase) =>
-            (_db, _contexts, _systemDatabase) = (db, new List<ODbContext>(), systemDatabase);
+        public EFTransactionDatabase(OTransactionDbContext db, ISystemDatabase systemDatabase)
+        {
+            _db = db;
+            _contexts = new List<ODbContext>();
+            _systemDatabase = systemDatabase;
+        }
 
         /// <summary>
         /// Adds the specified <paramref name="context"/> to the list of database contexts to be included in the transaction.
@@ -39,7 +43,8 @@ namespace orch.core.ef.System
             {
                 context.Database.UseTransaction(_dbTransaction);
             }
-            _contexts.Add(context);
+            if(!_contexts.Contains(context))
+                _contexts.Add(context);
         }
         public bool InTransaction => _dbTransaction != null;
 
@@ -880,11 +885,16 @@ namespace orch.core.ef.System
 
         public bool IsPermitted(Guid userId, string permissionKey)
         {
+            if (userId == Guid.Empty)
+                throw new ArgumentException("User ID cannot be empty");
+            
             var permission = _db.Permissions.Where(permission => permission.PermissionKey == permissionKey).FirstOrDefault();
             if (permission == null)
-            {
-                throw new InvalidOperationException($"Permssion key {permissionKey} not defined");
-            }
+                throw new InvalidOperationException($"Permission key {permissionKey} not defined");
+
+            if (userId == GetRootUser()?.Id)
+                return true;
+            
             return _db.UserRoles
                 .Where(userRole => userRole.UserId == userId) //select the roles of the user
                 .Join(_db.PermissionRoles, a => a.RoleId, b => b.RoleId, (a, b) => b) //join with permssion roles table
@@ -952,6 +962,12 @@ namespace orch.core.ef.System
                 throw new InvalidOperationException($"Permission key(s) {string.Join(", ", notFoundKeys)} not found");
             }
 
+            if (GetRootUser() is { } rootUser && rootUser.Id == userId)
+            {
+                notGrantedPermissions = Array.Empty<string>();
+                return true;
+            }
+
             var userPermissionIds = _db.UserRoles
                 .Where(x => x.UserId == userId) // select the roles of the user
                 .Join(_db.PermissionRoles, a => a.RoleId, b => b.RoleId, (a, b) => b) // join with permission roles table
@@ -973,7 +989,7 @@ namespace orch.core.ef.System
             return isPermitted;
         }
 
-
+        [OViewFunction("IsPermittedAny")]
         public bool IsPermittedAny(Guid userId, params string[] permissionKeys)
         {
             var permissions = _db.Permissions.Where(x => permissionKeys.Contains(x.PermissionKey)).ToList();
@@ -983,6 +999,11 @@ namespace orch.core.ef.System
                 throw new InvalidOperationException($"Permission key(s) {string.Join(", ", notFoundKeys)} not found");
             }
 
+            if (GetRootUser() is { } rootUser && rootUser.Id == userId)
+            {
+                return true;
+            }
+            
             var userPermissionIds = _db.UserRoles
                 .Where(x => x.UserId == userId) // select the roles of the user
                 .Join(_db.PermissionRoles, a => a.RoleId, b => b.RoleId, (a, b) => b) // join with permission roles table
@@ -1290,6 +1311,16 @@ namespace orch.core.ef.System
             return _db.Commands.Where(command => command.TranId == transaction.Id && command.SeqNo == 1)
                      .Select(commad => new OCommand(commad))
                      .FirstOrDefault();
+        }
+
+        [OViewFunction]
+        public OJob? GetJob(string jobId)
+        {
+            return _db.Jobs
+                .AsNoTracking()
+                .Where(job => job.Id == jobId)
+                .Select(job => new OJob(job))
+                .FirstOrDefault();
         }
 
         public void ChangePassword(OCommand command, Guid userId, byte[] passwordHash)

@@ -7,7 +7,7 @@ using orch.core.model;
 
 namespace orch.core.job
 {
-    public abstract class JobHandlerBase<T> : JobHandlerBase<T, JobProgress>
+    public abstract class JobHandlerBase<T> : JobHandlerBase<T, JobProgress> where T : class
     {
         protected JobHandlerBase(TransactionServiceCollection services) : base(services)
         {
@@ -17,7 +17,6 @@ namespace orch.core.job
     public abstract class JobHandlerBase<T, P> : IJobHandler where P : JobProgress
     {
         protected TransactionServiceCollection _services;
-        protected IEventLogDatabase _eventLogDb;
 
         protected OJob _jobInfo;
         protected T _jobData;
@@ -26,14 +25,13 @@ namespace orch.core.job
         protected JobHandlerBase(TransactionServiceCollection services)
         {
             _services = services;
-            _eventLogDb = services.TranService.Services.GetRequiredService<IEventLogDatabase>();
         }
 
         public IHubContext<JobProgressHub> HubContext { get; set; }
 
         public CancellationToken CancellationToken { get; set; }
 
-        public bool IsCancelled => CancellationToken.IsCancellationRequested;
+        protected bool IsCancelled => CancellationToken.IsCancellationRequested;
 
         async Task IJobHandler.Execute()
         {
@@ -41,14 +39,16 @@ namespace orch.core.job
             {
                 await Execute();
 
-                await HubContext.Clients.Group(_jobInfo.Id).SendAsync(JobProgressHub.SuccessMethod);
+                await HubContext.Clients.Group(_jobInfo.Id)
+                    .SendAsync(JobProgressHub.SuccessMethod, cancellationToken: CancellationToken);
             }
             finally
             {
 
                 if (IsCancelled)
                 {
-                    HubContext.Clients.Group(_jobInfo.Id)?.SendAsync(JobProgressHub.CancelledMethod, _jobInfo.Id);
+                    HubContext.Clients.Group(_jobInfo.Id)?.SendAsync(JobProgressHub.CancelledMethod, _jobInfo.Id,
+                        cancellationToken: CancellationToken);
                     OnCancelled();
                 }
             }
@@ -96,6 +96,9 @@ namespace orch.core.job
             string reference = null,
             object data = null)
         {
+            var scope = _services.TranService.Services.GetRequiredService<IServiceScopeFactory>().CreateScope();
+            var eventLogDb = scope.ServiceProvider.GetRequiredService<IEventLogDatabase>();
+            
             var eventLog = new EventLog
             {
                 Id = _services.Host.NextGuid(),
@@ -107,7 +110,7 @@ namespace orch.core.job
                 Data = data is null ? null : JsonConvert.SerializeObject(data)
             };
 
-            _eventLogDb.Add(eventLog);
+            eventLogDb.Add(eventLog);
         }
 
         public abstract Task Execute();

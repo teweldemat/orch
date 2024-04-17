@@ -51,7 +51,7 @@ namespace orch.wf
 
         T GetTaskDataByCommandId<T>(Guid commandId) where T : WfStateData;
 
-        T GetTaskDataByRef<T>(String reference) where T : WfStateData;
+        T GetTaskDataByRef<T>(string reference) where T : WfStateData;
 
         PagedList<T> GetOpenTasks<T>(Guid taskTypeId, int index, int count) where T : WfStateData;
 

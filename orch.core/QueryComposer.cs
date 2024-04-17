@@ -2,6 +2,7 @@
 using funcscript.core;
 using funcscript.model;
 using Microsoft.Extensions.DependencyInjection;
+using orch.core.job;
 using System.Collections;
 using System.Reflection;
 using System.Text;
@@ -360,6 +361,22 @@ namespace orch.core
                 return null;
 
             return new CommandTypeInfo()
+            {
+                TypeId = ret.TypeId,
+                Key = ret.Key,
+                TypeName = ret.TypeName,
+            };
+        }
+
+        [OViewFunction(name: "GetJobTypeInfoById")]
+        public JobTypeInfo GetJobTypeInfo(Guid id)
+        {
+            var ret = OJobService.GetTypeInfoById(id);
+
+            if (ret is null)
+                return null;
+
+            return new JobTypeInfo()
             {
                 TypeId = ret.TypeId,
                 Key = ret.Key,

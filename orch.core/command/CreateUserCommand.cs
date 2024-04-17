@@ -89,9 +89,22 @@ namespace orch.core.command
                 throw new InvalidOperationException($"{_commandData.User.UserName} is already used");
             }
 
-            if (root != null && _commandData.User.Roles != null && _commandData.User.Roles.Count > 0)
+            if (root != null)
             {
-                AssignRolesCommandHandler.CheckPermssionToAssignRoles(_services.TranDb, _commandInfo, root, _commandData.User.Id, _commandData.User.Roles);
+                if (_commandInfo.UserId == null || _commandInfo.UserId == Guid.Empty)
+                    throw new UnauthorizedAccessException("You are not authorized to create users");
+
+                var isRoot = root.Id == _commandInfo.UserId;
+                if (!isRoot)
+                {
+                    _services.TranDb.IsPermitted(_commandInfo.UserId.Value, CoreModule.PERMISSION_CREATE_USER);
+                }
+
+                if (_commandData.User.Roles is { Count: > 0 })
+                {
+                    AssignRolesCommandHandler.CheckPermssionToAssignRoles(
+                        _services.TranDb, _commandInfo, root, _commandData.User.Id, _commandData.User.Roles);
+                }
             }
 
             _services.TranDb.CreateUser(_commandInfo, _commandData.User);

@@ -433,10 +433,8 @@ namespace orch.ef.workflow
 
         public object? GetTaskData(Type type, Guid taskId)
         {
-            var x = _dbContext.TaskData.Where(x => x.TaskId == taskId).FirstOrDefault();
-            if (x == null || x.Data == null)
-                return null;
-            return Newtonsoft.Json.JsonConvert.DeserializeObject(x.Data, type);
+            var x = _dbContext.TaskData.FirstOrDefault(x => x.TaskId == taskId);
+            return x?.Data == null ? null : Newtonsoft.Json.JsonConvert.DeserializeObject(x.Data, type);
         }
 
         public T? GetTaskData<T>(Guid taskId) where T : WfStateData
@@ -450,6 +448,7 @@ namespace orch.ef.workflow
         public TaskStatePair<T>? GetTaskStatePair<T>(Guid taskId) where T : WfStateData
         {
             var task = _dbContext.Tasks
+                                    .AsNoTracking()
                                     .Include(t => t.Data)
                                     .Where(t => t.Id == taskId)
                                     .FirstOrDefault();
