@@ -96,20 +96,28 @@ namespace orch.core.job
             string reference = null,
             object data = null)
         {
-            var eventLogDb = _services.TranService.Services.GetRequiredService<IEventLogDatabase>();
-            
-            var eventLog = new EventLog
-            {
-                Id = _services.Host.NextGuid(),
-                Time = _services.Host.CurrentTime(),
-                Message = message,
-                Level = level,
-                Reference = reference,
-                JobId = _jobInfo.Id,
-                Data = data is null ? null : JsonConvert.SerializeObject(data)
-            };
+            var scope = _services.TranService.Services.CreateScope();
+            var eventLogDb = scope.ServiceProvider.GetRequiredService<IEventLogDatabase>();
 
-            eventLogDb.Add(eventLog);
+            try
+            {
+                var eventLog = new EventLog
+                {
+                    Id = _services.Host.NextGuid(),
+                    Time = _services.Host.CurrentTime(),
+                    Message = message,
+                    Level = level,
+                    Reference = reference,
+                    JobId = _jobInfo.Id,
+                    Data = data is null ? null : JsonConvert.SerializeObject(data)
+                };
+
+                eventLogDb.Add(eventLog);
+            }
+            finally
+            {
+                scope.Dispose();
+            }
         }
 
         public abstract Task Execute();
