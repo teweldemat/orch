@@ -140,9 +140,7 @@ namespace orch.core
         public IJobHandler GetHandler(Guid typeId)
         {
             if (!s_jobHandlerInfos.ContainsKey(typeId)) return null;
-
-            var service = ScopeFactory.CreateApplicationScope().Services;
-
+            
             var handlerInfo = s_jobHandlerInfos[typeId];
             var parameters = handlerInfo.ConstructorParameters.Select(x =>
             {
@@ -151,7 +149,7 @@ namespace orch.core
                     return this;
                 }
 
-                return service.GetService(x);
+                return this.TranService.Services.GetService(x);
 
             }).ToArray();
 
