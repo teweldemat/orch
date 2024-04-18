@@ -97,10 +97,13 @@ namespace orch.core.job
             object data = null)
         {
             var scope = _services.TranService.Services.CreateScope();
+            var tranDb = scope.ServiceProvider.GetRequiredService<ITransactionDatabase>();
             var eventLogDb = scope.ServiceProvider.GetRequiredService<IEventLogDatabase>();
 
             try
             {
+                tranDb.BeginTransaction();
+                
                 var eventLog = new EventLog
                 {
                     Id = _services.Host.NextGuid(),
@@ -113,6 +116,12 @@ namespace orch.core.job
                 };
 
                 eventLogDb.Add(eventLog);
+
+                tranDb.CommitTransaction();
+            }
+            catch (Exception ex)
+            {
+                tranDb.RollbackTransaction();
             }
             finally
             {
