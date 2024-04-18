@@ -96,21 +96,37 @@ namespace orch.core.job
             string reference = null,
             object data = null)
         {
-            var scope = _services.TranService.Services.GetRequiredService<IServiceScopeFactory>().CreateScope();
+            var scope = _services.TranService.Services.CreateScope();
+            var tranDb = scope.ServiceProvider.GetRequiredService<ITransactionDatabase>();
             var eventLogDb = scope.ServiceProvider.GetRequiredService<IEventLogDatabase>();
-            
-            var eventLog = new EventLog
-            {
-                Id = _services.Host.NextGuid(),
-                Time = _services.Host.CurrentTime(),
-                Message = message,
-                Level = level,
-                Reference = reference,
-                JobId = _jobInfo.Id,
-                Data = data is null ? null : JsonConvert.SerializeObject(data)
-            };
 
-            eventLogDb.Add(eventLog);
+            try
+            {
+                tranDb.BeginTransaction();
+                
+                var eventLog = new EventLog
+                {
+                    Id = _services.Host.NextGuid(),
+                    Time = _services.Host.CurrentTime(),
+                    Message = message,
+                    Level = level,
+                    Reference = reference,
+                    JobId = _jobInfo.Id,
+                    Data = data is null ? null : JsonConvert.SerializeObject(data)
+                };
+
+                eventLogDb.Add(eventLog);
+
+                tranDb.CommitTransaction();
+            }
+            catch (Exception ex)
+            {
+                tranDb.RollbackTransaction();
+            }
+            finally
+            {
+                scope.Dispose();
+            }
         }
 
         public abstract Task Execute();
