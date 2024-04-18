@@ -96,8 +96,7 @@ namespace orch.core.job
             string reference = null,
             object data = null)
         {
-            var scope = _services.TranService.Services.GetRequiredService<IServiceScopeFactory>().CreateScope();
-            var eventLogDb = scope.ServiceProvider.GetRequiredService<IEventLogDatabase>();
+            var eventLogDb = _services.TranService.Services.GetRequiredService<IEventLogDatabase>();
             
             var eventLog = new EventLog
             {
