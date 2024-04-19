@@ -38,8 +38,8 @@ namespace orch.core
             RecurringJobManager = recurringJobManager;
         }
 
-        private static readonly ConcurrentDictionary<Guid, string> singletonJobsByTypeId = new();
-        private static readonly ConcurrentDictionary<string, Guid> concurrentJobsByJobId = new();
+        private static readonly ConcurrentDictionary<Guid, string> SingletonJobsByTypeId = new();
+        private static readonly ConcurrentDictionary<string, Guid> ConcurrentJobsByJobId = new();
 
         private void ProcessJob(PerformContext context, OJob job, object data, out IJobHandler handler, CancellationToken cancellationToken)
         {
@@ -70,18 +70,18 @@ namespace orch.core
             {
                 case JobProcessType.Singleton:
                     {
-                        if (singletonJobsByTypeId.TryGetValue(typeId, out var existingJobId))
+                        if (SingletonJobsByTypeId.TryGetValue(typeId, out var existingJobId))
                             return existingJobId;
 
                         var jobId = BackgroundJob.Enqueue(() => ExecuteJob(default, job, data, CancellationToken.None));
-                        singletonJobsByTypeId.TryAdd(typeId, jobId);
+                        SingletonJobsByTypeId.TryAdd(typeId, jobId);
 
                         return jobId;
                     }
                 case JobProcessType.Concurrent:
                     {
                         var jobId = BackgroundJob.Enqueue(() => ExecuteJob(default, job, data, CancellationToken.None));
-                        concurrentJobsByJobId.TryAdd(jobId, typeId);
+                        ConcurrentJobsByJobId.TryAdd(jobId, typeId);
                         return jobId;
                     }
                 default:
@@ -124,13 +124,14 @@ namespace orch.core
             }
             finally
             {
-                if (typeInfo.ProcessType == JobProcessType.Singleton)
+                switch (typeInfo?.ProcessType)
                 {
-                    singletonJobsByTypeId.TryRemove(job.DataTypeID, out _);
-                }
-                else if (typeInfo.ProcessType == JobProcessType.Concurrent)
-                {
-                    concurrentJobsByJobId.TryRemove(context.BackgroundJob.Id, out _);
+                    case JobProcessType.Singleton:
+                        SingletonJobsByTypeId.TryRemove(job.DataTypeID, out _);
+                        break;
+                    case JobProcessType.Concurrent:
+                        ConcurrentJobsByJobId.TryRemove(context.BackgroundJob.Id, out _);
+                        break;
                 }
             }
         }
@@ -147,13 +148,13 @@ namespace orch.core
         {
             Guid typeId;
 
-            if (singletonJobsByTypeId.Values.Contains(jobId))
+            if (SingletonJobsByTypeId.Values.Contains(jobId))
             {
-                typeId = singletonJobsByTypeId.FirstOrDefault(x => x.Value == jobId).Key;
+                typeId = SingletonJobsByTypeId.FirstOrDefault(x => x.Value == jobId).Key;
             }
             else
             {
-                concurrentJobsByJobId.TryGetValue(jobId, out typeId);
+                ConcurrentJobsByJobId.TryGetValue(jobId, out typeId);
             }
 
             if (typeId == Guid.Empty)
@@ -177,7 +178,7 @@ namespace orch.core
         {
             _ = GetTypeInfoById(typeId) ?? throw new JobTypeIdNotFoundException(typeId);
 
-            if (singletonJobsByTypeId.TryGetValue(typeId, out var jobId))
+            if (SingletonJobsByTypeId.TryGetValue(typeId, out var jobId))
             {
                 return jobId;
             }
