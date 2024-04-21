@@ -40,17 +40,19 @@ namespace orch.report
             services.AddScoped<OReportService>();
             services.TryAddSingleton<IHttpContextAccessor, HttpContextAccessor>();
 
-            var architecture = RuntimeInformation.ProcessArchitecture;
-            if (architecture is not (Architecture.X86 or Architecture.X64) &&
-                options.Converter == PdfConverter.wkhtmltopdf)
-            {
-                // wkhtmltopdf is supported only on x86 and x64 architectures
-                options.Converter = PdfConverter.Chromium;
-            }
-
             switch (options.Converter)
             {
                 case PdfConverter.wkhtmltopdf:
+
+                    if (RuntimeInformation.ProcessArchitecture is not (Architecture.X86 or Architecture.X64))
+                    {
+                        // throw new InvalidOperationException(
+                        //     "wkhtmltopdf is supported only on x86 and x64 architectures");
+
+                        // ! Temporary solution to allow the application to run on other architectures without PDF support
+                        break;
+                    }
+                    
                     services.AddSingleton(typeof(IConverter), new STASynchronizedConverter(new PdfTools()));
                     services.AddScoped<IHtmlToPdfConverter, DinkToPdfConverter>();
 

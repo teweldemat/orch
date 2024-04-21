@@ -9,14 +9,14 @@ namespace orch.report.Handler
     public abstract class ReportHandlerBase<ParamsType> : IReportHandler
     {
         protected readonly TransactionServiceCollection _services;
-        protected readonly IHtmlToPdfConverter _converter;
+        protected readonly IHtmlToPdfConverter? _converter;
 
         protected ParamsType? _paramsData;
 
         protected ReportHandlerBase(TransactionServiceCollection services)
         {
             _services = services;
-            _converter = _services.TranService.Services.GetRequiredService<IHtmlToPdfConverter>();
+            _converter = _services.TranService.Services.GetService<IHtmlToPdfConverter>();
         }
 
         public void SetData(object? data) => _paramsData = (ParamsType?)data;
@@ -38,6 +38,11 @@ namespace orch.report.Handler
 
         Task<FileContentResult> IReportHandler.GeneratePDF()
         {
+            if (_converter is null)
+            {
+                throw new NotSupportedException($"PDF format is not supported, converter is not available.");
+            }
+            
             return _converter.ConvertToPdfAsync(GeneratePDF());
         }
 

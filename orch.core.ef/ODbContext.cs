@@ -1,8 +1,8 @@
-﻿using cis10.ef.Core.Conventions;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using Npgsql;
 using orch.core.ef;
 using System.Data.Common;
+using orch.core.ef.Conventions;
 
 namespace orch.ef.Core
 {

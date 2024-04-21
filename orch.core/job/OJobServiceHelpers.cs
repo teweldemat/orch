@@ -24,7 +24,7 @@ namespace orch.core.job
                 var storage = JobStorage.Current;
 
                 using var connection = storage.GetConnection();
-                foreach (var recurringJob in StorageConnectionExtensions.GetRecurringJobs(connection))
+                foreach (var recurringJob in connection.GetRecurringJobs())
                 {
                     RecurringJob.RemoveIfExists(recurringJob.Id);
                 }

@@ -31,7 +31,7 @@ namespace orch.core.job
 
         public CancellationToken CancellationToken { get; set; }
 
-        public bool IsCancelled => CancellationToken.IsCancellationRequested;
+        protected bool IsCancelled => CancellationToken.IsCancellationRequested;
 
         async Task IJobHandler.Execute()
         {
@@ -39,14 +39,16 @@ namespace orch.core.job
             {
                 await Execute();
 
-                await HubContext.Clients.Group(_jobInfo.Id).SendAsync(JobProgressHub.SuccessMethod);
+                await HubContext.Clients.Group(_jobInfo.Id)
+                    .SendAsync(JobProgressHub.SuccessMethod, cancellationToken: CancellationToken);
             }
             finally
             {
 
                 if (IsCancelled)
                 {
-                    HubContext.Clients.Group(_jobInfo.Id)?.SendAsync(JobProgressHub.CancelledMethod, _jobInfo.Id);
+                    HubContext.Clients.Group(_jobInfo.Id)?.SendAsync(JobProgressHub.CancelledMethod, _jobInfo.Id,
+                        cancellationToken: CancellationToken);
                     OnCancelled();
                 }
             }
@@ -94,21 +96,37 @@ namespace orch.core.job
             string reference = null,
             object data = null)
         {
-            var scope = _services.TranService.Services.GetRequiredService<IServiceScopeFactory>().CreateScope();
+            var scope = _services.TranService.Services.CreateScope();
+            var tranDb = scope.ServiceProvider.GetRequiredService<ITransactionDatabase>();
             var eventLogDb = scope.ServiceProvider.GetRequiredService<IEventLogDatabase>();
-            
-            var eventLog = new EventLog
-            {
-                Id = _services.Host.NextGuid(),
-                Time = _services.Host.CurrentTime(),
-                Message = message,
-                Level = level,
-                Reference = reference,
-                JobId = _jobInfo.Id,
-                Data = data is null ? null : JsonConvert.SerializeObject(data)
-            };
 
-            eventLogDb.Add(eventLog);
+            try
+            {
+                tranDb.BeginTransaction();
+                
+                var eventLog = new EventLog
+                {
+                    Id = _services.Host.NextGuid(),
+                    Time = _services.Host.CurrentTime(),
+                    Message = message,
+                    Level = level,
+                    Reference = reference,
+                    JobId = _jobInfo.Id,
+                    Data = data is null ? null : JsonConvert.SerializeObject(data)
+                };
+
+                eventLogDb.Add(eventLog);
+
+                tranDb.CommitTransaction();
+            }
+            catch (Exception ex)
+            {
+                tranDb.RollbackTransaction();
+            }
+            finally
+            {
+                scope.Dispose();
+            }
         }
 
         public abstract Task Execute();
