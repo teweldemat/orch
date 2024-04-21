@@ -3,7 +3,7 @@ using orch.wf.model;
 
 namespace orch.ef.workflow.entities
 {
-    internal class DALTaskNote : TaskNoteProps
+    public class DALTaskNote : TaskNoteProps
     {
         public DALTaskNote()
         { }
@@ -16,7 +16,7 @@ namespace orch.ef.workflow.entities
         public DALTaskHistory History { get; set; }
     }
 
-    internal class DALTaskHistory : TaskHistoryProps
+    public class DALTaskHistory : TaskHistoryProps
     {
         public DALTaskHistory()
         { }
@@ -28,7 +28,7 @@ namespace orch.ef.workflow.entities
         public virtual DALTaskNote? Note { get; set; }
     }
 
-    internal class DALTaskFollower : TaskFollowerProps
+    public class DALTaskFollower : TaskFollowerProps
     {
         public DALTaskFollower()
         { }
@@ -39,7 +39,7 @@ namespace orch.ef.workflow.entities
         public DALOTask Task { get; set; }
     }
 
-    internal class DALTaskAssignee : TaskAssigneeProps
+    public class DALTaskAssignee : TaskAssigneeProps
     {
         public DALTaskAssignee()
         { }
@@ -50,7 +50,7 @@ namespace orch.ef.workflow.entities
         public DALOTask Task { get; set; }
     }
 
-    internal class DALCheckListItem : CheckListItemProps
+    public class DALCheckListItem : CheckListItemProps
     {
         public DALCheckListItem()
         { }
@@ -63,7 +63,7 @@ namespace orch.ef.workflow.entities
         public int SeqNo { get; set; }
     }
 
-    internal class DALOTask : OTaskProps
+    public class DALOTask : OTaskProps
     {
         public DALOTask()
         { }
@@ -81,7 +81,7 @@ namespace orch.ef.workflow.entities
         public virtual ICollection<DALTaskMonitor> MonitoringTasks { get; set; }
     }
 
-    internal class DALTaskMonitor
+    public class DALTaskMonitor
     {
         public Guid Id { get; set; }
         public Guid MonitorTaskId { get; set; }

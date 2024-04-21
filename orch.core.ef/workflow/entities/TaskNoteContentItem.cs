@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace orch.ef.workflow.entities
 {
-    internal class DALTaskNoteContentItem
+    public class DALTaskNoteContentItem
     {
         public Guid NoteId { get; set; }
         public Guid TranId { get; set; }
