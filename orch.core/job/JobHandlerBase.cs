@@ -33,11 +33,19 @@ namespace orch.core.job
         public CancellationToken CancellationToken { get; set; }
 
         protected bool IsCancelled => CancellationToken.IsCancellationRequested;
+        
+        
+        private UserInfo? _systemUser;
+        private UserInfo SystemUser => _systemUser 
+            ??= _services.TranDb.GetSystemUser() 
+                ?? throw new InvalidOperationException("System user not found. Has the system been bootstrapped?");
 
         async Task IJobHandler.Execute()
         {
             try
             {
+                _ = SystemUser;
+                
                 await Execute();
 
                 await HubContext.Clients.Group(_jobInfo.Id)
@@ -124,7 +132,12 @@ namespace orch.core.job
             string reference = null,
             object data = null)
         {
-            ExecuteCommandUntyped(
+            
+            using var scope = _services.TranService.Services.CreateScope();
+            var transactionService = scope.ServiceProvider.GetRequiredService<OTransactionService>();
+            transactionService.ExecuteCommandUntyped(
+                SystemUser.Id,
+                _jobInfo.SystemID,
                 Guid.Parse(AddEventLogCommand.TYPE_ID),
                 0,
                 new AddEventLogCommand()
