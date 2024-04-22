@@ -1088,6 +1088,20 @@ namespace orch.core.ef.System
             }
             _db.SaveChanges();
         }
+        
+        public void UpdateSerialBatch(OCommand command, SerialBatch serialBatch)
+        {
+            var existing = _db.SerialBatches.AsNoTracking().FirstOrDefault(x => x.Id == serialBatch.Id) 
+                           ?? throw new ArgumentException($"Serial batch with ID {serialBatch.Id} not found");
+            
+            existing.FromSerialNo = serialBatch.FromSerialNo;
+            existing.ToSerialNo = serialBatch.ToSerialNo;
+            existing.MaxUsed = serialBatch.MaxUsed;
+            
+            existing.SetUpdate<ChangeProps>(command);
+            _db.SerialBatches.Update(existing);
+            _db.SaveChanges();
+        }
 
         [OViewFunction]
         public SerialBatch? GetSerialBatchBySerialType(Guid SerialTypeId)
@@ -1187,10 +1201,11 @@ namespace orch.core.ef.System
         [OViewFunction]
         public SerialBatch? GetSerialBatch(Guid batchId)
         {
-            return _db.SerialBatches.Where(serialBatch => serialBatch.Id == batchId)
-                       .AsEnumerable()
-                       .Select(serialBatch => new SerialBatch(serialBatch))
-                       .FirstOrDefault();
+            return _db.SerialBatches
+                .AsNoTracking()
+                .Where(serialBatch => serialBatch.Id == batchId)      .AsEnumerable()
+                .Select(serialBatch => new SerialBatch(serialBatch))
+                .FirstOrDefault();
         }
 
         public void UpdateRole(OCommand command, Role existing)
