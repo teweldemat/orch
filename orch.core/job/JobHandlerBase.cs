@@ -92,6 +92,18 @@ namespace orch.core.job
         public abstract string Summarize(out bool html);
 
         #region helpers
+        
+        protected void ExecuteCommand<DataType>(int formatVersion, DataType data, out Guid tranId)
+        {
+            using var scope = _services.TranService.Services.CreateScope();
+            var transactionService = scope.ServiceProvider.GetRequiredService<OTransactionService>();
+            transactionService.ExecuteCommand<DataType>(
+                _jobInfo.UserId,
+                _jobInfo.SystemID,
+                formatVersion,
+                data,
+                out tranId);
+        }
 
         protected void ExecuteCommandUntyped(Guid typeId, int formatVersion, object data, out Guid tranId)
         {
