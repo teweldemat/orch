@@ -1027,10 +1027,11 @@ namespace orch.core.ef.System
         public SerialType? GetSerialType(Guid id)
         {
             return _db.SerialTypes
-                  .Where(serialType => serialType.Id == id)
-                  .AsEnumerable()
-                  .Select(serialType => new SerialType(serialType))
-                  .FirstOrDefault();
+                .AsNoTracking()
+                .Where(serialType => serialType.Id == id)
+                .AsEnumerable()
+                .Select(serialType => new SerialType(serialType))
+                .FirstOrDefault();
         }
 
         public void CreateSerialType(OCommand command, SerialType type)
@@ -1052,6 +1053,7 @@ namespace orch.core.ef.System
             existing.AuthorizationLevel = type.AuthorizationLevel;
             
             existing.SetUpdate<ChangeProps>(command);
+            _db.SerialTypes.Update(existing);
             _db.SaveChanges();
         }
 
