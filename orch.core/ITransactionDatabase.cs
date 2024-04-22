@@ -125,6 +125,7 @@ namespace orch.core
         SerialType GetSerialType(string key);
 
         void CreateSerialType(OCommand command, SerialType type);
+        void UpdateSerialType(OCommand command, SerialType type);
 
         void CreateSerialBatch(OCommand command, SerialBatch serialBatch);
 

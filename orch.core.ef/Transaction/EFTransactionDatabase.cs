@@ -1043,6 +1043,17 @@ namespace orch.core.ef.System
             _db.SerialTypes.Add(new DALSerialType(type));
             _db.SaveChanges();
         }
+        
+        public void UpdateSerialType(OCommand command, SerialType type)
+        {
+            var existing = _db.SerialTypes.AsNoTracking().FirstOrDefault(x => x.Id == type.Id) 
+                           ?? throw new ArgumentException($"Serial type with ID {type.Id} not found");
+            
+            existing.AuthorizationLevel = type.AuthorizationLevel;
+            
+            existing.SetUpdate<ChangeProps>(command);
+            _db.SaveChanges();
+        }
 
         public void CreateSerialBatch(OCommand command, SerialBatch serialBatch)
         {
