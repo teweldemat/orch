@@ -178,12 +178,7 @@ namespace orch.core
         {
             _ = GetTypeInfoById(typeId) ?? throw new JobTypeIdNotFoundException(typeId);
 
-            if (SingletonJobsByTypeId.TryGetValue(typeId, out var jobId))
-            {
-                return jobId;
-            }
-
-            return null;
+            return SingletonJobsByTypeId.GetValueOrDefault(typeId);
         }
 
         private void Authorize(JobTypeInfo typeInfo, Guid userId)
