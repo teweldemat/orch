@@ -30,7 +30,7 @@ public abstract class RecurringJobBase
     protected TransactionSystemInformation? SystemInformation =>
         _systemInformation ??= Services.TranDb.GetCurrentSystemInformation();
 
-    protected void ExecuteCommandUntyped(string typeId, int formatVersion, object data, out Guid tranId)
+    protected void ExecuteScopedCommandUntyped(string typeId, int formatVersion, object data, out Guid tranId)
     {
         if (SystemUser is not { } user)
             throw new InvalidOperationException("System user is not set.");
@@ -55,7 +55,7 @@ public abstract class RecurringJobBase
         string reference = null,
         object data = null)
     {
-        ExecuteCommandUntyped(
+        ExecuteScopedCommandUntyped(
             AddEventLogCommand.TYPE_ID,
             0,
             new AddEventLogCommand()
