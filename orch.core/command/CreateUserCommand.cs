@@ -97,7 +97,10 @@ namespace orch.core.command
                 var isRoot = root.Id == _commandInfo.UserId;
                 if (!isRoot)
                 {
-                    _services.TranDb.IsPermitted(_commandInfo.UserId.Value, CoreModule.PERMISSION_CREATE_USER);
+                    if (!_services.TranDb.IsPermitted(_commandInfo.UserId.Value, CoreModule.PERMISSION_CREATE_USER))
+                    {
+                        throw new InvalidOperationException("You are not authorized to create users");
+                    }
                 }
 
                 if (_commandData.User.Roles is { Count: > 0 })
