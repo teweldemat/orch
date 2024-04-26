@@ -39,6 +39,33 @@ namespace orch.core.command
         public ChangeUserEnabledStatusCommandHandler(TransactionServiceCollection services) : base(services)
         {
         }
+        
+        protected override void Authorize()
+        {
+            var rootUser = _services.TranDb.GetRootUser()
+                           ?? throw new InvalidOperationException(
+                               "Root user not found, system has not been initialized.");
+            
+            var systemUser = _services.TranDb.GetSystemUser()
+                    ?? throw new InvalidOperationException("System user not found, system has not been initialized.");
+
+            if (_commandInfo.UserId is not { } userId)
+                throw new UnauthorizedAccessException("You are not authorized to change user enabled status");
+
+            var isRoot = _commandInfo.UserId == rootUser.Id;
+            
+            if (_commandData.UserId == rootUser.Id)
+                throw new UnauthorizedAccessException("The root user's enabled status cannot be changed");
+            
+            if (_commandData.UserId == systemUser.Id)
+                throw new UnauthorizedAccessException("The system user's enabled status cannot be changed");
+            
+            if (userId == _commandData.UserId)
+                throw new InvalidOperationException("You cannot change your own enabled status");
+
+            if (!isRoot && !_services.TranDb.IsPermitted(userId, CoreModule.PERMISSION_CREATE_USER))
+                throw new UnauthorizedAccessException("You are not authorized to change user enabled status");
+        }
 
         public override string Summarize(out bool html)
         {
@@ -51,9 +78,7 @@ namespace orch.core.command
             user = _services.TranDb.GetUserInfo(_commandData.UserId);
             if (user == null)
                 throw new InvalidDataException($"User with Id:{_commandData.UserId} doesn't exist");
-
-            OCommon.AssertRootUser(_services.TranDb, _commandInfo.UserId);
-
+            
             _commandData.UserName = user.UserName;
 
             if (user.Enabled && _commandData.Enabled)
