@@ -22,13 +22,13 @@ namespace fsstudio
 
         public  object Evaluate(IFsDataProvider parent, IParameterList pars)
         {
-            var query = pars[0] as string;
+            var query = pars.GetParameter(parent, 0) as string;
             if (query == null)
                 return new InvalidOperationException($"{this.Symbol} - {ParName(0)} is required");
 
             object parsVal = null;
             if (pars.Count > 1)
-                parsVal = pars[1];
+                parsVal = pars.GetParameter(parent, 1);
 
             var request = $"/api/query?access_token={Program.AccessToken}&query={System.Web.HttpUtility.UrlEncode(query)}";
             if (parsVal != null)
