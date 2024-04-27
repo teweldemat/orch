@@ -74,7 +74,7 @@ namespace fsstudio
 
         public object Evaluate(IFsDataProvider parent, IParameterList pars)
         {
-            var prompt = pars[0] as string;
+            var prompt = pars.GetParameter(parent, 0) as string;
             if (prompt == null)
                 return new InvalidOperationException($"{this.Symbol} - {ParName(0)} is required");
 
