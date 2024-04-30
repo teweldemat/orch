@@ -42,6 +42,15 @@ namespace orch.core.command
         public CreateRolePermssionCommandHandler(TransactionServiceCollection services) : base(services)
         {
         }
+        
+        protected override void Authorize()
+        {
+            if (_commandInfo.UserId is not {} userId 
+                || !_services.TranDb.IsPermitted(userId, CoreModule.PERMISSION_MANAGE_ROLES))
+            {
+                throw new UnauthorizedAccessException("You are not authorized to manage roles");
+            }
+        }
 
         public override string Summarize(out bool html)
         {
@@ -73,7 +82,6 @@ namespace orch.core.command
 
         protected override void Execute()
         {
-            OCommon.AssertRootUser(_services.TranDb, _commandInfo.UserId);
             var permissionIds = _commandData.Permissions.Select(x => x.Id).ToList();
             _services.TranDb.SetRolePermssions(_commandInfo, _commandData.Role.Id, permissionIds);
         }

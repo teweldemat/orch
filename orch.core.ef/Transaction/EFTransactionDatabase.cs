@@ -1027,10 +1027,11 @@ namespace orch.core.ef.System
         public SerialType? GetSerialType(Guid id)
         {
             return _db.SerialTypes
-                  .Where(serialType => serialType.Id == id)
-                  .AsEnumerable()
-                  .Select(serialType => new SerialType(serialType))
-                  .FirstOrDefault();
+                .AsNoTracking()
+                .Where(serialType => serialType.Id == id)
+                .AsEnumerable()
+                .Select(serialType => new SerialType(serialType))
+                .FirstOrDefault();
         }
 
         public void CreateSerialType(OCommand command, SerialType type)
@@ -1041,6 +1042,18 @@ namespace orch.core.ef.System
             }
             type.SetCreate<ChangeProps>(command);
             _db.SerialTypes.Add(new DALSerialType(type));
+            _db.SaveChanges();
+        }
+        
+        public void UpdateSerialType(OCommand command, SerialType type)
+        {
+            var existing = _db.SerialTypes.AsNoTracking().FirstOrDefault(x => x.Id == type.Id) 
+                           ?? throw new ArgumentException($"Serial type with ID {type.Id} not found");
+            
+            existing.AuthorizationLevel = type.AuthorizationLevel;
+            
+            existing.SetUpdate<ChangeProps>(command);
+            _db.SerialTypes.Update(existing);
             _db.SaveChanges();
         }
 
