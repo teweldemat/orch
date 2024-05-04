@@ -109,7 +109,7 @@ namespace orch.core
                 }
                 else
                 {
-                    object parVal = index < pars.Count ? pars[index] : null;
+                    object parVal = index < pars.Count ? pars.GetParameter(parent, index) : null;
                     Type parType = currentPar.ParameterType;
 
                     // Use default value if parameter is missing and a default exists

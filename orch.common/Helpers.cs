@@ -207,7 +207,74 @@ namespace orch.common
             return amountInWords.Substring(0, 1).ToUpper() + amountInWords.Substring(1);
         }
 
+        public static string NumberToAmharic(decimal num)
+        {
+            string[] ones =
+            {
+                "", "አንድ", "ሁለት", "ሶስት", "አራት", "አምስት", "ስድስት", "ሰባት", "ስመንት", "ዘጠኝ"
+            };
+            string[] tens =
+            {
+                "", "አስር", "ሃያ", "ሰላሳ", "አርባ", "አምሳ", "ስልሳ", "ሰባ", "ሰማንያ", "ዘጠና"
+            };
+            const string hundred = "መቶ";
+            const string thousand = "ሺህ";
+            const string million = "ሚሊዮን";
+            const string billion = "ቢሊዮን";
+            const string cent = "ሳንቲም";
 
+            var cents = (int)Math.Round(num * 100) % 100;
+            var birrs = (int)Math.Floor(num);
+
+            if (cents > 0)
+            {
+                return NumberToAmharic(birrs) + " ና " + NumberToAmharic(cents) + " " + cent;
+            }
+
+            switch (num)
+            {
+                case < 10 and >= 1:
+                    return ones[(int)Math.Floor(num)];
+                case < 100:
+                    return tens[(int)Math.Floor(num / 10)] +
+                           (num % 10 != 0 ? " " + ones[(int)Math.Floor(num % 10)] : "");
+                case < 1000:
+                {
+                    var hundreds = (int)Math.Floor(num / 100);
+                    var remainder = num % 100;
+                    return ones[hundreds] + " " + hundred + (remainder != 0 ? " " + NumberToAmharic(remainder) : "");
+                }
+                case < 1_000_000:
+                {
+                    var thousands = (int)Math.Floor(num / 1000);
+                    var remainder = num % 1000;
+                    return NumberToAmharic(thousands) + " " + thousand +
+                           (remainder != 0 ? " " + NumberToAmharic(remainder) : "");
+                }
+                case < 1_000_000_000:
+                {
+                    var millions = (int)Math.Floor(num / 1_000_000);
+                    var remainder = num % 1_000_000;
+                    return NumberToAmharic(millions) + " " + million +
+                           (remainder != 0 ? " " + NumberToAmharic(remainder) : "");
+                }
+                case < 1_000_000_000_000:
+                {
+                    var billions = (int)Math.Floor(num / 1_000_000_000);
+                    var remainder = num % 1_000_000_000;
+                    return NumberToAmharic(billions) + " " + billion +
+                           (remainder != 0 ? " " + NumberToAmharic(remainder) : "");
+                }
+            }
+
+            if (num % 1 != 0)
+            {
+                var decimalNumber = (int)Math.Round((num % 1) * 100);
+                return NumberToAmharic(Math.Floor(num)) + " ና " + NumberToAmharic(decimalNumber) + " " + cent;
+            }
+
+            return num.ToString();
+        }
     }
 
 
