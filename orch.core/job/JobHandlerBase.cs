@@ -2,6 +2,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
+using orch.core.command;
 using orch.core.logging;
 using orch.core.model;
 
@@ -32,11 +33,19 @@ namespace orch.core.job
         public CancellationToken CancellationToken { get; set; }
 
         protected bool IsCancelled => CancellationToken.IsCancellationRequested;
+        
+        
+        private UserInfo? _systemUser;
+        private UserInfo SystemUser => _systemUser 
+            ??= _services.TranDb.GetSystemUser() 
+                ?? throw new InvalidOperationException("System user not found. Has the system been bootstrapped?");
 
         async Task IJobHandler.Execute()
         {
             try
             {
+                _ = SystemUser;
+                
                 await Execute();
 
                 await HubContext.Clients.Group(_jobInfo.Id)
@@ -57,13 +66,7 @@ namespace orch.core.job
         string IJobHandler.Summarize()
         {
             var ret = Summarize(out var html);
-
-            if (html)
-            {
-                return ret;
-            }
-
-            return $"<p>{System.Web.HttpUtility.HtmlEncode(ret)}</p>";
+            return html ? ret : $"<p>{System.Web.HttpUtility.HtmlEncode(ret)}</p>";
         }
         public void SetData(OJob job, object data)
         {
@@ -75,7 +78,7 @@ namespace orch.core.job
                 _jobData = (T)data;
         }
 
-        private readonly JsonSerializerSettings settings = new()
+        private readonly JsonSerializerSettings _settings = new()
         {
             ContractResolver = new DefaultContractResolver
             {
@@ -87,7 +90,40 @@ namespace orch.core.job
         {
             HubContext.Clients.Group(_jobInfo.Id).SendAsync(
                 JobProgressHub.ProgressMethod,
-                JsonConvert.SerializeObject(progress, settings)).Wait();
+                JsonConvert.SerializeObject(progress, _settings)).Wait();
+        }
+
+        public abstract Task Execute();
+
+        public virtual void OnCancelled() { }
+
+        public abstract string Summarize(out bool html);
+
+        #region helpers
+        
+        protected void ExecuteCommand<DataType>(int formatVersion, DataType data, out Guid tranId)
+        {
+            using var scope = _services.TranService.Services.CreateScope();
+            var transactionService = scope.ServiceProvider.GetRequiredService<OTransactionService>();
+            transactionService.ExecuteCommand<DataType>(
+                _jobInfo.UserId,
+                _jobInfo.SystemID,
+                formatVersion,
+                data,
+                out tranId);
+        }
+
+        protected void ExecuteCommandUntyped(Guid typeId, int formatVersion, object data, out Guid tranId)
+        {
+            using var scope = _services.TranService.Services.CreateScope();
+            var transactionService = scope.ServiceProvider.GetRequiredService<OTransactionService>();
+            transactionService.ExecuteCommandUntyped(
+                _jobInfo.UserId,
+                _jobInfo.SystemID,
+                typeId,
+                formatVersion,
+                data,
+                out tranId);
         }
 
         protected void AddEventLog(
@@ -96,43 +132,27 @@ namespace orch.core.job
             string reference = null,
             object data = null)
         {
-            var scope = _services.TranService.Services.CreateScope();
-            var tranDb = scope.ServiceProvider.GetRequiredService<ITransactionDatabase>();
-            var eventLogDb = scope.ServiceProvider.GetRequiredService<IEventLogDatabase>();
-
-            try
-            {
-                tranDb.BeginTransaction();
-                
-                var eventLog = new EventLog
+            
+            using var scope = _services.TranService.Services.CreateScope();
+            var transactionService = scope.ServiceProvider.GetRequiredService<OTransactionService>();
+            transactionService.ExecuteCommandUntyped(
+                SystemUser.Id,
+                _jobInfo.SystemID,
+                Guid.Parse(AddEventLogCommand.TYPE_ID),
+                0,
+                new AddEventLogCommand()
                 {
-                    Id = _services.Host.NextGuid(),
-                    Time = _services.Host.CurrentTime(),
-                    Message = message,
-                    Level = level,
-                    Reference = reference,
-                    JobId = _jobInfo.Id,
-                    Data = data is null ? null : JsonConvert.SerializeObject(data)
-                };
-
-                eventLogDb.Add(eventLog);
-
-                tranDb.CommitTransaction();
-            }
-            catch (Exception ex)
-            {
-                tranDb.RollbackTransaction();
-            }
-            finally
-            {
-                scope.Dispose();
-            }
+                    EventLog = new EventLog()
+                    {
+                        Level = level,
+                        Message = message,
+                        Reference = reference,
+                        Data = JsonConvert.SerializeObject(data)
+                    }
+                },
+                out _);
         }
 
-        public abstract Task Execute();
-
-        public virtual void OnCancelled() { }
-
-        public abstract string Summarize(out bool html);
+        #endregion
     }
 }

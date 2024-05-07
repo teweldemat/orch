@@ -27,9 +27,6 @@ namespace orch.core.command
         {
             if (_commandData.UserId == Guid.Empty)
                 throw new InvalidDataException("The UserId property must not contain an empty identifier.");
-
-            if (!_commandData.Roles.Any())
-                throw new InvalidDataException("The Roles property must contain at least one role identifier.");
         }
     }
     public class AssignRolesCommandHandler : CommandHandlerBase<AssignRolesCommand>, ICommandHandler
