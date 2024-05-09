@@ -1,6 +1,6 @@
 using orch.core.model;
 
-namespace orch.core.command;
+namespace orch.core.command.serial;
 
 [CommandType(
     TYPE_ID,

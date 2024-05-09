@@ -1088,20 +1088,35 @@ namespace orch.core.ef.System
             }
             _db.SaveChanges();
         }
-        
-        public void UpdateSerialBatch(OCommand command, SerialBatch serialBatch)
+
+        public void DeleteLastSerialNo(OCommand command, Guid batchId)
         {
-            var existing = _db.SerialBatches.AsNoTracking().FirstOrDefault(x => x.Id == serialBatch.Id) 
-                           ?? throw new ArgumentException($"Serial batch with ID {serialBatch.Id} not found");
-            
-            existing.FromSerialNo = serialBatch.FromSerialNo;
-            existing.ToSerialNo = serialBatch.ToSerialNo;
-            existing.MaxUsed = serialBatch.MaxUsed;
-            
-            existing.SetUpdate<ChangeProps>(command);
-            _db.SerialBatches.Update(existing);
+            var batch = _db.SerialBatches.FirstOrDefault(b => b.Id == batchId);
+            if (batch == null)
+            {
+                throw new InvalidOperationException($"Serial batch with ID '{batchId}' does not exist.");
+            }
+
+            if (batch.MaxUsed < batch.FromSerialNo)
+            {
+                throw new InvalidOperationException("No serial numbers have been used from this batch yet.");
+            }
+
+            var lastSerial = _db.UsedSerials
+                .Where(us => us.BatchId == batchId && us.Sn == batch.MaxUsed)
+                .SingleOrDefault();
+
+            if (lastSerial == null)
+            {
+                throw new InvalidOperationException("The last serial number could not be found.");
+            }
+
+            batch.MaxUsed--;
+            _db.UsedSerials.Remove(lastSerial);
+
             _db.SaveChanges();
         }
+
 
         [OViewFunction]
         public SerialBatch? GetSerialBatchBySerialType(Guid SerialTypeId)
@@ -1117,6 +1132,23 @@ namespace orch.core.ef.System
         {
             return _db.UsedSerials
                 .Where(serialNo => serialNo.BatchId == batchId)
+                .Select(serialNo => new SerialNo(serialNo))
+                .FirstOrDefault();
+        }
+
+        public SerialNo? GetLastSerialNo(Guid batchId)
+        {
+            if (!_db.SerialBatches
+                    .AsNoTracking()
+                    .Any(x => x.Id == batchId))
+            {
+                throw new InvalidOperationException($"Serial batch with ID '{batchId}' does not exist.");
+            }
+
+            return _db.UsedSerials
+                .AsNoTracking()
+                .Where(serialNo => serialNo.BatchId == batchId)
+                .OrderByDescending(serialNo => serialNo.Sn)
                 .Select(serialNo => new SerialNo(serialNo))
                 .FirstOrDefault();
         }
