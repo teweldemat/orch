@@ -132,10 +132,7 @@ namespace orch.wf
                     ).ToList();
 
                 var users = _tranDb.GetUserWithPermissions(perms);
-
-                if (DefaultFsDataProvider.Trace)
-                    DefaultFsDataProvider.WriteTraceLine("Filtering applicable users");
-
+                
                 users = users.Where(x =>
                     {
                         var user = _tranDb.GetUserInfo(x);
