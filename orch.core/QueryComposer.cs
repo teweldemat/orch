@@ -136,7 +136,7 @@ namespace orch.core
 
                     if (parVal is FsList list1 && (parType.IsArray || parType.GetInterfaces().Contains(typeof(IList))))
                     {
-                        var listData = list1.Data;
+                        var listData = list1;
                         Type elementType;
 
                         if (parType.IsArray)
