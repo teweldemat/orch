@@ -13,16 +13,19 @@
         public string TypeName { get; set; }
         public JobProcessType ProcessType { get; set; }
         public Type Type { get; set; }
+        public Type Predicate { get; set; }
         public string[] Permissions { get; set; } = Array.Empty<string>();
         public string Cron { get; set; } = string.Empty;
-
     }
 
+    
     [AttributeUsage(AttributeTargets.Class)]
     public class BackgroundJobAttribute : Attribute
     {
         internal JobTypeInfo TypeInfo { get; set; }
         public Type Handler { get; set; }
+
+        public Type Predicate { get; set; }
 
         public BackgroundJobAttribute(
             string typeId,
@@ -30,6 +33,7 @@
             string typeName,
             JobProcessType processType,
             Type handler = null,
+            Type predicate = null, 
             string[] permissions = null,
             string? cron = null)
         {
@@ -68,11 +72,18 @@
             }
 
             if (handler != null && !typeof(IJobHandler).IsAssignableFrom(handler))
-            {
                 throw new ArgumentException($"The provided handler type, {handler.Name}, does not implement IJobHandler.", nameof(handler));
-            }
 
             Handler = handler;
+
+            if (predicate != null && !typeof(IJobPredicate).IsAssignableFrom(predicate))
+            {
+                throw new ArgumentException(
+                    $"The provided predicate type, {predicate.Name}, does not implement IJobPredicate.",
+                    nameof(predicate));
+            }
+
+            Predicate = predicate;
         }
     }
 }

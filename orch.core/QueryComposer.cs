@@ -2,6 +2,7 @@
 using funcscript.core;
 using funcscript.model;
 using Microsoft.Extensions.DependencyInjection;
+using orch.core.job;
 using System.Collections;
 using System.Reflection;
 using System.Text;
@@ -108,7 +109,7 @@ namespace orch.core
                 }
                 else
                 {
-                    object parVal = index < pars.Count ? pars[index] : null;
+                    object parVal = index < pars.Count ? pars.GetParameter(parent, index) : null;
                     Type parType = currentPar.ParameterType;
 
                     // Use default value if parameter is missing and a default exists
@@ -135,7 +136,7 @@ namespace orch.core
 
                     if (parVal is FsList list1 && (parType.IsArray || parType.GetInterfaces().Contains(typeof(IList))))
                     {
-                        var listData = list1.Data;
+                        var listData = list1;
                         Type elementType;
 
                         if (parType.IsArray)
@@ -360,6 +361,22 @@ namespace orch.core
                 return null;
 
             return new CommandTypeInfo()
+            {
+                TypeId = ret.TypeId,
+                Key = ret.Key,
+                TypeName = ret.TypeName,
+            };
+        }
+
+        [OViewFunction(name: "GetJobTypeInfoById")]
+        public JobTypeInfo GetJobTypeInfo(Guid id)
+        {
+            var ret = OJobService.GetTypeInfoById(id);
+
+            if (ret is null)
+                return null;
+
+            return new JobTypeInfo()
             {
                 TypeId = ret.TypeId,
                 Key = ret.Key,

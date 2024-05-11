@@ -1,7 +1,3 @@
-using System.ComponentModel.DataAnnotations;
-using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
-using System.Runtime.InteropServices;
 namespace orch.common
 {
 
@@ -10,8 +6,8 @@ namespace orch.common
         public int Day;
         public int Month;
         public int Year;
-        public long GrigDate=>EthiopianDate.ToGrig(this);
-        public DateTime DotNetDate => EthiopianDate.ToDotNetTime(this);
+        public long GrigDate => ToGrig(this);
+        public DateTime DotNetDate => ToDotNetTime(this);
         public static bool IsLeapYearEt(int y)
         {
             return ((y % 4) == 3);
@@ -319,6 +315,9 @@ namespace orch.common
             return new EthiopianDate(etDate.Day, etDate.Month, newYear);
         }
 
+        public static long AddEthiopianYears(long date, int years)
+            => AddYears(ToEth(date), years).GrigDate;
+
         public static EthiopianDate AddDays(EthiopianDate etDate, int days)
         {
             if (!etDate.isValid())
@@ -327,10 +326,10 @@ namespace orch.common
         }
         public static double EthiopanYearDifference(long d1, long d2, bool upperBoundInclusive)
         {
-            var date1 = EthiopianDate.ToEth(d1);
-            var date2 = EthiopianDate.ToEth(d2);
+            var date1 = ToEth(d1);
+            var date2 = ToEth(d2);
             if (upperBoundInclusive)
-                date2 = EthiopianDate.AddDays(date2, 1);
+                date2 = AddDays(date2, 1);
             var dayNo1 = date1.Month * 30 + date1.Day;
             var dayNo2 = date2.Month * 30 + date2.Day;
 
@@ -340,10 +339,13 @@ namespace orch.common
         }
         public static int FullEthiopianYearDifference(long d1, long d2, bool upperBoundInclusive, out int remainder)
         {
-            var date1 = EthiopianDate.ToEth(d1);
-            var date2 = EthiopianDate.ToEth(d2);
+            var date1 = ToEth(d1);
+            if (date1.Month == 13 && date1.Day == 6)
+                throw new ArgumentOutOfRangeException("FullEthiopianYearDifference is not defined for date 1 set to Pagume 6");
+
+            var date2 = ToEth(d2);
             if (upperBoundInclusive)
-                date2 = EthiopianDate.AddDays(date2, 1);
+                date2 = AddDays(date2, 1);
 
 
             var dayNo1 = date1.Month * 30 + date1.Day;
@@ -351,6 +353,10 @@ namespace orch.common
 
             var years = date2.Year - date1.Year - (dayNo2 >= dayNo1 ? 0 : 1);
             remainder = dayNo2 - dayNo1;
+            if(remainder<0)
+            {
+                remainder += IsLeapYearEt(date1.Year) ? 366 : 365;
+            }
             return years;
         }
         public static EthiopianDate Parse(string date)

@@ -13,8 +13,7 @@
         public Guid UserId { get; set; }
         public string Password { get; set; }
 
-        [OGeneratedData]
-        public string UserName { get; set; }
+        [OGeneratedData] public string UserName { get; set; }
     }
 
     public class SetPasswordCommandInitializer : CommandInitializerBase<SetPasswordCommand>
@@ -45,6 +44,26 @@
         {
         }
 
+        protected override void Authorize()
+        {
+            var rootUser = _services.TranDb.GetRootUser()
+                           ?? throw new InvalidOperationException(
+                               "Root user not found, system has not been initialized.");
+
+            if (_commandInfo.UserId is not { } userId)
+                throw new UnauthorizedAccessException("You are not authorized to change passwords");
+
+            var isRoot = _commandInfo.UserId == rootUser.Id;
+
+            if (_commandData.UserId == rootUser.Id && !isRoot)
+                throw new UnauthorizedAccessException("You are not authorized to change the root user's password");
+
+            if (!isRoot && _commandInfo.UserId != _commandData.UserId &&
+                !_services.TranDb.IsPermitted(userId, CoreModule.PERMISSION_CREATE_USER))
+                throw new UnauthorizedAccessException("You are not authorized to change passwords");
+        }
+
+
         public override void Preprocess()
         {
             _commandData.UserName = _services.TranDb.GetUserInfo(_commandData.UserId).UserName;
@@ -58,10 +77,6 @@
 
         protected override void Execute()
         {
-            if (_commandData.UserId != _commandInfo.UserId.Value)
-            {
-                OCommon.AssertRootUser(_services.TranDb, _commandInfo.UserId);
-            }
             var passwordHash = OSystemService.HashPassword(_commandData.Password);
             _services.TranDb.ChangePassword(_commandInfo, _commandData.UserId, passwordHash);
         }

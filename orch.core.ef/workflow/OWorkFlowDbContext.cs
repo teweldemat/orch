@@ -14,13 +14,13 @@ namespace orch.ef.workflow
         {
         }
 
-        internal DbSet<DALOTask> Tasks { get; set; }
+        public DbSet<DALOTask> Tasks { get; set; }
         internal DbSet<DALTaskData> TaskData { get; set; }
         internal DbSet<DALCheckListItem> TaskCheckLists { get; set; }
         internal DbSet<DALTaskHistory> TaskHistory { get; set; }
         internal DbSet<DALTaskNote> TaskNotes { get; set; }
         internal DbSet<DALTaskNoteContentItem> NoteContents { get; set; }
-        internal DbSet<DALTaskAssignee> TaskAssignee { get; set; }
+        public DbSet<DALTaskAssignee> TaskAssignee { get; set; }
         internal DbSet<DALTaskFollower> TaskFollower { get; set; }
         internal DbSet<DALTaskMonitor> TaskMonitors { get; set; }
         internal DbSet<DALWfNotification> Notifications { get; set; }

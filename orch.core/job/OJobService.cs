@@ -12,7 +12,7 @@ namespace orch.core
 {
     public sealed partial class OJobService
     {
-        private IServiceProvider Services { get; }
+        private IApplicationScopeFactory ScopeFactory { get; set; }
         private IOHost Host { get; }
         private OTransactionService TranService { get; }
         private ITransactionDatabase TranDb { get; }
@@ -21,7 +21,7 @@ namespace orch.core
         private IRecurringJobManager RecurringJobManager { get; }
 
         public OJobService(
-            IServiceProvider services,
+            IApplicationScopeFactory scopeFactory,
             IOHost host,
             OTransactionService tranService,
             ITransactionDatabase tranDb,
@@ -29,7 +29,7 @@ namespace orch.core
             IHubContext<JobProgressHub> hubContext,
             IRecurringJobManager recurringJobManager)
         {
-            Services = services;
+            ScopeFactory = scopeFactory;
             Host = host;
             TranService = tranService;
             TranDb = tranDb;
@@ -38,8 +38,8 @@ namespace orch.core
             RecurringJobManager = recurringJobManager;
         }
 
-        private static readonly ConcurrentDictionary<Guid, string> singletonJobsByTypeId = new();
-        private static readonly ConcurrentDictionary<string, Guid> concurrentJobsByJobId = new();
+        private static readonly ConcurrentDictionary<Guid, string> SingletonJobsByTypeId = new();
+        private static readonly ConcurrentDictionary<string, Guid> ConcurrentJobsByJobId = new();
 
         private void ProcessJob(PerformContext context, OJob job, object data, out IJobHandler handler, CancellationToken cancellationToken)
         {
@@ -70,18 +70,18 @@ namespace orch.core
             {
                 case JobProcessType.Singleton:
                     {
-                        if (singletonJobsByTypeId.TryGetValue(typeId, out var existingJobId))
+                        if (SingletonJobsByTypeId.TryGetValue(typeId, out var existingJobId))
                             return existingJobId;
 
                         var jobId = BackgroundJob.Enqueue(() => ExecuteJob(default, job, data, CancellationToken.None));
-                        singletonJobsByTypeId.TryAdd(typeId, jobId);
+                        SingletonJobsByTypeId.TryAdd(typeId, jobId);
 
                         return jobId;
                     }
                 case JobProcessType.Concurrent:
                     {
                         var jobId = BackgroundJob.Enqueue(() => ExecuteJob(default, job, data, CancellationToken.None));
-                        concurrentJobsByJobId.TryAdd(jobId, typeId);
+                        ConcurrentJobsByJobId.TryAdd(jobId, typeId);
                         return jobId;
                     }
                 default:
@@ -124,28 +124,37 @@ namespace orch.core
             }
             finally
             {
-                if (typeInfo.ProcessType == JobProcessType.Singleton)
+                switch (typeInfo?.ProcessType)
                 {
-                    singletonJobsByTypeId.TryRemove(job.DataTypeID, out _);
-                }
-                else if (typeInfo.ProcessType == JobProcessType.Concurrent)
-                {
-                    concurrentJobsByJobId.TryRemove(context.BackgroundJob.Id, out _);
+                    case JobProcessType.Singleton:
+                        SingletonJobsByTypeId.TryRemove(job.DataTypeID, out _);
+                        break;
+                    case JobProcessType.Concurrent:
+                        ConcurrentJobsByJobId.TryRemove(context.BackgroundJob.Id, out _);
+                        break;
                 }
             }
+        }
+
+        [AutomaticRetry(Attempts = 0)]
+        [DisableConcurrentExecution(60)]
+        public Task ExecuteRecurringJob(
+            PerformContext context, OJob job, object data, CancellationToken cancellationToken)
+        {
+            return ExecuteJob(context, job, data, cancellationToken);
         }
 
         public bool CancelJob(Guid userId, string jobId)
         {
             Guid typeId;
 
-            if (singletonJobsByTypeId.Values.Contains(jobId))
+            if (SingletonJobsByTypeId.Values.Contains(jobId))
             {
-                typeId = singletonJobsByTypeId.FirstOrDefault(x => x.Value == jobId).Key;
+                typeId = SingletonJobsByTypeId.FirstOrDefault(x => x.Value == jobId).Key;
             }
             else
             {
-                concurrentJobsByJobId.TryGetValue(jobId, out typeId);
+                ConcurrentJobsByJobId.TryGetValue(jobId, out typeId);
             }
 
             if (typeId == Guid.Empty)
@@ -169,12 +178,7 @@ namespace orch.core
         {
             _ = GetTypeInfoById(typeId) ?? throw new JobTypeIdNotFoundException(typeId);
 
-            if (singletonJobsByTypeId.TryGetValue(typeId, out var jobId))
-            {
-                return jobId;
-            }
-
-            return null;
+            return SingletonJobsByTypeId.GetValueOrDefault(typeId);
         }
 
         private void Authorize(JobTypeInfo typeInfo, Guid userId)
@@ -190,6 +194,8 @@ namespace orch.core
                 }
             }
         }
+        
+        
 
         public void AddOrUpdateRecurringJobs()
         {
@@ -201,6 +207,16 @@ namespace orch.core
 
             foreach (var typeInfo in GetAllJobTypes().Where(jt => jt.ProcessType is JobProcessType.Recurring))
             {
+                if (GetPredicate(typeInfo.TypeId) is { } predicate)
+                {
+                    if (!predicate.CanRun())
+                    {
+                        RecurringJob.RemoveIfExists(typeInfo.Key);
+                        continue;
+                    }
+
+                }
+                
                 var job = new OJob()
                 {
                     UserId = systemUser.Id,
@@ -211,7 +227,7 @@ namespace orch.core
 
                 RecurringJob.AddOrUpdate<OJobService>(
                     typeInfo.Key,
-                    (service) => service.ExecuteJob(default, job, null, CancellationToken.None),
+                    (service) => service.ExecuteRecurringJob(default, job, null, CancellationToken.None),
                     typeInfo.Cron);
             }
         }

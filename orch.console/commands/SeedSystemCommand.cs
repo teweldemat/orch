@@ -107,7 +107,6 @@ namespace orch.console.commands
                     if (from is FsList list)
                     {
                         baseFiles = list
-                            .Data
                             .Select(x => x as string)
                             .Where(x => x != null)
                             .ToList();
@@ -163,7 +162,7 @@ namespace orch.console.commands
                 if (!res)
                     return false;
                 var index = nCommands;
-                foreach (KeyValueCollection c in commands.Data)
+                foreach (KeyValueCollection c in commands)
                 {
                     if (c == null)
                         continue;

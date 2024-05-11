@@ -125,9 +125,10 @@ namespace orch.core
         SerialType GetSerialType(string key);
 
         void CreateSerialType(OCommand command, SerialType type);
+        void UpdateSerialType(OCommand command, SerialType type);
 
         void CreateSerialBatch(OCommand command, SerialBatch serialBatch);
-
+        void DeleteLastSerialNo(OCommand command, Guid batchId);
         Guid AddFileReference(OCommand command, ContentReference cref);
 
         void ReleaseReference(OCommand command, Guid fileId);
@@ -139,6 +140,7 @@ namespace orch.core
         SerialType GetSerialType(Guid id);
 
         SerialNo GetSerialNo(Guid batchId);
+        SerialNo? GetLastSerialNo(Guid batchId);
 
         List<SerialType> GetSerialTypes();
 
@@ -163,6 +165,8 @@ namespace orch.core
         IList<OCommand> GetCommandsByDataType(Guid tranId, List<Guid> dataTypeIds);
 
         OCommand GetMainCommand(Guid tranId);
+
+        OJob? GetJob(string jobId);
 
         void ChangePassword(OCommand command, Guid userId, byte[] passwordHash);
 

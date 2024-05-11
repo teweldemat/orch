@@ -12,9 +12,17 @@ namespace orch.core
         static readonly Dictionary<string, List<JobTypeInfo>> s_jobTypesByAssembly = new();
         static readonly Dictionary<Guid, JobHandlerInfo> s_jobHandlerInfos = new();
 
+        static readonly Dictionary<Guid, JobPredicateInfo> s_jobPredicateInfos = new();
+
         class JobHandlerInfo
         {
             public Type HandlerType;
+            public Type[] ConstructorParameters;
+        }
+
+        class JobPredicateInfo
+        {
+            public Type PredicateType;
             public Type[] ConstructorParameters;
         }
 
@@ -57,25 +65,31 @@ namespace orch.core
             jobAttr.TypeInfo.TypeName ??= t.FullName;
 
             ValidateAttribute(jobAttr);
-
+            
             s_jobTypes.Add(jobAttr.TypeInfo.TypeId, jobAttr.TypeInfo);
 
             s_jobTypesByType[t] = jobAttr.TypeInfo;
             s_jobTypesByKey[jobAttr.TypeInfo.Key] = jobAttr.TypeInfo;
 
-            if (jobAttr.Handler != null && jobAttr.Handler.GetInterface(typeof(IJobHandler).FullName) != null)
+            if (jobAttr.Handler?.GetInterface(typeof(IJobHandler).FullName) != null)
             {
                 ValidateHandler(jobAttr);
             }
 
+            if (jobAttr.Predicate?.GetInterface(typeof(IJobPredicate).FullName) != null)
+            {
+                ValidatePredicate(jobAttr);
+            }
+            
             s_jobTypesByAssembly[assemblyName].Add(jobAttr.TypeInfo);
         }
 
         private static void ValidateAttribute(BackgroundJobAttribute atr)
         {
-            if (s_jobTypes.ContainsKey(atr.TypeInfo.TypeId))
+            if (s_jobTypes.TryGetValue(atr.TypeInfo.TypeId, out var type))
             {
-                throw new InvalidOperationException($"The Id '{atr.TypeInfo.TypeId}' that is assigned to '{atr.TypeInfo.Key}' is already assigned to '{s_jobTypes[atr.TypeInfo.TypeId].Key}'");
+                throw new InvalidOperationException(
+                    $"The Id '{atr.TypeInfo.TypeId}' that is assigned to '{atr.TypeInfo.Key}' is already assigned to '{type.Key}'");
             }
         }
 
@@ -100,11 +114,33 @@ namespace orch.core
             };
         }
 
+        public static void ValidatePredicate(BackgroundJobAttribute atr)
+        {
+            var constructors = atr.Predicate.GetConstructors();
+            if (constructors.Length == 0)
+            {
+                throw new InvalidHandlerException($"Job predicate {atr.Predicate} doesn't have a constructor");
+            }
+
+            if (constructors.Length > 1)
+            {
+                throw new InvalidHandlerException(
+                    $"Multiple constructors found for job predicate {atr.Predicate} and that is not allowed");
+            }
+
+            var constructorParams = constructors[0].GetParameters().Select(p => p.ParameterType).ToArray();
+            s_jobPredicateInfos[atr.TypeInfo.TypeId] = new JobPredicateInfo
+            {
+                PredicateType = atr.Predicate,
+                ConstructorParameters = constructorParams
+            };
+        }
+
 
         public IJobHandler GetHandler(Guid typeId)
         {
             if (!s_jobHandlerInfos.ContainsKey(typeId)) return null;
-
+            
             var handlerInfo = s_jobHandlerInfos[typeId];
             var parameters = handlerInfo.ConstructorParameters.Select(x =>
             {
@@ -113,11 +149,29 @@ namespace orch.core
                     return this;
                 }
 
-                return Services.GetService(x);
+                return this.TranService.Services.GetService(x);
 
             }).ToArray();
 
             return Activator.CreateInstance(handlerInfo.HandlerType, parameters) as IJobHandler;
+        }
+
+        public IJobPredicate GetPredicate(Guid typeId)
+        {
+            if (!s_jobPredicateInfos.ContainsKey(typeId)) return null;
+            
+            var predicateInfo = s_jobPredicateInfos[typeId];
+            var parameters = predicateInfo.ConstructorParameters.Select(x =>
+            {
+                if (x.IsAssignableFrom(typeof(OJobService)))
+                {
+                    return this;
+                }
+
+                return this.TranService.Services.GetService(x);
+            }).ToArray();
+
+            return Activator.CreateInstance(predicateInfo.PredicateType, parameters) as IJobPredicate;
         }
 
         public static JobTypeInfo? GetTypeIdByType(Type t)
@@ -142,5 +196,7 @@ namespace orch.core
             => s_jobTypesByAssembly.ContainsKey(assemblyName)
                 ? s_jobTypesByAssembly[assemblyName]
                     : throw new ArgumentException($"No types found for assembly {assemblyName}");
+        
+        
     }
 }

@@ -23,8 +23,12 @@ namespace orch.core.ef.System
 
         private DbTransaction? _dbTransaction;
 
-        public EFTransactionDatabase(OTransactionDbContext db, ISystemDatabase systemDatabase) =>
-            (_db, _contexts, _systemDatabase) = (db, new List<ODbContext>(), systemDatabase);
+        public EFTransactionDatabase(OTransactionDbContext db, ISystemDatabase systemDatabase)
+        {
+            _db = db;
+            _contexts = new List<ODbContext>();
+            _systemDatabase = systemDatabase;
+        }
 
         /// <summary>
         /// Adds the specified <paramref name="context"/> to the list of database contexts to be included in the transaction.
@@ -39,7 +43,8 @@ namespace orch.core.ef.System
             {
                 context.Database.UseTransaction(_dbTransaction);
             }
-            _contexts.Add(context);
+            if(!_contexts.Contains(context))
+                _contexts.Add(context);
         }
         public bool InTransaction => _dbTransaction != null;
 
@@ -191,11 +196,7 @@ namespace orch.core.ef.System
         public TransactionSystemInformation? GetCurrentSystemInformation()
         {
             var sysInfo = _db.TransactionSystemInformation.AsNoTracking().FirstOrDefault();
-            if (sysInfo == null)
-            {
-                return null;
-            }
-            return new TransactionSystemInformation(sysInfo);
+            return sysInfo == null ? null : new TransactionSystemInformation(sysInfo);
         }
 
         public long LastTranSeqNo
@@ -211,10 +212,7 @@ namespace orch.core.ef.System
         public long Count
         {
             [OViewFunction("GetTransactionsCount")]
-            get
-            {
-                return _db.Transactions.Count();
-            }
+            get => _db.Transactions.Count();
         }
 
         [OViewFunction("GetTransactionsCountByDataTypeIds")]
@@ -224,6 +222,15 @@ namespace orch.core.ef.System
                 .AsNoTracking()
                 .Where(t => t.Commands.Any(c => c.TranId == t.Id && dataTypeIds.Contains(c.DataTypeID)))
                 .Count();
+        }
+        
+        [OViewFunction("LastSeqNoByDataTypeIds")]
+        public long LastSeqNoByDataTypeIds(List<Guid> dataTypeIds)
+        {
+            return _db.Transactions
+                .AsNoTracking()
+                .Where(t => t.Commands.Any(c => c.TranId == t.Id && dataTypeIds.Contains(c.DataTypeID)))
+                .Max(t => t.SeqNo);
         }
 
         public T? Deserialize<T>(OCommand command)
@@ -878,11 +885,16 @@ namespace orch.core.ef.System
 
         public bool IsPermitted(Guid userId, string permissionKey)
         {
+            if (userId == Guid.Empty)
+                throw new ArgumentException("User ID cannot be empty");
+            
             var permission = _db.Permissions.Where(permission => permission.PermissionKey == permissionKey).FirstOrDefault();
             if (permission == null)
-            {
-                throw new InvalidOperationException($"Permssion key {permissionKey} not defined");
-            }
+                throw new InvalidOperationException($"Permission key {permissionKey} not defined");
+
+            if (userId == GetRootUser()?.Id)
+                return true;
+            
             return _db.UserRoles
                 .Where(userRole => userRole.UserId == userId) //select the roles of the user
                 .Join(_db.PermissionRoles, a => a.RoleId, b => b.RoleId, (a, b) => b) //join with permssion roles table
@@ -950,6 +962,12 @@ namespace orch.core.ef.System
                 throw new InvalidOperationException($"Permission key(s) {string.Join(", ", notFoundKeys)} not found");
             }
 
+            if (GetRootUser() is { } rootUser && rootUser.Id == userId)
+            {
+                notGrantedPermissions = Array.Empty<string>();
+                return true;
+            }
+
             var userPermissionIds = _db.UserRoles
                 .Where(x => x.UserId == userId) // select the roles of the user
                 .Join(_db.PermissionRoles, a => a.RoleId, b => b.RoleId, (a, b) => b) // join with permission roles table
@@ -971,7 +989,7 @@ namespace orch.core.ef.System
             return isPermitted;
         }
 
-
+        [OViewFunction("IsPermittedAny")]
         public bool IsPermittedAny(Guid userId, params string[] permissionKeys)
         {
             var permissions = _db.Permissions.Where(x => permissionKeys.Contains(x.PermissionKey)).ToList();
@@ -981,6 +999,11 @@ namespace orch.core.ef.System
                 throw new InvalidOperationException($"Permission key(s) {string.Join(", ", notFoundKeys)} not found");
             }
 
+            if (GetRootUser() is { } rootUser && rootUser.Id == userId)
+            {
+                return true;
+            }
+            
             var userPermissionIds = _db.UserRoles
                 .Where(x => x.UserId == userId) // select the roles of the user
                 .Join(_db.PermissionRoles, a => a.RoleId, b => b.RoleId, (a, b) => b) // join with permission roles table
@@ -1004,10 +1027,11 @@ namespace orch.core.ef.System
         public SerialType? GetSerialType(Guid id)
         {
             return _db.SerialTypes
-                  .Where(serialType => serialType.Id == id)
-                  .AsEnumerable()
-                  .Select(serialType => new SerialType(serialType))
-                  .FirstOrDefault();
+                .AsNoTracking()
+                .Where(serialType => serialType.Id == id)
+                .AsEnumerable()
+                .Select(serialType => new SerialType(serialType))
+                .FirstOrDefault();
         }
 
         public void CreateSerialType(OCommand command, SerialType type)
@@ -1018,6 +1042,18 @@ namespace orch.core.ef.System
             }
             type.SetCreate<ChangeProps>(command);
             _db.SerialTypes.Add(new DALSerialType(type));
+            _db.SaveChanges();
+        }
+        
+        public void UpdateSerialType(OCommand command, SerialType type)
+        {
+            var existing = _db.SerialTypes.AsNoTracking().FirstOrDefault(x => x.Id == type.Id) 
+                           ?? throw new ArgumentException($"Serial type with ID {type.Id} not found");
+            
+            existing.AuthorizationLevel = type.AuthorizationLevel;
+            
+            existing.SetUpdate<ChangeProps>(command);
+            _db.SerialTypes.Update(existing);
             _db.SaveChanges();
         }
 
@@ -1053,6 +1089,35 @@ namespace orch.core.ef.System
             _db.SaveChanges();
         }
 
+        public void DeleteLastSerialNo(OCommand command, Guid batchId)
+        {
+            var batch = _db.SerialBatches.FirstOrDefault(b => b.Id == batchId);
+            if (batch == null)
+            {
+                throw new InvalidOperationException($"Serial batch with ID '{batchId}' does not exist.");
+            }
+
+            if (batch.MaxUsed < batch.FromSerialNo)
+            {
+                throw new InvalidOperationException("No serial numbers have been used from this batch yet.");
+            }
+
+            var lastSerial = _db.UsedSerials
+                .Where(us => us.BatchId == batchId && us.Sn == batch.MaxUsed)
+                .SingleOrDefault();
+
+            if (lastSerial == null)
+            {
+                throw new InvalidOperationException("The last serial number could not be found.");
+            }
+
+            batch.MaxUsed--;
+            _db.UsedSerials.Remove(lastSerial);
+
+            _db.SaveChanges();
+        }
+
+
         [OViewFunction]
         public SerialBatch? GetSerialBatchBySerialType(Guid SerialTypeId)
         {
@@ -1067,6 +1132,23 @@ namespace orch.core.ef.System
         {
             return _db.UsedSerials
                 .Where(serialNo => serialNo.BatchId == batchId)
+                .Select(serialNo => new SerialNo(serialNo))
+                .FirstOrDefault();
+        }
+
+        public SerialNo? GetLastSerialNo(Guid batchId)
+        {
+            if (!_db.SerialBatches
+                    .AsNoTracking()
+                    .Any(x => x.Id == batchId))
+            {
+                throw new InvalidOperationException($"Serial batch with ID '{batchId}' does not exist.");
+            }
+
+            return _db.UsedSerials
+                .AsNoTracking()
+                .Where(serialNo => serialNo.BatchId == batchId)
+                .OrderByDescending(serialNo => serialNo.Sn)
                 .Select(serialNo => new SerialNo(serialNo))
                 .FirstOrDefault();
         }
@@ -1151,10 +1233,11 @@ namespace orch.core.ef.System
         [OViewFunction]
         public SerialBatch? GetSerialBatch(Guid batchId)
         {
-            return _db.SerialBatches.Where(serialBatch => serialBatch.Id == batchId)
-                       .AsEnumerable()
-                       .Select(serialBatch => new SerialBatch(serialBatch))
-                       .FirstOrDefault();
+            return _db.SerialBatches
+                .AsNoTracking()
+                .Where(serialBatch => serialBatch.Id == batchId)      .AsEnumerable()
+                .Select(serialBatch => new SerialBatch(serialBatch))
+                .FirstOrDefault();
         }
 
         public void UpdateRole(OCommand command, Role existing)
@@ -1288,6 +1371,16 @@ namespace orch.core.ef.System
             return _db.Commands.Where(command => command.TranId == transaction.Id && command.SeqNo == 1)
                      .Select(commad => new OCommand(commad))
                      .FirstOrDefault();
+        }
+
+        [OViewFunction]
+        public OJob? GetJob(string jobId)
+        {
+            return _db.Jobs
+                .AsNoTracking()
+                .Where(job => job.Id == jobId)
+                .Select(job => new OJob(job))
+                .FirstOrDefault();
         }
 
         public void ChangePassword(OCommand command, Guid userId, byte[] passwordHash)

@@ -43,15 +43,18 @@ namespace orch.core.command
 
         protected override void Authorize()
         {
-            var isRootUserBeingUpdated = _services.TranService.IsRootUser(_commandData.UserInfo.Id);
-            var isRootUserRequesting = _services.TranService.IsRootUser((Guid)_commandInfo.UserId);
-
-            if (isRootUserBeingUpdated && !isRootUserRequesting)
-            {
-                throw new UnauthorizedAccessException("Only a root user can update another root user.");
-            }
-
-            OCommon.AssertRootUser(_services.TranDb, this._commandInfo.UserId, false);
+            if (_commandInfo.UserId is not {} userId)
+                throw new UnauthorizedAccessException("You are not authorized to update user information.");
+            
+            var rootUser = _services.TranDb.GetRootUser()
+                ?? throw new InvalidOperationException("Root user not found, system has not been initialized.");
+            
+            var targetIsRoot = _services.TranService.IsRootUser(_commandData.UserInfo.Id);
+            if (targetIsRoot && rootUser.Id != userId)
+                throw new UnauthorizedAccessException("You are not authorized to update root user information.");
+             
+            if (userId != rootUser.Id && !_services.TranDb.IsPermitted(_commandInfo.UserId.Value, CoreModule.PERMISSION_CREATE_USER))
+                throw new UnauthorizedAccessException("You are not authorized to update user information.");
         }
 
         public override void Preprocess()

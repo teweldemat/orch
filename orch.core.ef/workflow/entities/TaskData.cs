@@ -1,6 +1,6 @@
 ﻿namespace orch.ef.workflow.entities
 {
-    internal class DALTaskData
+    public class DALTaskData
     {
         public Guid TaskId { get; set; }
         public String? Data { get; set; }

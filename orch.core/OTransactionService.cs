@@ -148,7 +148,7 @@ namespace orch.core
 
                     if (sysInfo.SystemId != tran.SystemID)
                         throw new InvalidOperationException(
-                            $"Transaction system id {command.SystemID} doesn't match the current system id {sysInfo.SystemId}");
+                            $"The System ID of the transaction does not match the current system ID.");
 
                     tran.PrevId = sysInfo.HeadTranId;
                 }
