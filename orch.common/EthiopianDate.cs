@@ -246,7 +246,24 @@ namespace orch.common
             }
             return "";
         }
-        
+
+        public static string ToEtTimeString(long time)
+        {
+            var dateTime = Helpers.LongToTime(time);
+            var hour = dateTime.Hour;
+            var minute = dateTime.Minute;
+            var second = dateTime.Second;
+
+            // Convert the hour from the standard 24-hour format to Ethiopian time
+            string period = hour >= 6 && hour < 18 ? "AM" : "PM"; // Determine AM/PM period
+            hour = (hour + 6) % 12;
+            hour = hour == 0 ? 12 : hour; // Adjust 0 to 12 for Ethiopian time
+
+            // Format the time as a string in the format "hh:mm:ss AM/PM"
+            return $"{hour:D2}:{minute:D2}";
+        }
+
+
         public override string ToString()
         {
             return (this.Day.ToString("00") + "/" + this.Month.ToString("00") + "/" + this.Year.ToString("0000"));
