@@ -27,6 +27,14 @@ namespace orch.ef.workflow
             _dbContext = dbContext;
             _tranDb = tranDb;
         }
+        
+        public void DetachEntities()
+        {
+            foreach (var entry in _dbContext.ChangeTracker.Entries())
+            {
+                entry.State = EntityState.Detached;
+            }
+        }
 
         public void AssignFollowers(OCommand command, Guid taskId, IList<Guid> userId)
         {
@@ -371,7 +379,7 @@ namespace orch.ef.workflow
             _dbContext.Entry(dalTask).State = EntityState.Detached;
         }
 
-        private Guid? InsertNote(OCommand command, Guid taskId, TaskNote note)
+        private Guid? InsertNote(OCommand command, Guid taskId, TaskNote? note)
         {
             if (note != null)
             {
@@ -379,7 +387,7 @@ namespace orch.ef.workflow
                 note.TaskId = taskId;
                 note.CommandId = command.Id;
                 _dbContext.TaskNotes.Add(new DALTaskNote(note));
-                int seqNo = 1;
+                var seqNo = 1;
                 if (note.Files != null)
                 {
                     foreach (var f in note.Files)
@@ -391,6 +399,7 @@ namespace orch.ef.workflow
                                 FileId = f,
                                 RefText = $"Task attachment"
                             }.SetCreate<ContentReference>(command));
+                        
                         var c = new DALTaskNoteContentItem
                         {
                             NoteId = note.Id,
@@ -488,18 +497,18 @@ namespace orch.ef.workflow
         {
             UpdateTaskData(command, taskId, taskData, note, null);
         }
-        public void UpdateTaskData<T>(OCommand command, Guid taskId, T taskData, TaskNote note, OTaskStatus? newState) where T : WfStateData
+        public void UpdateTaskData<T>(OCommand command, Guid taskId, T? taskData, TaskNote note, OTaskStatus? newState) where T : WfStateData
         {
             assertCommand(command);
 
-            var task = _dbContext.TaskData.Where(x => x.TaskId == taskId).FirstOrDefault();
-            if (task == null)
-                throw new InvalidOperationException($"Task data {taskId} not found");
-            if (taskData == null)
-                task.Data = null;
-            else
-                task.Data = Newtonsoft.Json.JsonConvert.SerializeObject(taskData);
-            var t = _dbContext.Tasks.AsNoTracking().FirstOrDefault(x => x.Id == taskId);
+            var task = _dbContext.TaskData.FirstOrDefault(x => x.TaskId == taskId) 
+                       ?? throw new InvalidOperationException($"Task data '{taskId}' not found");
+            
+            task.Data = taskData == null ? null : Newtonsoft.Json.JsonConvert.SerializeObject(taskData);
+            
+            var t = _dbContext.Tasks.AsNoTracking().FirstOrDefault(x => x.Id == taskId)
+                    ?? throw new InvalidOperationException($"Task '{taskId}' not found");
+            
             var oldStatus = t.Status;
             if (newState != null)
             {
@@ -520,7 +529,7 @@ namespace orch.ef.workflow
                 MainCommand = command.MainCommand,
                 NoteId = noteId,
                 OldStatus = oldStatus,
-                NewStatus = newState == null ? t.Status : newState.Value,
+                NewStatus = newState ?? t.Status,
             });
 
             _dbContext.SaveChanges();

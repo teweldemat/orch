@@ -6,7 +6,9 @@ using orch.wf.model.dto;
 namespace orch.wf
 {
     public interface IWfDatabase : IDisposable
-    {
+    {        
+        void DetachEntities();
+
         IList<OTask> GetUserTasks(Guid userId, List<OTaskStatus>? filterStatuses = null);
 
         PagedList<OTask> GetUserTasksPaged(
