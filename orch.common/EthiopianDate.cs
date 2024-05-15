@@ -243,19 +243,18 @@ namespace orch.common
             return "";
         }
 
-        public static string ToTimeString(long time)
+        public static string ToEtTimeString(long time)
         {
             var dateTime = Helpers.LongToTime(time);
-            var hours = dateTime.Hour;
-            var minutes = dateTime.Minute;
-            if (hours < 12)
-            {
-                return $"{hours - 6}:{minutes:D2} ";
-            }
-
-            return $"{hours - 6}:{minutes:D2} ";
+            var hour = dateTime.Hour;
+            var minute = dateTime.Minute;
+            
+            hour = (hour + 6) % 12;
+            hour = hour == 0 ? 12 : hour;
+            
+            return $"{hour:D2}:{minute:D2}";
         }
-
+        
         public override string ToString()
         {
             return (this.Day.ToString("00") + "/" + this.Month.ToString("00") + "/" + this.Year.ToString("0000"));
