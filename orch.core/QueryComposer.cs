@@ -222,7 +222,7 @@ namespace orch.core
             _funcs = funcs;
         }
 
-        public override bool ContainsKey(string key)
+        public override bool IsDefined(string key)
         {
             return _funcs.ContainsKey(key);
         }
@@ -244,6 +244,8 @@ namespace orch.core
             _callers[key] = ret;
             return ret;
         }
+
+        public override IFsDataProvider ParentProvider => null;
 
         private void Authorize(ViewFunction vf)
         {
@@ -269,6 +271,7 @@ namespace orch.core
         private readonly Guid _userId;
         private readonly object _pars;
         private readonly Dictionary<string, ServiceFunctionCollection> _services;
+        private DefaultFsDataProvider g = new DefaultFsDataProvider();
 
         public ViewQueryProvider(OTransactionService tranService, Guid userId, object pars)
         {
@@ -278,10 +281,9 @@ namespace orch.core
             _pars = pars;
         }
 
-        private DefaultFsDataProvider g = new DefaultFsDataProvider();
 
 
-        public object GetData(string name)
+        public object Get(string name)
         {
             //check from loaded services
             if (_services.TryGetValue(name, out var sc))
@@ -297,7 +299,23 @@ namespace orch.core
 
             if ("pars".Equals(name))
                 return _pars;
-            return g.GetData(name);
+            return g.Get(name);
+        }
+
+        public IFsDataProvider ParentProvider => g;
+        public bool IsDefined(string name)
+        {
+            if (_services.ContainsKey(name))
+                return true;
+
+            var col = QueryComposer.GetViewFunctionCollection(name);
+            if (col != null)
+            {
+                return true;
+            }
+            if ("pars".Equals(name))
+                return true;
+            return g.IsDefined(name);
         }
     }
 
