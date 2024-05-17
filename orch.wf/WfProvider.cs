@@ -1,4 +1,5 @@
 ﻿using funcscript;
+using funcscript.core;
 using orch.core;
 using orch.core.model;
 using orch.wf.model;
@@ -42,12 +43,15 @@ namespace orch.wf
                         default:
                             break;
                     }
-                    return _viewProvider.GetData(name);
+                    return _viewProvider.Get(name);
                 });
         }
-        public object GetData(string name)
+        public object Get(string name)
         {
             return _cache[name];
         }
+
+        public IFsDataProvider ParentProvider => null;
+        public bool IsDefined(string key) => true;
     }
 }
