@@ -4,6 +4,7 @@ namespace orch.core
 {
     public static class CoreModule
     {
+        public const string PERMISSION_GET_SERIALS = "GET_SERIALS";
         public const string PERMISSION_MANAGE_SERIALS = "MANAGE_SERIALS";
         public const string PERMISSION_GET_ROLES = "GET_ROLES";
         public const string PERMISSION_GET_USER = "GET_USER";

@@ -1163,7 +1163,7 @@ namespace orch.core.ef.System
                 .ToList();
         }
 
-        [OViewFunction]
+        [OViewFunction(permissions: new []{ CoreModule.PERMISSION_GET_SERIALS })]
         public List<SerialType> GetSerialTypes()
         {
             return _db
