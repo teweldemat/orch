@@ -58,7 +58,7 @@ namespace orch.core
                 return null;
             }
 
-            foreach (var extension in new[] { ".dll", ".exe" })
+            foreach (var extension in new[] { ".dll", ".exe", ".so" })
             {
                 var path = Path.Combine(basePath, assemblyName.Name + extension);
                 if (File.Exists(path))
