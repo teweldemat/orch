@@ -76,6 +76,7 @@ namespace orch.wf
         IList<TaskHistoryWithData> GetTaskHistoryWithData(Guid taskId);
 
         TaskHistory GetLastTaskChange(Guid taskId);
+        TaskNote? GetTaskNote(Guid noteId);
 
         void MonitorTask(OCommand command, Guid monitorTaskId, Guid monitoredTaskId);
 
