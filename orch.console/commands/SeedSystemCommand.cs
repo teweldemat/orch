@@ -14,7 +14,7 @@ namespace orch.console.commands
         {
         }
 
-        private bool ExecuteInDirectory(string directory, Func<bool> action)
+        private static bool ExecuteInDirectory(string directory, Func<bool> action)
         {
             var cur = Directory.GetCurrentDirectory();
             Directory.SetCurrentDirectory(directory);
@@ -28,13 +28,13 @@ namespace orch.console.commands
             }
         }
 
-        private class ProcessOptions
+        private sealed class ProcessOptions
         {
             public bool Isolated = false;
             public bool Verbose = false;
             public bool IgnoreCount = false;
             public int SkipCommands = 0;
-
+            public bool Atomic = false;
         }
 
         private OTransactionService currentService;
@@ -52,17 +52,29 @@ namespace orch.console.commands
             return c.FileId;
         }
 
-        private bool ProcessFile(OTransactionService service, string fileName, ProcessOptions options, KeyValueCollection vars,
-                out KeyValueCollection outvars, int nPrevCommands, out int nCommands)
+        private bool ProcessFile(
+            OTransactionService service,
+            string fileName,
+            ProcessOptions options,
+            KeyValueCollection vars,
+            out KeyValueCollection outvars,
+            int nPrevCommands,
+            out int nCommands)
         {
             outvars = null;
             nCommands = nPrevCommands;
+
+            var tranDb = service.Services.GetRequiredService<ITransactionDatabase>();
+
             try
             {
-                var tranDb = service.Services.GetService<ITransactionDatabase>();
+                if (options.Atomic)
+                {
+                    tranDb.BeginTransaction();
+                }
 
                 var rootUser = tranDb.GetRootUser();
-                var systemInfo = tranDb.GetCurrentSystemInformation();
+
                 var p = new KvcProvider(new ObjectKvc(new
                 {
                     attach = new Func<string, Guid?>(GetAttachment),
@@ -77,6 +89,7 @@ namespace orch.console.commands
                     _host.StdOut.WriteLine($"Couldn't find file {mainFile}");
                     return false;
                 }
+
                 var mainFileContent = File.ReadAllText(mainFile);
                 KeyValueCollection seedData = null;
 
@@ -102,8 +115,10 @@ namespace orch.console.commands
                 {
                     var from = seedData.Get("from");
                     IList<string> baseFiles = null;
+
                     if (from is string @string)
                         baseFiles = new string[] { @string };
+
                     if (from is FsList list)
                     {
                         baseFiles = list
@@ -121,6 +136,7 @@ namespace orch.console.commands
                                 var ret = ProcessFile(service, Path.Combine(fi.Directory.FullName, baseFile), options, thisVar, out thisVar, nc, out nc);
                                 return ret;
                             });
+
                             if (!execRes)
                                 return false;
                         }
@@ -136,6 +152,7 @@ namespace orch.console.commands
                         vars = thisVar,
                         sql = new SqlFunction(),
                     }), p);
+
                 if (!File.Exists(commandFile))
                 {
                     _host.StdOut.WriteLine($"No command file {commandFile}. Skipping");
@@ -162,6 +179,7 @@ namespace orch.console.commands
                 if (!res)
                     return false;
                 var index = nCommands;
+
                 foreach (KeyValueCollection c in commands)
                 {
                     if (c == null)
@@ -177,7 +195,7 @@ namespace orch.console.commands
                         return false;
                     }
                     var userInfo = tranDb.GetUserInfo(user);
-                    systemInfo = tranDb.GetCurrentSystemInformation();
+                    var systemInfo = tranDb.GetCurrentSystemInformation();
 
                     _host.StdOut.Write($"{index}: {commandType}...");
                     if ((options.Isolated || systemInfo == null || options.IgnoreCount || index > tranDb.Count) && index > options.SkipCommands)
@@ -208,10 +226,21 @@ namespace orch.console.commands
                 }
                 outvars = thisVar;
                 nCommands = index;
+
+                if (options.Atomic)
+                {
+                    tranDb.CommitTransaction();
+                }
+
                 return true;
             }
             catch (Exception ex)
             {
+                if (options.Atomic)
+                {
+                    tranDb.RollbackTransaction();
+                }
+
                 while (ex != null)
                 {
                     _host.StdOut.WriteLine(ex.Message);
@@ -264,7 +293,11 @@ namespace orch.console.commands
                                 options.SkipCommands = skip;
                                 i++; // Skip the next argument since we've processed it
                             }
-                            continue;
+                            break;
+
+                        case "--atomic":
+                            options.Atomic = true;
+                            break;
                     }
 
                 currentService = service;

@@ -71,6 +71,8 @@
         public static readonly string USER_NAME_ROOT = "root";
         public static readonly string USER_NAME_SYSTEM = "system";
 
+        public static readonly string PASSWORD_PATTERN = @"^[^\s]{8,}$";
+
         public Guid Id { get; set; }
         public long Time { get; set; }
         public string UserName { get; set; }

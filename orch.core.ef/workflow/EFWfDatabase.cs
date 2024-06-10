@@ -273,26 +273,19 @@ namespace orch.ef.workflow
                 || EF.Functions.ILike(x.Task.Description, $"%{query}%"));
             }
 
-            switch (sortBy)
+            queryable = sortBy switch
             {
-                case TaskSortFields.Reference:
-                    queryable = sortOrder == SortOrder.Asc
-                        ? queryable.OrderBy(x => x.Task.Reference)
-                        : queryable.OrderByDescending(x => x.Task.Reference);
-                    break;
-                case TaskSortFields.CreateTime:
-                    queryable = sortOrder == SortOrder.Asc
-                        ? queryable.OrderBy(x => x.Task.CreateTime)
-                        : queryable.OrderByDescending(x => x.Task.CreateTime);
-                    break;
-                case TaskSortFields.UpdateTime:
-                    queryable = sortOrder == SortOrder.Asc
-                        ? queryable.OrderBy(x => x.Task.UpdateTime)
-                        : queryable.OrderByDescending(x => x.Task.UpdateTime);
-                    break;
-            }
-
-
+                TaskSortFields.Reference => sortOrder == SortOrder.Asc
+                    ? queryable.OrderBy(x => x.Task.Reference)
+                    : queryable.OrderByDescending(x => x.Task.Reference),
+                TaskSortFields.CreateTime => sortOrder == SortOrder.Asc
+                    ? queryable.OrderBy(x => x.Task.CreateTime)
+                    : queryable.OrderByDescending(x => x.Task.CreateTime),
+                TaskSortFields.UpdateTime => sortOrder == SortOrder.Asc
+                    ? queryable.OrderBy(x => x.Task.UpdateTime)
+                    : queryable.OrderByDescending(x => x.Task.UpdateTime),
+                _ => queryable
+            };
 
             return new PagedList<OTask>
             {
@@ -457,10 +450,9 @@ namespace orch.ef.workflow
         public TaskStatePair<T>? GetTaskStatePair<T>(Guid taskId) where T : WfStateData
         {
             var task = _dbContext.Tasks
-                                    .AsNoTracking()
-                                    .Include(t => t.Data)
-                                    .Where(t => t.Id == taskId)
-                                    .FirstOrDefault();
+                .AsNoTracking()
+                .Include(t => t.Data)
+                .FirstOrDefault(t => t.Id == taskId);
 
             if (task == null) return null;
 
@@ -538,7 +530,7 @@ namespace orch.ef.workflow
         [OViewFunction]
         public object? GetTaskDataByCommandId(Guid commandId)
         {
-            var task = _dbContext.Tasks.AsNoTracking().Where(x => x.CreateCommandId == commandId).FirstOrDefault();
+            var task = _dbContext.Tasks.AsNoTracking().FirstOrDefault(x => x.CreateCommandId == commandId);
             if (task == null)
                 return null;
             var taskInfo = WfModule.GetWfTypeInfo(task.TaskTypeId);
@@ -547,7 +539,7 @@ namespace orch.ef.workflow
         [OViewFunction]
         public object? GetTaskData(Guid taskId)
         {
-            var task = _dbContext.Tasks.AsNoTracking().Where(x => x.Id == taskId).FirstOrDefault();
+            var task = _dbContext.Tasks.AsNoTracking().FirstOrDefault(x => x.Id == taskId);
             if (task == null)
                 return null;
             var taskInfo = WfModule.GetWfTypeInfo(task.TaskTypeId);
@@ -557,26 +549,22 @@ namespace orch.ef.workflow
         [OViewFunction]
         public object? GetTaskDataByRef(String reference)
         {
-            var task = _dbContext.Tasks.AsNoTracking().Where(x => x.Reference == reference).FirstOrDefault();
+            var task = _dbContext.Tasks.AsNoTracking().FirstOrDefault(x => x.Reference == reference);
             if (task == null)
                 return null;
             var taskInfo = WfModule.GetWfTypeInfo(task.TaskTypeId);
             return GetTaskData(taskInfo.Type, task.Id);
         }
-        public T GetTaskDataByCommandId<T>(Guid commandId) where T : WfStateData
+        public T? GetTaskDataByCommandId<T>(Guid commandId) where T : WfStateData
         {
-            var task = _dbContext.Tasks.AsNoTracking().Where(x => x.CreateCommandId == commandId).FirstOrDefault();
-            if (task == null)
-                return null;
-            return GetTaskData<T>(task.Id);
+            var task = _dbContext.Tasks.AsNoTracking().FirstOrDefault(x => x.CreateCommandId == commandId);
+            return task == null ? null : GetTaskData<T>(task.Id);
         }
 
         public T? GetTaskDataByRef<T>(string reference) where T : WfStateData
         {
-            var task = _dbContext.Tasks.AsNoTracking().Where(x => x.Reference == reference).FirstOrDefault();
-            if (task == null)
-                return null;
-            return GetTaskData<T>(task.Id);
+            var task = _dbContext.Tasks.AsNoTracking().FirstOrDefault(x => x.Reference == reference);
+            return task == null ? null : GetTaskData<T>(task.Id);
         }
 
         public PagedList<T> GetOpenTasks<T>(Guid taskTypeId, int index, int count) where T : WfStateData
@@ -756,11 +744,26 @@ namespace orch.ef.workflow
             return hist;
         }
 
-        public TaskHistory GetLastTaskChange(Guid taskId)
+        [OViewFunction]
+        public TaskHistory? GetLastTaskChange(Guid taskId)
         {
-            return _dbContext.TaskHistory.AsNoTracking().Where(x => x.TaskId == taskId).OrderByDescending(x => x.CommandSeqNo).Take(1)
-                    .Select(x => new TaskHistory(x))
-                    .FirstOrDefault();
+            return _dbContext.TaskHistory
+                .AsNoTracking()
+                .Where(x => x.TaskId == taskId)
+                .OrderByDescending(x => x.CommandSeqNo)
+                .Take(1)
+                .Select(x => new TaskHistory(x))
+                .FirstOrDefault();
+        }
+        
+        [OViewFunction]
+        public TaskNote? GetTaskNote(Guid noteId)
+        {
+            return _dbContext.TaskNotes
+                .AsNoTracking()
+                .Where(x => x.Id == noteId)
+                .Select(x => new TaskNote(x))
+                .FirstOrDefault();
         }
 
         public void MonitorTask(OCommand command, Guid monitorTaskId, Guid monitoredTaskId)
