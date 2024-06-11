@@ -51,11 +51,11 @@ namespace orch.core.command
         public override void Preprocess()
         {
             if (_commandInfo.UserId is not { } userId ||
-                _services.TranDb.GetUserInfo(_commandInfo.UserId.Value, includePassword: true) is not { } userInfo)
+                _services.TranDb.GetUserInfo(userId, includePassword: true) is not { } userInfo)
                 throw new UnauthorizedAccessException("You are not authorized to change passwords");
 
             if (!userInfo.PasswordHash.SequenceEqual(OSystemService.HashPassword(_commandData.OldPassword)))
-                throw new UnauthorizedAccessException("Old password does not match.");
+                throw new ArgumentException("Old password does not match.");
 
             if (_commandData.OldPassword == _commandData.NewPassword)
                 throw new ArgumentException("Old and new passwords are the same.");
@@ -73,7 +73,8 @@ namespace orch.core.command
         {
             _services.TranDb.ChangePassword(
                 _commandInfo,
-                _commandInfo.UserId.Value!,
+                // ReSharper disable once PossibleInvalidOperationException
+                _commandInfo.UserId.Value,
                 OSystemService.HashPassword(_commandData.NewPassword));
         }
     }
