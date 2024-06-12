@@ -4,7 +4,8 @@ namespace orch.core
 {
     public interface ISystemService : IDisposable
     {
-        Guid CreateAccessToken(string userName, string password, string clientInfo, int? maxTokens = null);
+        Guid CreateAccessToken(
+            string userName, string password, string clientInfo, int? maxTokens = null, long? expiryTime = null);
         AccessToken PingAccessToken(Guid? access_token);
         void DeleteAccessToken(params Guid[] accessTokens);
         AccessToken GetAccessTokenInfo(Guid accessToken);
@@ -33,7 +34,8 @@ namespace orch.core
             this.tranDb = command;
         }
 
-        public Guid CreateAccessToken(string userName, string password, string clientInfo, int? maxTokens = null)
+        public Guid CreateAccessToken(
+            string userName, string password,  string clientInfo,  int? maxTokens = null, long? expiryTime = null)
         {
             if (maxTokens < 0)
                 throw new ArgumentException($"{nameof(maxTokens)} cannot be less than 0");
@@ -41,6 +43,9 @@ namespace orch.core
             var now = host.CurrentTime();
             var user = tranDb.GetUserInfo(userName, true);
             var rootUser = tranDb.GetRootUser();
+            
+            if (rootUser == null)
+                throw new InvalidOperationException("Root user doesn't exist, has the system been initialized?");
 
             if (user == null)
                 throw new InvalidOperationException($"User {userName} doesn't exist");
@@ -49,17 +54,22 @@ namespace orch.core
                 throw new InvalidOperationException($"User {userName} is disabled");
 
             var hash = HashPassword(password);
-            if (!Enumerable.SequenceEqual(user.PasswordHash, hash))
+            if (!user.PasswordHash.SequenceEqual(hash))
                 throw new InvalidOperationException($"Invalid password");
 
-            if (maxTokens.HasValue && maxTokens > 0 && user.Id != rootUser.Id)
+            if (maxTokens is > 0 && user.Id != rootUser.Id)
             {
                 var tokens = sysDb.GetTokensByUserId(user.Id);
-                int excessTokens = tokens.Count - maxTokens.Value + 1;
+                var excessTokens = tokens.Count - maxTokens.Value + 1;
 
                 if (excessTokens > 0)
                 {
-                    var tokensToDelete = tokens.OrderBy(t => t.CreatedTime).Take(excessTokens).Select(t => t.Token).ToArray();
+                    var tokensToDelete = tokens
+                        .OrderBy(t => t.CreatedTime)
+                        .Take(excessTokens)
+                        .Select(t => t.Token)
+                        .ToArray();
+                    
                     sysDb.DeleteAccessToken(tokensToDelete);
                 }
             }
@@ -67,7 +77,7 @@ namespace orch.core
             var accessToken = new AccessToken()
             {
                 CreatedTime = now,
-                ExpiryTime = null,
+                ExpiryTime = expiryTime,
                 LastUsed = now,
                 Token = host.NextGuid(),
                 UserId = user.Id

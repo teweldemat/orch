@@ -59,10 +59,9 @@ namespace orch.core.swagger
             var sysService = scope.ServiceProvider.GetRequiredService<OSystemService>();
             var host = scope.ServiceProvider.GetRequiredService<IOHost>();
 
-            if (context.Session.TryGetValue(username, out byte[]? sessionTokenBytes) && Guid.TryParse(Encoding.UTF8.GetString(sessionTokenBytes), out Guid existingToken))
+            if (context.Session.TryGetValue(username, out var sessionTokenBytes) && Guid.TryParse(Encoding.UTF8.GetString(sessionTokenBytes), out Guid existingToken))
             {
-                var tokenProps = sysService.PingAccessToken(existingToken);
-                if (tokenProps == null || tokenProps.ExpiryTime == null || Helpers.LongToTime((long)tokenProps.ExpiryTime) < Helpers.LongToTime(host.CurrentTime()))
+                if (sysService.PingAccessToken(existingToken) is { ExpiryTime: not null } existingAccessToken && Helpers.LongToTime((long)existingAccessToken.ExpiryTime) <= Helpers.LongToTime(host.CurrentTime()))
                 {
                     TryDeleteAccessToken(sysService, existingToken);
                     return CreateSessionToken(context, sysService, username, password);
@@ -73,7 +72,7 @@ namespace orch.core.swagger
             return CreateSessionToken(context, sysService, username, password);
         }
 
-        private void TryDeleteAccessToken(OSystemService sysService, Guid existingToken)
+        private void TryDeleteAccessToken(ISystemService sysService, Guid existingToken)
         {
             try
             {
@@ -85,9 +84,9 @@ namespace orch.core.swagger
             }
         }
 
-        private static Guid CreateSessionToken(HttpContext context, OSystemService sysService, string username, string password)
+        private static Guid CreateSessionToken(HttpContext context, ISystemService sysService, string username, string password)
         {
-            Guid newToken = sysService.CreateAccessToken(username, password, "SwaggerUI");
+            var newToken = sysService.CreateAccessToken(username, password, "SwaggerUI");
             context.Session.Set(username, newToken.ToByteArray());
             return newToken;
         }
@@ -95,7 +94,7 @@ namespace orch.core.swagger
         private void ModifyRequestHeadersAndQueryString(HttpContext context, Guid token)
         {
             context.Request.Headers[token_key] = token.ToString();
-            string queryString = context.Request.QueryString.ToString();
+            var queryString = context.Request.QueryString.ToString();
 
             if (string.IsNullOrEmpty(queryString))
             {
