@@ -50,6 +50,7 @@ public abstract class RecurringJobBase
     }
 
     protected void AddEventLog(
+        PerformContext? context,
         EventLogProps.LogLevel level,
         string message,
         string reference = null,
@@ -65,7 +66,8 @@ public abstract class RecurringJobBase
                     Level = level,
                     Message = message,
                     Reference = reference,
-                    Data = Newtonsoft.Json.JsonConvert.SerializeObject(data)
+                    Data = Newtonsoft.Json.JsonConvert.SerializeObject(data),
+                    JobId = context?.BackgroundJob.Id
                 }
             },
             out _);
