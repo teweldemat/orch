@@ -136,14 +136,6 @@ namespace orch.core
             }
         }
 
-        [AutomaticRetry(Attempts = 0)]
-        [DisableConcurrentExecution(60)]
-        public Task ExecuteRecurringJob(
-            PerformContext context, OJob job, object data, CancellationToken cancellationToken)
-        {
-            return ExecuteJob(context, job, data, cancellationToken);
-        }
-
         public bool CancelJob(Guid userId, string jobId)
         {
             Guid typeId;
@@ -192,43 +184,6 @@ namespace orch.core
                     var notGrantedPermissionsStr = string.Join(", ", notGrantedPermissions);
                     throw new UnauthorizedAccessException($"You are not authorized to initiate or cancel job: '{typeInfo.TypeName}'. Missing permissions: {notGrantedPermissionsStr}");
                 }
-            }
-        }
-        
-        
-
-        public void AddOrUpdateRecurringJobs()
-        {
-            var systemUser = TranDb.GetSystemUser()
-             ?? throw new InvalidOperationException("Unable to retrieve system user information.");
-
-            var sysInfo = TranDb.GetCurrentSystemInformation()
-                ?? throw new InvalidOperationException("Unable to retrieve current system information.");
-
-            foreach (var typeInfo in GetAllJobTypes().Where(jt => jt.ProcessType is JobProcessType.Recurring))
-            {
-                if (GetPredicate(typeInfo.TypeId) is { } predicate)
-                {
-                    if (!predicate.CanRun())
-                    {
-                        RecurringJob.RemoveIfExists(typeInfo.Key);
-                        continue;
-                    }
-
-                }
-                
-                var job = new OJob()
-                {
-                    UserId = systemUser.Id,
-                    SystemID = sysInfo.SystemId,
-                    Time = Host.CurrentTime(),
-                    DataTypeID = typeInfo.TypeId,
-                };
-
-                RecurringJob.AddOrUpdate<OJobService>(
-                    typeInfo.Key,
-                    (service) => service.ExecuteRecurringJob(default, job, null, CancellationToken.None),
-                    typeInfo.Cron);
             }
         }
     }
