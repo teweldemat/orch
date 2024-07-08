@@ -4,7 +4,7 @@ namespace orch.core
 {
     public interface ISystemService : IDisposable
     {
-        Guid CreateAccessToken(
+        AccessToken CreateAccessToken(
             string userName, string password, string clientInfo, int? maxTokens = null, long? expiryTime = null);
         AccessToken PingAccessToken(Guid? access_token);
         void DeleteAccessToken(params Guid[] accessTokens);
@@ -34,13 +34,21 @@ namespace orch.core
             this.tranDb = command;
         }
 
-        public Guid CreateAccessToken(
+        public AccessToken CreateAccessToken(
             string userName, string password,  string clientInfo,  int? maxTokens = null, long? expiryTime = null)
         {
             if (maxTokens < 0)
                 throw new ArgumentException($"{nameof(maxTokens)} cannot be less than 0");
 
             var now = host.CurrentTime();
+            
+            // '0' expiry time means the token never expires
+            if (expiryTime == default(long))
+                expiryTime = null;
+            
+            if (expiryTime <= now)
+                throw new ArgumentException("Access token expiry time must be in the future.");
+            
             var user = tranDb.GetUserInfo(userName, true);
             var rootUser = tranDb.GetRootUser();
             
@@ -84,7 +92,8 @@ namespace orch.core
             };
 
             sysDb.CreateAccessToken(accessToken);
-            return accessToken.Token;
+            
+            return accessToken;
         }
 
         public AccessToken PingAccessToken(Guid? access_token)

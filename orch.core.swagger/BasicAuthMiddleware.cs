@@ -86,7 +86,7 @@ namespace orch.core.swagger
 
         private static Guid CreateSessionToken(HttpContext context, ISystemService sysService, string username, string password)
         {
-            var newToken = sysService.CreateAccessToken(username, password, "SwaggerUI");
+            var newToken = sysService.CreateAccessToken(username, password, "SwaggerUI").Token;
             context.Session.Set(username, newToken.ToByteArray());
             return newToken;
         }
