@@ -13,7 +13,7 @@ namespace orch.common
         {
             return (double)money / 10000;
         }
-        public static long TimeToLong(DateTime time)
+        public static long TimeToLong(this DateTime time)
         {
             //YYYYMMDDHHSSMMM
             return (((((
@@ -41,7 +41,7 @@ namespace orch.common
             //long milliseconds = (long)(time - new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc)).TotalMilliseconds;
             // return milliseconds;
         }
-        public static DateTime LongToTime(long time)
+        public static DateTime LongToTime(this long time)
         {
 
             var ms = time % 1000;
