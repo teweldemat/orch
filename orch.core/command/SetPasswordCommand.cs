@@ -1,4 +1,6 @@
-﻿namespace orch.core.command
+﻿using orch.core.model;
+
+namespace orch.core.command
 {
     [CommandType(
         TYPE_ID,
@@ -25,15 +27,14 @@
         public override void Init()
         {
             if (_commandData.UserId == Guid.Empty)
-            {
-                throw new InvalidOperationException("UserId should not be empty.");
-            }
-
-            _commandData.Password = _commandData.Password.Trim();
-
+                throw new InvalidOperationException("Please specify the Id of the user to change the password for.");
+            
             if (string.IsNullOrEmpty(_commandData.Password))
+                throw new InvalidOperationException("Please specify a new password.");
+            
+            if (!System.Text.RegularExpressions.Regex.IsMatch(_commandData.Password, UserInfoProps.PASSWORD_PATTERN))
             {
-                throw new InvalidOperationException("Password should not be empty.");
+                throw new ArgumentException("New password must be at least 8 characters long and contain no spaces.");
             }
         }
     }
@@ -46,27 +47,48 @@
 
         protected override void Authorize()
         {
-            var rootUser = _services.TranDb.GetRootUser()
-                           ?? throw new InvalidOperationException(
-                               "Root user not found, system has not been initialized.");
-
             if (_commandInfo.UserId is not { } userId)
                 throw new UnauthorizedAccessException("You are not authorized to change passwords");
-
-            var isRoot = _commandInfo.UserId == rootUser.Id;
-
-            if (_commandData.UserId == rootUser.Id && !isRoot)
-                throw new UnauthorizedAccessException("You are not authorized to change the root user's password");
-
-            if (!isRoot && _commandInfo.UserId != _commandData.UserId &&
-                !_services.TranDb.IsPermitted(userId, CoreModule.PERMISSION_CREATE_USER))
-                throw new UnauthorizedAccessException("You are not authorized to change passwords");
+            
+            var rootUser = _services.TranDb.GetRootUser();
+            var systemUser = _services.TranDb.GetSystemUser();
+                
+            if (rootUser == null || systemUser == null)
+                throw new InvalidOperationException("Root and/or system user not found, has the system been bootstrapped?");
+            
+            var targetIsRoot = _commandData.UserId == rootUser.Id;
+            var targetIsSystem = _commandData.UserId == systemUser.Id;
+            
+            var actorIsRoot = _commandInfo.UserId == rootUser.Id;
+            var actorIsSystem = _commandInfo.UserId == systemUser.Id;
+            
+            if (targetIsRoot)
+            {
+                if (!actorIsRoot)
+                    throw new UnauthorizedAccessException("You are not authorized to change the root user's password");
+            }
+            else if (targetIsSystem)
+            {
+                if (!actorIsSystem && !actorIsRoot)
+                    throw new UnauthorizedAccessException("You are not authorized to change the system user's password");
+            }
+            else if (!actorIsRoot && !actorIsSystem)
+            {
+                if (!_services.TranDb.IsPermitted(userId, CoreModule.PERMISSION_CHANGE_PASSWORD))
+                    throw new UnauthorizedAccessException("You are not authorized to change passwords. Missing permission: " + CoreModule.PERMISSION_CHANGE_PASSWORD);
+            }
         }
-
-
+        
+        private string _newPassword;
         public override void Preprocess()
         {
-            _commandData.UserName = _services.TranDb.GetUserInfo(_commandData.UserId).UserName;
+            if (_services.TranDb.GetUserInfo(_commandData.UserId) is not { } targetUser)
+                throw new InvalidOperationException($"User with Id '{_commandData.UserId}' not found.");
+            
+            _commandData.UserName = targetUser.UserName;
+            
+            _newPassword = _commandData.Password;
+            _commandData.Password = default;
         }
 
         public override string Summarize(out bool html)
@@ -77,8 +99,10 @@
 
         protected override void Execute()
         {
-            var passwordHash = OSystemService.HashPassword(_commandData.Password);
+            var passwordHash = OSystemService.HashPassword(_newPassword);
             _services.TranDb.ChangePassword(_commandInfo, _commandData.UserId, passwordHash);
+            
+            _commandData.Password = string.Empty;
         }
     }
 }
