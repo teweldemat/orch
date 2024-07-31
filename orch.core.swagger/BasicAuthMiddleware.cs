@@ -13,7 +13,7 @@ namespace orch.core.swagger
         private readonly RequestDelegate _next;
         private readonly IServiceProvider _serviceProvider;
         private readonly ILogger _logger;
-        private readonly string token_key = "access_token";
+        private const string TokenKey = "access_token";
 
         public BasicAuthMiddleware(RequestDelegate next, IServiceProvider serviceProvider, ILogger<BasicAuthMiddleware> logger)
         {
@@ -28,7 +28,7 @@ namespace orch.core.swagger
 
             if (authHeader != null && authHeader.StartsWith("Basic "))
             {
-                string token = authHeader["Basic ".Length..].Trim();
+                var token = authHeader["Basic ".Length..].Trim();
                 string[] credentials = Encoding.UTF8.GetString(Convert.FromBase64String(token)).Split(':');
                 if (credentials.Length < 2 || string.IsNullOrEmpty(credentials[0]) || string.IsNullOrEmpty(credentials[1]))
                 {
@@ -36,9 +36,9 @@ namespace orch.core.swagger
                     return;
                 }
 
-                string username = credentials[0];
-                string password = credentials[1];
-                Guid existingToken = ManageSessionToken(context, username, password);
+                var username = credentials[0];
+                var password = credentials[1];
+                var existingToken = ManageSessionToken(context, username, password);
                 ModifyRequestHeadersAndQueryString(context, existingToken);
                 context.Response.Cookies.Append("access_token", existingToken.ToString());
             }
@@ -59,7 +59,7 @@ namespace orch.core.swagger
             var sysService = scope.ServiceProvider.GetRequiredService<OSystemService>();
             var host = scope.ServiceProvider.GetRequiredService<IOHost>();
 
-            if (context.Session.TryGetValue(username, out var sessionTokenBytes) && Guid.TryParse(Encoding.UTF8.GetString(sessionTokenBytes), out Guid existingToken))
+            if (context.Session.TryGetValue(username, out var sessionTokenBytes) && Guid.TryParse(Encoding.UTF8.GetString(sessionTokenBytes), out var existingToken))
             {
                 if (sysService.PingAccessToken(existingToken) is { ExpiryTime: not null } existingAccessToken && Helpers.LongToTime((long)existingAccessToken.ExpiryTime) <= Helpers.LongToTime(host.CurrentTime()))
                 {
@@ -93,17 +93,23 @@ namespace orch.core.swagger
 
         private void ModifyRequestHeadersAndQueryString(HttpContext context, Guid token)
         {
-            context.Request.Headers[token_key] = token.ToString();
+            context.Request.Headers[TokenKey] = token.ToString();
             var queryString = context.Request.QueryString.ToString();
+            
+            var tranDb = context.RequestServices.GetRequiredService<ITransactionDatabase>();
+            var systemInformation = tranDb.GetCurrentSystemInformation();
+            
+            if (systemInformation?.SystemId is not { } systemId)
+                throw new InvalidOperationException("System Id not set. Has the system been bootstrapped?");
 
             if (string.IsNullOrEmpty(queryString))
             {
-                queryString = $"?{token_key}={token}&system_id={GUIDLibrary.DEVELOPMENT_SYSTEM_ID}";
+                queryString = $"?{TokenKey}={token}&system_id={systemId}";
             }
             else
             {
-                char prefix = queryString.Contains('?') ? '&' : '?';
-                queryString += $"{prefix}{token_key}={token}&system_id={GUIDLibrary.DEVELOPMENT_SYSTEM_ID}";
+                var prefix = queryString.Contains('?') ? '&' : '?';
+                queryString += $"{prefix}{TokenKey}={token}&system_id={systemId}";
             }
 
             context.Request.QueryString = new QueryString(queryString);
