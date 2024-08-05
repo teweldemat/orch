@@ -144,6 +144,7 @@ namespace orch.core.job
                 {
                     EventLog = new EventLog()
                     {
+                        JobId = _jobInfo.Id,
                         Level = level,
                         Message = message,
                         Reference = reference,
