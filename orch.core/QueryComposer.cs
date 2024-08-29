@@ -92,9 +92,21 @@ namespace orch.core
 
         public object Evaluate(IFsDataProvider parent, IParameterList pars)
         {
-            var serviceObject = _tranService.Services.GetRequiredService(_func.Service);
-            if (serviceObject == null)
-                throw new InvalidOperationException($"Unable to get instance of service {_func.Service}");
+            var serviceType = _func.Service;
+            object serviceObject = null;
+
+            if (serviceType.IsAbstract && serviceType.IsSealed)
+            {
+                serviceObject = serviceType;
+            }
+            else
+            {
+                serviceObject = _tranService.Services.GetRequiredService(serviceType);
+                if (serviceObject == null)
+                {
+                    throw new InvalidOperationException($"Unable to get instance of service {serviceType}");
+                }
+            }
 
             var parVals = new object[_func.Pars.Length];
             var index = 0;

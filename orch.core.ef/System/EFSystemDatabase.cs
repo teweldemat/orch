@@ -26,11 +26,14 @@ namespace orch.core.ef.System
             _dbContext.Dispose();
         }
 
-        private static void AssertActiveAccessToken(Guid tokenId, DALAccessToken? accessToken)
+        private  void AssertActiveAccessToken(Guid tokenId, AccessTokenProps? accessToken)
         {
             if (accessToken == null)
                 throw new InvalidOperationException($"Access token {tokenId} doesn't exist");
-            if (accessToken.ExpiryTime != null)
+            
+            var now = _host.CurrentTime();
+            
+            if (accessToken.ExpiryTime != null && accessToken.ExpiryTime < now)
                 throw new InvalidOperationException($"Access token {tokenId} has expired, it can't be used.");
         }
 
@@ -119,7 +122,9 @@ namespace orch.core.ef.System
 
         public AccessToken? PingAccessToken(Guid tokenId)
         {
-            var token = _dbContext.AccessTokens.AsNoTracking().Where(accessToken => accessToken.Token == tokenId)
+            var token = _dbContext.AccessTokens
+                .AsNoTracking()
+                .Where(accessToken => accessToken.Token == tokenId)
                 .FirstOrDefault();
 
             AssertActiveAccessToken(tokenId, token);
@@ -139,8 +144,9 @@ namespace orch.core.ef.System
 
         public List<AccessToken> GetTokensByUserId(Guid userId)
         {
+            var now = _host.CurrentTime();
             return _dbContext.AccessTokens
-                .Where(t => t.UserId == userId && (t.ExpiryTime == null))
+                .Where(t => t.UserId == userId && (t.ExpiryTime == null || t.ExpiryTime > now))
                 .OrderBy(t => t.CreatedTime)
                 .Select(t => new AccessToken(t))
                 .ToList();

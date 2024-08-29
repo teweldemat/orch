@@ -48,6 +48,8 @@ namespace orch.core.command
         {
         }
 
+        private string _newPassword;
+
         public override void Preprocess()
         {
             if (_commandInfo.UserId is not { } userId ||
@@ -59,8 +61,13 @@ namespace orch.core.command
 
             if (_commandData.OldPassword == _commandData.NewPassword)
                 throw new ArgumentException("Old and new passwords are the same.");
-
+            
             _commandData.UserName = userInfo.UserName;
+            
+            _newPassword = _commandData.NewPassword;
+            _commandData.OldPassword = default;
+            _commandData.NewPassword = default;
+
         }
 
         public override string Summarize(out bool html)
@@ -75,7 +82,7 @@ namespace orch.core.command
                 _commandInfo,
                 // ReSharper disable once PossibleInvalidOperationException
                 _commandInfo.UserId.Value,
-                OSystemService.HashPassword(_commandData.NewPassword));
+                OSystemService.HashPassword(_newPassword));
         }
     }
 }

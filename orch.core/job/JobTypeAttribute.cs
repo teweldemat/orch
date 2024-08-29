@@ -4,7 +4,6 @@
     {
         Concurrent,
         Singleton,
-        Recurring
     }
     public class JobTypeInfo
     {
@@ -13,9 +12,7 @@
         public string TypeName { get; set; }
         public JobProcessType ProcessType { get; set; }
         public Type Type { get; set; }
-        public Type Predicate { get; set; }
-        public string[] Permissions { get; set; } = Array.Empty<string>();
-        public string Cron { get; set; } = string.Empty;
+        public string[] Permissions { get; set; } = Array.Empty<string>(); 
     }
 
     
@@ -24,7 +21,6 @@
     {
         internal JobTypeInfo TypeInfo { get; set; }
         public Type Handler { get; set; }
-
         public Type Predicate { get; set; }
 
         public BackgroundJobAttribute(
@@ -33,11 +29,9 @@
             string typeName,
             JobProcessType processType,
             Type handler = null,
-            Type predicate = null, 
-            string[] permissions = null,
-            string? cron = null)
+            string[] permissions = null)
         {
-            if (!Guid.TryParse(typeId, out Guid parsedTypeId))
+            if (!Guid.TryParse(typeId, out var parsedTypeId))
             {
                 throw new ArgumentException($"Failed to parse '{typeId}' as a GUID for the job '{key}'.");
             }
@@ -55,35 +49,10 @@
                 TypeInfo.Permissions = permissions;
             }
 
-            if (processType is JobProcessType.Recurring)
-            {
-                if (TypeInfo.Permissions.Any())
-                    throw new ArgumentException($"Permissions should not be provided for recurring job '{TypeInfo.Key}'.");
-
-                if (string.IsNullOrEmpty(cron))
-                    throw new ArgumentException($"Cron expression should be provided for recurring job '{TypeInfo.Key}'.");
-
-                TypeInfo.Cron = cron;
-            }
-            else
-            {
-                if (cron is not null)
-                    throw new ArgumentException($"Cron expression should not be provided for non-recurring job '{TypeInfo.Key}'.");
-            }
-
             if (handler != null && !typeof(IJobHandler).IsAssignableFrom(handler))
                 throw new ArgumentException($"The provided handler type, {handler.Name}, does not implement IJobHandler.", nameof(handler));
 
             Handler = handler;
-
-            if (predicate != null && !typeof(IJobPredicate).IsAssignableFrom(predicate))
-            {
-                throw new ArgumentException(
-                    $"The provided predicate type, {predicate.Name}, does not implement IJobPredicate.",
-                    nameof(predicate));
-            }
-
-            Predicate = predicate;
         }
     }
 }

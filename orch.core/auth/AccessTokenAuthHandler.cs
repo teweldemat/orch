@@ -66,7 +66,7 @@ namespace orch.core.auth
         {
             if (accessToken == Guid.Empty)
             {
-                throw new AuthenticationException("Authentication is required. Please log in.");
+                throw new AuthenticationException("Authentication required. Please log in.");
             }
 
             var token = systemService.PingAccessToken(accessToken);
