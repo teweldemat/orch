@@ -231,17 +231,18 @@ namespace orch.core.ef.System
             catch
             {
                 transaction.Rollback();
-                
-                // If creating entry in database fails, delete the saved file and throw exception
+
+                // If creating entry in database fails, delete the saved file and rethrow exception
                 try
                 {
-                    if (existingFile is not null)
+                    if (existingFile is null)
                         File.Delete(filePath);
                 }
                 catch (Exception deleteException)
                 {
                     throw new IOException("Error trying to rollback file creation", deleteException);
                 }
+                
                 throw;
             }
         }
