@@ -126,7 +126,7 @@ namespace orch.wf
             Services.WfService.AssignWorkflow(_commandInfo, StateData);
         }
 
-        protected override void Authorize()
+        protected sealed override void Authorize()
         {
             var wf = StateData;
             foreach (var p in RequiredPermissions(_commandInfo, wf))
