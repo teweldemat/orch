@@ -67,7 +67,7 @@ public abstract class RecurringJobBase
                     Message = message,
                     Reference = reference,
                     Data = Newtonsoft.Json.JsonConvert.SerializeObject(data),
-                    JobId = context?.BackgroundJob.Id
+                    JobId = context?.BackgroundJob.Id,
                 }
             },
             out _);
