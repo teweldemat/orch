@@ -14,6 +14,6 @@ namespace orch.core
         void CreateFile(ContentFile cf);
         ContentFile GetFile(Guid file_id);
         PagedList<ContentFile> GetFiles(int pageNumber, int pageSize, ContentFileFilter? filter = null);
-        ContentFile SaveFile(string fileName, Stream r, Guid? fileId = null);
+        ContentFile SaveFile(string fileName, Stream r, Guid? fileId = null, bool overwrite = false);
     }
 }

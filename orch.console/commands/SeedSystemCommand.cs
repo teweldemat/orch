@@ -68,11 +68,7 @@ namespace orch.console.commands
 
             try
             {
-                if (options.Atomic)
-                {
-                    tranDb.BeginTransaction();
-                }
-
+                
                 var rootUser = tranDb.GetRootUser();
 
                 var p = new KvcProvider(new ObjectKvc(new
@@ -227,20 +223,10 @@ namespace orch.console.commands
                 outvars = thisVar;
                 nCommands = index;
 
-                if (options.Atomic)
-                {
-                    tranDb.CommitTransaction();
-                }
-
                 return true;
             }
             catch (Exception ex)
             {
-                if (options.Atomic)
-                {
-                    tranDb.RollbackTransaction();
-                }
-
                 while (ex != null)
                 {
                     _host.StdOut.WriteLine(ex.Message);
@@ -302,6 +288,12 @@ namespace orch.console.commands
 
                 currentService = service;
                 Attachments = new Dictionary<string, Guid>();
+                
+                var tranDb = service.Services.GetRequiredService<ITransactionDatabase>();
+
+                if (options.Atomic)
+                    tranDb.BeginTransaction();
+
                 if (ProcessFile(service, seedIndexFileName, options, null, out var vars, 0, out var n))
                 {
                     if (vars == null)
@@ -312,6 +304,14 @@ namespace orch.console.commands
                         File.WriteAllText(fn.FullName, vars.ToString());
                         _host.StdOut.WriteLine($"Applied variables saved in {new Uri(fn.FullName).AbsoluteUri}");
                     }
+                        
+                    if (options.Atomic)
+                        tranDb.CommitTransaction();
+                } 
+                else
+                {
+                    if (options.Atomic)
+                        tranDb.RollbackTransaction();
                 }
             }
             catch (Exception ex)

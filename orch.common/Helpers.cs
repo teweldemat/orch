@@ -117,7 +117,7 @@ namespace orch.common
         /// </summary>
         /// <param name="input">The string to convert.</param>
         /// <returns>The snake_case representation of the input string.</returns>
-        public static string ToSnakeCase(string input)
+        public static string ToSnakeCase(this string input)
         {
             if (string.IsNullOrEmpty(input))
             {

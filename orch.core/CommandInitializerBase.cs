@@ -4,15 +4,7 @@ namespace orch.core
 {
     public abstract class CommandInitializerBase<T> : ICommandInitializer
     {
-        private IOHost _host;
-
-        protected IOHost Host
-        {
-            get
-            {
-                return _host;
-            }
-        }
+        protected IOHost Host { get; }
 
         protected OTransaction _tranInfo;
         protected OCommand _commandInfo;
@@ -20,7 +12,7 @@ namespace orch.core
 
         protected CommandInitializerBase(IOHost host)
         {
-            _host = host;
+            Host = host;
         }
 
         public void SetData(OTransaction tranInfo, OCommand commandInfo, object data)
