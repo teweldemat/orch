@@ -23,9 +23,9 @@ namespace orch.core
             return sha.ComputeHash(bytes);
         }
 
-        private readonly IOHost host;
-        private readonly ISystemDatabase sysDb;
-        private readonly ITransactionDatabase tranDb;
+        protected readonly IOHost host;
+        protected readonly ISystemDatabase sysDb;
+        protected readonly ITransactionDatabase tranDb;
 
         public OSystemService(IOHost host, ISystemDatabase db, ITransactionDatabase command)
         {
@@ -63,7 +63,7 @@ namespace orch.core
 
             var hash = HashPassword(password);
             if (!user.PasswordHash.SequenceEqual(hash))
-                throw new InvalidOperationException($"Invalid password");
+                throw new InvalidOperationException($"Incorrect username and/or password");
 
             if (maxTokens is > 0 && user.Id != rootUser.Id)
             {
