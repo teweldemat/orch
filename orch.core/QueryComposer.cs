@@ -93,19 +93,19 @@ namespace orch.core
         public object Evaluate(IFsDataProvider parent, IParameterList pars)
         {
             var serviceType = _func.Service;
-            object serviceObject = null;
+            object serviceObject;
 
-            if (serviceType.IsAbstract && serviceType.IsSealed)
+            if (_func.Method.IsStatic)
+            {
+                serviceObject = null;
+            }
+            else if (serviceType.IsAbstract && serviceType.IsSealed)
             {
                 serviceObject = serviceType;
             }
             else
             {
                 serviceObject = _tranService.Services.GetRequiredService(serviceType);
-                if (serviceObject == null)
-                {
-                    throw new InvalidOperationException($"Unable to get instance of service {serviceType}");
-                }
             }
 
             var parVals = new object[_func.Pars.Length];
@@ -125,9 +125,9 @@ namespace orch.core
                     Type parType = currentPar.ParameterType;
 
                     // Use default value if parameter is missing and a default exists
-                    if (parVal == null && _func.DefaultValues.ContainsKey(currentPar))
+                    if (parVal == null && _func.DefaultValues.TryGetValue(currentPar, out var value))
                     {
-                        parVal = _func.DefaultValues[currentPar];
+                        parVal = value;
                     }
 
                     if (parVal is KeyValueCollection collection)
