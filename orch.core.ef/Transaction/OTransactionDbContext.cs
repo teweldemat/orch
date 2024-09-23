@@ -32,7 +32,7 @@ namespace orch.core.ef.Transaction
         #endregion
 
         #region job
-        protected internal DbSet<DALOJob> Jobs { get; set; }
+        public DbSet<DALOJob> Jobs { get; protected internal set; }
         #endregion
 
         #region role & permission
@@ -58,7 +58,7 @@ namespace orch.core.ef.Transaction
         #endregion
 
         #region logging
-        internal DbSet<DALEventLog> EventLogs { get; set; }
+        public DbSet<DALEventLog> EventLogs { get; protected internal set; }
         #endregion
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
