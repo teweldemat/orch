@@ -18,7 +18,7 @@ namespace orch.core.ef.Transaction
     /// </summary>
     public class OTransactionDbContext : ODbContext
     {
-        protected internal static readonly string CORE_SECHMA = "core";
+        public static readonly string CORE_SECHMA = "core";
 
         protected OTransactionDbContext(DbConnection connection) : base(connection)
         {
@@ -54,7 +54,7 @@ namespace orch.core.ef.Transaction
         #region user
         public DbSet<DALUserInfo> Users { get; protected internal set; }
         protected internal DbSet<DALUserRole> UserRoles { get; set; }
-        protected internal DbSet<DALUserHistory> UserHistory { get; set; }
+        public DbSet<DALUserHistory> UserHistory { get; set; }
         #endregion
 
         #region logging
