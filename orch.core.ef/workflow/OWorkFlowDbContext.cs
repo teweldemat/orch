@@ -14,8 +14,8 @@ namespace orch.ef.workflow
         {
         }
 
-        public DbSet<DALOTask> Tasks { get; set; }
-        internal DbSet<DALTaskData> TaskData { get; set; }
+        public DbSet<DALOTask> Tasks { get; protected internal set; }
+        public DbSet<DALTaskData> TaskData { get; protected internal set; }
         internal DbSet<DALCheckListItem> TaskCheckLists { get; set; }
         internal DbSet<DALTaskHistory> TaskHistory { get; set; }
         internal DbSet<DALTaskNote> TaskNotes { get; set; }
