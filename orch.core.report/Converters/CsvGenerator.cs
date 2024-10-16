@@ -1,7 +1,9 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using System.ComponentModel;
 using System.Data;
+using System.Globalization;
 using System.Text;
+using CsvHelper;
 
 namespace orch.report.Generators
 {
@@ -17,11 +19,24 @@ namespace orch.report.Generators
                 FileDownloadName = FormatFileName(fileName)
             };
         }
+        
+        [Obsolete("Use DataTableToCsvFileContentResultV2 instead")]
         public static FileContentResult DataTableToCsvFileContentResult(this DataTable dataTable, string fileName)
         {
             var csvData = GenerateCsvFromDataTable(dataTable);
             var contentBytes = Encoding.UTF8.GetBytes(csvData);
             var contentType = "text/csv";
+            return new FileContentResult(contentBytes, contentType)
+            {
+                FileDownloadName = FormatFileName(fileName)
+            };
+        }
+        
+        public static FileContentResult DataTableToCsvFileContentResultV2(this DataTable dataTable, string fileName)
+        {
+            var csvData = GenerateCsvFromDataTableV2(dataTable);
+            var contentBytes = Encoding.UTF8.GetBytes(csvData);
+            const string contentType = "text/csv";
             return new FileContentResult(contentBytes, contentType)
             {
                 FileDownloadName = FormatFileName(fileName)
@@ -75,6 +90,7 @@ namespace orch.report.Generators
             return stringBuilder.ToString();
         }
 
+        [Obsolete("Use GenerateCsvFromDataTableV2 instead")]
         private static string GenerateCsvFromDataTable(DataTable dataTable)
         {
             var stringBuilder = new StringBuilder();
@@ -88,10 +104,31 @@ namespace orch.report.Generators
                 IEnumerable<string> fields = row.ItemArray.Select(field => field.ToString());
                 stringBuilder.AppendLine(string.Join(",", fields));
             }
-
-
-
+            
             return stringBuilder.ToString();
+        }
+        
+        public static string GenerateCsvFromDataTableV2(DataTable dataTable)
+        {
+            using var writer = new StringWriter();
+            using var csv = new CsvWriter(writer, CultureInfo.InvariantCulture);
+            
+            foreach (DataColumn column in dataTable.Columns)
+            {
+                csv.WriteField(column.ColumnName);
+            }
+            csv.NextRecord();
+
+            foreach (DataRow row in dataTable.Rows)
+            {
+                foreach (var field in row.ItemArray)
+                {
+                    csv.WriteField(field);
+                }
+                csv.NextRecord();
+            }
+
+            return writer.ToString();
         }
     }
 }

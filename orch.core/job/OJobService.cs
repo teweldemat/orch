@@ -99,7 +99,7 @@ namespace orch.core
 
             try
             {
-                ProcessJob(context, job, data, out IJobHandler handler, cancellationToken);
+                ProcessJob(context, job, data, out var handler, cancellationToken);
 
                 await handler.Execute();
 

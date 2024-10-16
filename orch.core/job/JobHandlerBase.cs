@@ -58,6 +58,7 @@ namespace orch.core.job
                 {
                     HubContext.Clients.Group(_jobInfo.Id)?.SendAsync(JobProgressHub.CancelledMethod, _jobInfo.Id,
                         cancellationToken: CancellationToken);
+                    
                     OnCancelled();
                 }
             }
@@ -68,6 +69,7 @@ namespace orch.core.job
             var ret = Summarize(out var html);
             return html ? ret : $"<p>{System.Web.HttpUtility.HtmlEncode(ret)}</p>";
         }
+        
         public void SetData(OJob job, object data)
         {
             _jobInfo = job;
@@ -86,11 +88,12 @@ namespace orch.core.job
             }
         };
 
+        // TODO: make asynchronous
         protected void SendProgress(P progress)
         {
-            HubContext.Clients.Group(_jobInfo.Id).SendAsync(
+            HubContext.Clients?.Group(_jobInfo.Id).SendAsync(
                 JobProgressHub.ProgressMethod,
-                JsonConvert.SerializeObject(progress, _settings)).Wait();
+                JsonConvert.SerializeObject(progress, _settings), cancellationToken: CancellationToken).Wait();
         }
 
         public abstract Task Execute();
