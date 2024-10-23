@@ -1464,6 +1464,7 @@ namespace orch.core.ef.System
             public string Key;
             public String TypeName;
         }
+
         [OViewFunction]
         public IList<CommandType> GetAllCommandTypes()
         {
@@ -1474,6 +1475,25 @@ namespace orch.core.ef.System
                 TypeId = x.TypeId
             }).ToList();
         }
+
+        public class JobType
+        {
+            public Guid TypeId;
+            public string Key;
+            public String TypeName;
+        }
+
+        [OViewFunction]
+        public IList<JobType> GetAllJobTypes()
+        {
+            return OJobService.GetAllJobTypes().Select(x => new JobType
+            {
+                Key = x.Key,
+                TypeName = x.TypeName,
+                TypeId = x.TypeId
+            }).ToList();
+        }
+
         public void Dispose()
         {
             _dbTransaction?.Dispose();

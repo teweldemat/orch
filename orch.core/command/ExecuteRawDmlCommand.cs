@@ -47,18 +47,18 @@
 
         public override void Preprocess()
         {
-            var lowerDml = _commandData.Dml.ToLower();
-            if (lowerDml.Contains("begin") || lowerDml.Contains("commit") || lowerDml.Contains("rollback"))
-            {
-                throw new InvalidOperationException(
-                    "DML should not contain transaction statements (BEGIN, COMMIT, ROLLBACK).");
-            }
+            // var lowerDml = _commandData.Dml.ToLower();
+            // if (lowerDml.Contains("begin") || lowerDml.Contains("commit") || lowerDml.Contains("rollback"))
+            // {
+            //     throw new InvalidOperationException(
+            //         "DML should not contain transaction statements (BEGIN, COMMIT, ROLLBACK).");
+            // }
         }
 
         public override string Summarize(out bool html)
         {
             html = false;
-
+            
             if (!string.IsNullOrEmpty(_commandData.Note))
             {
                 return $"Executed raw DML ({_commandData.Note}): {_commandData.Dml}";

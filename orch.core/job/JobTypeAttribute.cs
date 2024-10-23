@@ -21,7 +21,6 @@
     {
         internal JobTypeInfo TypeInfo { get; set; }
         public Type Handler { get; set; }
-        public Type Predicate { get; set; }
 
         public BackgroundJobAttribute(
             string typeId,

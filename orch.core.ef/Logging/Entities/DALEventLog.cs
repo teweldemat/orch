@@ -3,7 +3,7 @@ using orch.core.model;
 
 namespace orch.core.ef.Logging.Entities
 {
-    internal class DALEventLog : EventLogProps
+    public class DALEventLog : EventLogProps
     {
         public DALEventLog() { }
 
