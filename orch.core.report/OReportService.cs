@@ -49,7 +49,7 @@ namespace orch.report
             return handler.GeneratePreview();
         }
 
-        public Task<FileContentResult> GenerateFile(string report_type, ReportFormat report_format, object? data, HttpContext httpContext, Guid userId)
+        public Task<FileResult> GenerateFile(string report_type, ReportFormat report_format, object? data, HttpContext httpContext, Guid userId)
         {
             var reportTypeInfo = GetTypeInfoByKey(report_type);
             if (reportTypeInfo?.Key is null)

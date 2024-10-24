@@ -4,7 +4,7 @@ namespace orch.core.report.Converters
 {
     public interface IHtmlToPdfConverter
     {
-        Task<FileContentResult> ConvertToPdfAsync(PdfRequest request);
+        Task<FileResult> ConvertToPdfAsync(PdfRequest request);
     }
 
     public class PdfMargins

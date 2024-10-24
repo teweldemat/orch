@@ -36,7 +36,7 @@ namespace orch.report.Handler
             return PreviewGenerator.Generate(GeneratePreview());
         }
 
-        Task<FileContentResult> IReportHandler.GeneratePDF()
+        Task<FileResult> IReportHandler.GeneratePDF()
         {
             if (_converter is null)
             {
@@ -50,8 +50,8 @@ namespace orch.report.Handler
         {
             throw new NotSupportedException($"PDF format is not supported.");
         }
-
-        public virtual FileContentResult GenerateCSV()
+        
+        public virtual FileResult GenerateCSV()
         {
             throw new NotSupportedException($"CSV format is not supported.");
         }

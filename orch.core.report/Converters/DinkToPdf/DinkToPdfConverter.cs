@@ -38,7 +38,7 @@ namespace orch.report.Generators
             _webHostEnvironment = webHostEnvironment;
         }
 
-        public async Task<FileContentResult> ConvertToPdfAsync(PdfRequest request)
+        public async Task<FileResult> ConvertToPdfAsync(PdfRequest request)
         {
             var httpContext = (_httpContextAccessor?.HttpContext)
                 ?? throw new InvalidOperationException($"'{nameof(_httpContextAccessor.HttpContext)}' is null. Are you missing the '{nameof(IHttpContextAccessor)}' middleware?");

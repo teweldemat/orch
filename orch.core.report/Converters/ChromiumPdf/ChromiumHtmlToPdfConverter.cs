@@ -36,7 +36,7 @@ namespace orch.core.report.Converters.ChromiumPdf
             _webHostEnvironment = webHostEnvironment ?? throw new ArgumentNullException(nameof(webHostEnvironment));
         }
 
-        public async Task<FileContentResult> ConvertToPdfAsync(PdfRequest request)
+        public async Task<FileResult> ConvertToPdfAsync(PdfRequest request)
         {
             var httpContext = (_httpContextAccessor?.HttpContext)
                 ?? throw new InvalidOperationException($"'{nameof(_httpContextAccessor.HttpContext)}' is null. Are you missing the '{nameof(IHttpContextAccessor)}' middleware?");
@@ -75,14 +75,8 @@ namespace orch.core.report.Converters.ChromiumPdf
             };
 
             var pdfStream = await page.PdfStreamAsync(pdfOptions);
-            byte[] pdfBytes;
-            using (var memoryStream = new MemoryStream())
-            {
-                pdfStream.CopyTo(memoryStream);
-                pdfBytes = memoryStream.ToArray();
-            }
-
-            return new FileContentResult(pdfBytes, "application/pdf")
+            
+            return new FileStreamResult(pdfStream, "application/pdf")
             {
                 FileDownloadName = request.FileDownloadName
             };
