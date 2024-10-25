@@ -33,7 +33,7 @@ namespace orch.report.Generators
             };
         }
         
-        public static FileStreamResult DataTableToCsvFileStreamResultV2(this DataTable dataTable, string fileName)
+        public static FileStreamResult DataTableToCsvFileStreamResult(this DataTable dataTable, string fileName)
         {
             var memoryStream = new MemoryStream();
 
