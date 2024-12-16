@@ -1,5 +1,6 @@
 ﻿using Newtonsoft.Json;
 using orch.core.command;
+using orch.core.errors;
 using orch.core.model;
 
 namespace orch.core
@@ -145,10 +146,8 @@ namespace orch.core
                 {
                     if (command.DataTypeID == Guid.Parse(SetSystemIdCommand.TYPE_ID))
                         throw new InvalidOperationException("Set system ID not allowed");
-
-                    if (sysInfo.SystemId != tran.SystemID)
-                        throw new InvalidOperationException(
-                            $"The System ID of the transaction does not match the current system ID.");
+                    
+                    SystemIdMismatchException.ThrowIfNotEqual(sysInfo.SystemId, tran.SystemID);
 
                     tran.PrevId = sysInfo.HeadTranId;
                 }
