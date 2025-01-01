@@ -6,7 +6,7 @@ namespace orch.utils.web
     {
         protected IActionResult Error(Exception ex)
         {
-            return StatusCode(500, new ErrorInfo(null, ex));
+            return StatusCode(500, new ErrorInfo(ex.Message, ex));
         }
         protected IActionResult Error(Exception ex, string message)
         {

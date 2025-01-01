@@ -55,6 +55,8 @@ namespace orch.core
         public string EnqueueJob(Guid userId, Guid systemId, Guid typeId, object data)
         {
             var typeInfo = GetTypeInfoById(typeId) ?? throw new JobTypeIdNotFoundException(typeId);
+            var currentSystemInfo = TranDb.GetCurrentSystemInformation();
+            SystemIdMismatchException.ThrowIfNotEqual(systemId, currentSystemInfo?.SystemId);
 
             Authorize(typeInfo, userId);
 
@@ -136,6 +138,7 @@ namespace orch.core
             }
         }
 
+        // TODO(job): Add 'SystemId' check during cancellation
         public bool CancelJob(Guid userId, string jobId)
         {
             Guid typeId;
