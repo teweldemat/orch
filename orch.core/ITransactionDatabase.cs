@@ -128,6 +128,7 @@ namespace orch.core
         void UpdateSerialType(OCommand command, SerialType type);
 
         void CreateSerialBatch(OCommand command, SerialBatch serialBatch);
+        void UpdateSerialBatch(OCommand command, SerialBatch serialBatch);
         void DeleteLastSerialNo(OCommand command, Guid batchId);
         Guid AddFileReference(OCommand command, ContentReference cref);
 
