@@ -43,7 +43,7 @@ namespace orch.core.ef.System
             {
                 context.Database.UseTransaction(_dbTransaction);
             }
-            if(!_contexts.Contains(context))
+            if (!_contexts.Contains(context))
                 _contexts.Add(context);
         }
         public bool InTransaction => _dbTransaction != null;
@@ -223,7 +223,7 @@ namespace orch.core.ef.System
                 .Where(t => t.Commands.Any(c => c.TranId == t.Id && dataTypeIds.Contains(c.DataTypeID)))
                 .Count();
         }
-        
+
         [OViewFunction("LastSeqNoByDataTypeIds")]
         public long LastSeqNoByDataTypeIds(List<Guid> dataTypeIds)
         {
@@ -887,14 +887,14 @@ namespace orch.core.ef.System
         {
             if (userId == Guid.Empty)
                 throw new ArgumentException("User ID cannot be empty");
-            
+
             var permission = _db.Permissions.Where(permission => permission.PermissionKey == permissionKey).FirstOrDefault();
             if (permission == null)
                 throw new InvalidOperationException($"Permission key {permissionKey} not defined");
 
             if (userId == GetRootUser()?.Id)
                 return true;
-            
+
             return _db.UserRoles
                 .Where(userRole => userRole.UserId == userId) //select the roles of the user
                 .Join(_db.PermissionRoles, a => a.RoleId, b => b.RoleId, (a, b) => b) //join with permssion roles table
@@ -1003,7 +1003,7 @@ namespace orch.core.ef.System
             {
                 return true;
             }
-            
+
             var userPermissionIds = _db.UserRoles
                 .Where(x => x.UserId == userId) // select the roles of the user
                 .Join(_db.PermissionRoles, a => a.RoleId, b => b.RoleId, (a, b) => b) // join with permission roles table
@@ -1044,14 +1044,14 @@ namespace orch.core.ef.System
             _db.SerialTypes.Add(new DALSerialType(type));
             _db.SaveChanges();
         }
-        
+
         public void UpdateSerialType(OCommand command, SerialType type)
         {
-            var existing = _db.SerialTypes.AsNoTracking().FirstOrDefault(x => x.Id == type.Id) 
+            var existing = _db.SerialTypes.AsNoTracking().FirstOrDefault(x => x.Id == type.Id)
                            ?? throw new ArgumentException($"Serial type with ID {type.Id} not found");
-            
+
             existing.AuthorizationLevel = type.AuthorizationLevel;
-            
+
             existing.SetUpdate<ChangeProps>(command);
             _db.SerialTypes.Update(existing);
             _db.SaveChanges();
@@ -1086,6 +1086,44 @@ namespace orch.core.ef.System
                 existing.ToSerialNo = serialBatch.ToSerialNo;
                 existing.SetUpdate<ChangeProps>(command);
             }
+            _db.SaveChanges();
+        }
+
+        public void UpdateSerialBatch(OCommand command, SerialBatch serialBatch)
+        {
+            var existing = _db.SerialBatches.FirstOrDefault(sb => sb.Id == serialBatch.Id);
+            if (existing == null)
+            {
+                throw new InvalidOperationException($"Serial batch with ID {serialBatch.Id} not found");
+            }
+
+            if (serialBatch.ToSerialNo <= existing.MaxUsed)
+            {
+                throw new InvalidOperationException($"New ToSerialNo ({serialBatch.ToSerialNo}) must be greater than MaxUsed ({existing.MaxUsed})");
+            }
+
+            if (serialBatch.ToSerialNo < existing.FromSerialNo)
+            {
+                throw new InvalidOperationException($"New ToSerialNo ({serialBatch.ToSerialNo}) must be greater than or equal to FromSerialNo ({existing.FromSerialNo})");
+            }
+
+            // Check for overlaps with other batches
+            var overlappingBatch = _db.SerialBatches
+                .Where(batch => batch.SerialTypeId == existing.SerialTypeId
+                    && batch.Id != serialBatch.Id
+                    && batch.FromSerialNo <= serialBatch.ToSerialNo
+                    && batch.ToSerialNo >= existing.FromSerialNo)
+                .FirstOrDefault();
+
+            if (overlappingBatch != null)
+            {
+                throw new InvalidOperationException($"Serial batch would overlap with batch {overlappingBatch.FromSerialNo} to {overlappingBatch.ToSerialNo}");
+            }
+
+            existing.Description = serialBatch.Description;
+            existing.ToSerialNo = serialBatch.ToSerialNo;
+            existing.SetUpdate<ChangeProps>(command);
+
             _db.SaveChanges();
         }
 
@@ -1163,7 +1201,7 @@ namespace orch.core.ef.System
                 .ToList();
         }
 
-        [OViewFunction(permissions: new []{ CoreModule.PERMISSION_GET_SERIALS })]
+        [OViewFunction(permissions: new[] { CoreModule.PERMISSION_GET_SERIALS })]
         public List<SerialType> GetSerialTypes()
         {
             return _db
@@ -1235,7 +1273,7 @@ namespace orch.core.ef.System
         {
             return _db.SerialBatches
                 .AsNoTracking()
-                .Where(serialBatch => serialBatch.Id == batchId)      .AsEnumerable()
+                .Where(serialBatch => serialBatch.Id == batchId).AsEnumerable()
                 .Select(serialBatch => new SerialBatch(serialBatch))
                 .FirstOrDefault();
         }
