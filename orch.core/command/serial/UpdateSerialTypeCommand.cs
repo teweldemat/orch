@@ -16,6 +16,8 @@ public class UpdateSerialTypeCommand
     public const string TYPE_ID = "35a97028-746d-4c45-986a-021973ca5fa8";
     
     public Guid SerialTypeId { get; set; }
+    public SerialNoFormattingType? FormatType { get; set; }
+    public string? FormatString { get; set; }
     public string? AuthorizationLevel { get; set; }
     
     
@@ -28,14 +30,15 @@ public class UpdateSerialTypeCommand
         public override void Init()
         {
             if (_commandData.SerialTypeId == Guid.Empty)
-                throw new InvalidOperationException("SerialTypeId must not be empty.");
+                throw new ArgumentException("Please specify a valid serial type ID.");
             
             _commandData.AuthorizationLevel = _commandData.AuthorizationLevel?.Trim();
             if (_commandData.AuthorizationLevel != null && string.IsNullOrWhiteSpace(_commandData.AuthorizationLevel))
-                throw new InvalidOperationException("'AuthorizationLevel' must not be empty when provided.");
-            
-            if (_commandData.AuthorizationLevel is null)
-                throw new InvalidOperationException("Command body is empty.");
+                throw new ArgumentException("If provided, 'AuthorizationLevel' must not be empty.");
+
+            _commandData.FormatString = _commandData.FormatString?.Trim();
+            if (_commandData.FormatString != null && string.IsNullOrWhiteSpace(_commandData.FormatString))
+                throw new ArgumentException("If provided, 'FormatString' must not be empty.");
         }
     }
     
@@ -67,6 +70,12 @@ public class UpdateSerialTypeCommand
         
         public override void Preprocess()
         {
+            if (_commandData.FormatType is not null)
+                SerialType.FormatType = _commandData.FormatType.Value;
+
+            if (_commandData.FormatString is not null)
+                SerialType.FormatString = _commandData.FormatString;
+            
             SerialType.AuthorizationLevel = _commandData.AuthorizationLevel;
         }
 

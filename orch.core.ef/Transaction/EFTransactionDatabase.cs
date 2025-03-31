@@ -9,6 +9,7 @@ using orch.core.model.dto;
 using orch.ef.Core;
 using System.Data;
 using System.Data.Common;
+using funcscript.core;
 
 
 namespace orch.core.ef.System
@@ -567,7 +568,7 @@ namespace orch.core.ef.System
                     .Select(userRole => userRole.UserId).Distinct().ToList();
         }
 
-        public SerialNo UseNextSerialNo(OCommand command, Guid batchId)
+        public SerialNo UseNextSerialNo(OCommand command, Guid batchId, IFsDataProvider? provider = null)
         {
 
             var batch = _db.SerialBatches.FirstOrDefault(serialBatch
@@ -577,7 +578,6 @@ namespace orch.core.ef.System
             {
                 throw new InvalidOperationException($"Invalid serial batch id {batchId}");
             }
-            var serialType = _db.SerialBatches.FirstOrDefault(x => x.SerialTypeId == batch.SerialTypeId);
             var type = GetSerialType(batch.SerialTypeId);
             if (batch.MaxUsed >= batch.ToSerialNo)
             {
@@ -589,7 +589,7 @@ namespace orch.core.ef.System
                 {
                     BatchId = batchId,
                     Sn = batch.MaxUsed,
-                    Formatted = type?.FormatSerialNo(batch.MaxUsed),
+                    Formatted = type?.FormatSerialNo(batch.MaxUsed, provider),
                     IsVoid = false,
                 }.SetCreate<DALSerialNo>(command);
 
@@ -1017,10 +1017,11 @@ namespace orch.core.ef.System
         [OViewFunction]
         public SerialType? GetSerialType(string key)
         {
-            return _db.SerialTypes.Where(serialType
-                => serialType.Key == key)
-                 .Select(x => new SerialType(x))
-                 .FirstOrDefault();
+            return _db.SerialTypes
+                .AsNoTracking()
+                .Where(serialType => serialType.Key == key)
+                .Select(x => new SerialType(x))
+                .FirstOrDefault();
         }
 
         [OViewFunction("GetSerialTypeById")]
@@ -1034,26 +1035,27 @@ namespace orch.core.ef.System
                 .FirstOrDefault();
         }
 
-        public void CreateSerialType(OCommand command, SerialType type)
+        public void CreateSerialType(OCommand command, SerialType serialType)
         {
-            if (GetSerialType(type.Key) != null)
+            if (GetSerialType(serialType.Key) != null)
             {
-                throw new InvalidOperationException($"Serial type key {type.Key} already used");
+                throw new InvalidOperationException($"Serial type key {serialType.Key} already used");
             }
-            type.SetCreate<ChangeProps>(command);
-            _db.SerialTypes.Add(new DALSerialType(type));
+
+            serialType.SetCreate<ChangeProps>(command);
+            _db.SerialTypes.Add(new DALSerialType(serialType));
             _db.SaveChanges();
         }
 
-        public void UpdateSerialType(OCommand command, SerialType type)
+        public void UpdateSerialType(OCommand command, SerialType serialType)
         {
-            var existing = _db.SerialTypes.AsNoTracking().FirstOrDefault(x => x.Id == type.Id)
-                           ?? throw new ArgumentException($"Serial type with ID {type.Id} not found");
+            var existing = _db.SerialTypes.AsNoTracking()
+                               .FirstOrDefault(x => x.Id == serialType.Id)
+                           ?? throw new ArgumentException($"Serial type with ID '{serialType.Id}' not found");
 
-            existing.AuthorizationLevel = type.AuthorizationLevel;
-
-            existing.SetUpdate<ChangeProps>(command);
-            _db.SerialTypes.Update(existing);
+            serialType.CopyChangeProps(existing);
+            serialType.SetUpdate<ChangeProps>(command);
+            _db.SerialTypes.Update(new DALSerialType(serialType));
             _db.SaveChanges();
         }
 
@@ -1091,37 +1093,56 @@ namespace orch.core.ef.System
 
         public void UpdateSerialBatch(OCommand command, SerialBatch serialBatch)
         {
+            if (command == null)
+                throw new ArgumentNullException(nameof(command));
+            if (serialBatch == null)
+                throw new ArgumentNullException(nameof(serialBatch));
+
+            if (serialBatch.FromSerialNo < 0)
+                throw new ArgumentException($"The value for '{nameof(SerialBatch.FromSerialNo)}' cannot be negative.",
+                    nameof(serialBatch));
+            if (serialBatch.ToSerialNo < 0)
+                throw new ArgumentException($"The value for '{nameof(SerialBatch.ToSerialNo)}' cannot be negative.",
+                    nameof(serialBatch));
+            if (serialBatch.FromSerialNo > serialBatch.ToSerialNo)
+                throw new InvalidOperationException(
+                    $"The value for '{nameof(SerialBatch.FromSerialNo)}' ({serialBatch.FromSerialNo}) cannot be greater than '{nameof(SerialBatch.ToSerialNo)}' ({serialBatch.ToSerialNo}).");
+            if (serialBatch.MaxUsed < serialBatch.FromSerialNo - 1)
+                throw new ArgumentException(
+                    $"The value for '{nameof(SerialBatch.MaxUsed)}' must be at least {serialBatch.FromSerialNo - 1}.",
+                    nameof(serialBatch));
+            if (serialBatch.MaxUsed >= serialBatch.ToSerialNo)
+                throw new ArgumentException(
+                    $"The value for '{nameof(SerialBatch.MaxUsed)}' must be less than '{nameof(SerialBatch.ToSerialNo)}' ({serialBatch.ToSerialNo}).",
+                    nameof(serialBatch));
+
             var existing = _db.SerialBatches.FirstOrDefault(sb => sb.Id == serialBatch.Id);
             if (existing == null)
-            {
-                throw new InvalidOperationException($"Serial batch with ID {serialBatch.Id} not found");
-            }
+                throw new InvalidOperationException(
+                    "The specified serial batch was not found. Please check your batch information.");
+
+            var overlappingBatch = _db.SerialBatches
+                .Where(batch => batch.SerialTypeId == existing.SerialTypeId &&
+                                batch.Id != serialBatch.Id &&
+                                batch.FromSerialNo <= serialBatch.ToSerialNo &&
+                                batch.ToSerialNo >= serialBatch.FromSerialNo)
+                .FirstOrDefault();
+            if (overlappingBatch != null)
+                throw new InvalidOperationException(
+                    $"The new range ('{nameof(SerialBatch.FromSerialNo)}' {serialBatch.FromSerialNo} to '{nameof(SerialBatch.ToSerialNo)}' {serialBatch.ToSerialNo}) overlaps with an existing batch (from {overlappingBatch.FromSerialNo} to {overlappingBatch.ToSerialNo}).");
 
             if (serialBatch.ToSerialNo <= existing.MaxUsed)
-            {
-                throw new InvalidOperationException($"New ToSerialNo ({serialBatch.ToSerialNo}) must be greater than MaxUsed ({existing.MaxUsed})");
-            }
+                throw new InvalidOperationException(
+                    $"The value for '{nameof(SerialBatch.ToSerialNo)}' must be greater than the highest issued serial number ({existing.MaxUsed}).");
 
-            if (serialBatch.ToSerialNo < existing.FromSerialNo)
-            {
-                throw new InvalidOperationException($"New ToSerialNo ({serialBatch.ToSerialNo}) must be greater than or equal to FromSerialNo ({existing.FromSerialNo})");
-            }
-
-            // Check for overlaps with other batches
-            var overlappingBatch = _db.SerialBatches
-                .Where(batch => batch.SerialTypeId == existing.SerialTypeId
-                    && batch.Id != serialBatch.Id
-                    && batch.FromSerialNo <= serialBatch.ToSerialNo
-                    && batch.ToSerialNo >= existing.FromSerialNo)
-                .FirstOrDefault();
-
-            if (overlappingBatch != null)
-            {
-                throw new InvalidOperationException($"Serial batch would overlap with batch {overlappingBatch.FromSerialNo} to {overlappingBatch.ToSerialNo}");
-            }
+            if (serialBatch.MaxUsed < existing.MaxUsed)
+                throw new InvalidOperationException(
+                    $"The new value for '{nameof(SerialBatch.MaxUsed)}' cannot be lower than the current maximum issued serial number ({existing.MaxUsed}).");
 
             existing.Description = serialBatch.Description;
+            existing.FromSerialNo = serialBatch.FromSerialNo;
             existing.ToSerialNo = serialBatch.ToSerialNo;
+            existing.MaxUsed = serialBatch.MaxUsed;
             existing.SetUpdate<ChangeProps>(command);
 
             _db.SaveChanges();

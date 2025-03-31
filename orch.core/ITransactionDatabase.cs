@@ -1,4 +1,5 @@
-﻿using orch.common;
+﻿using funcscript.core;
+using orch.common;
 using orch.core.model;
 using orch.core.model.dto;
 
@@ -84,7 +85,7 @@ namespace orch.core
 
         List<Guid> GetUserWithPermissions(IList<Guid> userWithPermissions);
 
-        SerialNo UseNextSerialNo(OCommand command, Guid batchId);
+        SerialNo UseNextSerialNo(OCommand command, Guid batchId, IFsDataProvider provider = null);
 
         PermissionAdminInfo GetPermissionAdminInfo(string pk);
 
@@ -124,8 +125,8 @@ namespace orch.core
 
         SerialType GetSerialType(string key);
 
-        void CreateSerialType(OCommand command, SerialType type);
-        void UpdateSerialType(OCommand command, SerialType type);
+        void CreateSerialType(OCommand command, SerialType serialType);
+        void UpdateSerialType(OCommand command, SerialType serialType);
 
         void CreateSerialBatch(OCommand command, SerialBatch serialBatch);
         void UpdateSerialBatch(OCommand command, SerialBatch serialBatch);

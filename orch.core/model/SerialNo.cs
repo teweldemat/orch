@@ -1,4 +1,7 @@
-﻿using orch.common;
+﻿using funcscript;
+using funcscript.core;
+using funcscript.model;
+using orch.common;
 
 namespace orch.core.model
 {
@@ -12,21 +15,60 @@ namespace orch.core.model
     public enum SerialNoFormattingType
     {
         DotNet,
-        Formula
+        FsFormula
     }
     public abstract class SerialTypeProps : ChangeProps
     {
         public Guid Id { get; set; }
-        public String Key { get; set; }
-        public String Name { get; set; }
-        public String FormatString { get; set; }
+        public string Key { get; set; }
+        public string Name { get; set; }
+        public string FormatString { get; set; }
         public SerialNoFormattingType FormatType { get; set; }
-        public String FormatSerialNo(int sn)
-        {
-            return String.Format(FormatString, sn);
-
-        }
         public string AuthorizationLevel { get; set; }
+
+        public string FormatSerialNo(int sn, IFsDataProvider provider = null)
+        {
+            if (string.IsNullOrWhiteSpace(FormatString))
+                return sn.ToString();
+
+            switch (FormatType)
+            {
+                case SerialNoFormattingType.DotNet:
+                    return string.Format(FormatString, sn);
+                case SerialNoFormattingType.FsFormula:
+                {
+                    object result;
+                    try
+                    {
+                        result = FuncScript.Evaluate(new KvcProvider(new ObjectKvc(new
+                            {
+                                serialNo = sn
+                            }),
+                            provider
+                        ), FormatString);
+                    }
+                    catch (Exception ex)
+                    {
+                        throw new ApplicationException(
+                            $"An error occurred while evaluating serial type '{Key}' with formatting type '{FormatType}'",
+                            ex);
+                    }
+
+                    if (result is null)
+                        throw new ApplicationException(
+                            $"Evaluation of serial type '{Key}' with formatting type '{FormatType}' did not return any value");
+
+                    if (result is not string formatted)
+                        throw new ApplicationException(
+                            $"Evaluation of serial type '{Key}' with formatting type '{FormatType}' returned non-string value '{result}' of type '{result.GetType()}'");
+
+                    return formatted;
+                }
+                default:
+                    throw new NotSupportedException(
+                        $"Serial type '{Key}' has unsupported formatting type '{FormatType}'");
+            }
+        }
     }
     public class SerialBatch : SerialBatchProps
     {
@@ -38,7 +80,7 @@ namespace orch.core.model
     {
         public Guid Id { get; set; }
         public Guid SerialTypeId { get; set; }
-        public String Description { get; set; }
+        public string Description { get; set; }
         public int FromSerialNo { get; set; }
         public int ToSerialNo { get; set; }
         public int MaxUsed { get; set; }
@@ -53,7 +95,7 @@ namespace orch.core.model
     {
         public Guid BatchId { get; set; }
         public int Sn { get; set; }
-        public String Formatted { get; set; }
+        public string Formatted { get; set; }
         public bool IsVoid { get; set; }
 
     }

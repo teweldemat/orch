@@ -16,7 +16,9 @@ namespace orch.core.command.serial
 
         public Guid BatchId { get; set; }
         public string Description { get; set; }
+        public int FromSerialNo { get; set; }
         public int ToSerialNo { get; set; }
+        public int MaxUsed { get; set; }
     }
 
     public class UpdateSerialBatchCommandInitializer : CommandInitializerBase<UpdateSerialBatchCommand>
@@ -47,7 +49,8 @@ namespace orch.core.command.serial
 
         protected override void Authorize()
         {
-            if (!_services.TranDb.IsPermitted(_commandInfo.UserId.Value, CoreModule.PERMISSION_MANAGE_SERIALS))
+            if (!_commandInfo.UserId.HasValue ||
+                !_services.TranDb.IsPermitted(_commandInfo.UserId.Value, CoreModule.PERMISSION_MANAGE_SERIALS))
                 throw new UnauthorizedAccessException("You are not authorized to manage serials.");
         }
 
@@ -70,13 +73,9 @@ namespace orch.core.command.serial
 
         public override void Preprocess()
         {
-            if (_commandData.ToSerialNo <= SerialBatch.MaxUsed)
-                throw new InvalidOperationException($"New ToSerialNo ({_commandData.ToSerialNo}) must be greater than MaxUsed ({SerialBatch.MaxUsed})");
-
-            if (_commandData.ToSerialNo < SerialBatch.FromSerialNo)
-                throw new InvalidOperationException($"New ToSerialNo ({_commandData.ToSerialNo}) must be greater than or equal to FromSerialNo ({SerialBatch.FromSerialNo})");
-
+            SerialBatch.FromSerialNo = _commandData.FromSerialNo;
             SerialBatch.ToSerialNo = _commandData.ToSerialNo;
+            SerialBatch.MaxUsed = _commandData.MaxUsed;
             SerialBatch.Description = _commandData.Description;
         }
 
