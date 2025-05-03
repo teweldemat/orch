@@ -165,9 +165,10 @@ namespace orch.core.ef.System
                 CreateTime = _host.CurrentTime()
             };
 
-            var existingFile = GetFile(item.FileId);
-
-            // Create directory if it does not already exist
+            
+            if (string.IsNullOrWhiteSpace(_contentServerConfig.BaseDir))
+                throw new InvalidOperationException($"{nameof(_contentServerConfig.BaseDir)} must be configured and non-empty.");
+            
             if (!Directory.Exists(_contentServerConfig.BaseDir))
             {
                 Directory.CreateDirectory(_contentServerConfig.BaseDir);
@@ -206,6 +207,8 @@ namespace orch.core.ef.System
             hashFunc.Dispose();
 
             var transaction = _dbContext.Database.BeginTransaction();
+            
+            var existingFile = GetFile(item.FileId);
 
             try
             {

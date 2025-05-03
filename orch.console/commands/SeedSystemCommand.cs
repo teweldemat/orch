@@ -4,6 +4,8 @@ using funcscript.sql.core;
 using Microsoft.Extensions.DependencyInjection;
 using orch.core;
 using System.Diagnostics;
+using System.Text.RegularExpressions;
+using System.Web;
 
 namespace orch.console.commands
 {
@@ -209,13 +211,24 @@ namespace orch.console.commands
                                 + $"\nmdData: \n{(cmdData == null ? "null" : Newtonsoft.Json.JsonConvert.SerializeObject(cmdData))}"
                                 );
                         }
-                        service.ExecuteCommandUntyped(
+                        
+                        var commandId = service.ExecuteCommandUntyped(
                             userId,
                             systemId,
                             typeId,
                             0,
-                            cmdData, out var tranSetId);
-                        _host.StdOut.WriteLine("OK");
+                            cmdData, out _);
+
+                        var command = tranDb.GetCommand(commandId);
+
+                        if (!string.IsNullOrWhiteSpace(command.TextSummary))
+                        {
+                            var plainText = Regex.Replace(command.TextSummary, "<.*?>", ""); // Strip HTML tags
+                            plainText = HttpUtility.HtmlDecode(plainText); // Decode HTML entities
+                            _host.StdOut.WriteLine($"OK - {plainText}");
+                        }
+                        else
+                            _host.StdOut.WriteLine($"OK");
                     }
                     else
                         _host.StdOut.WriteLine("Skipped");
@@ -300,9 +313,12 @@ namespace orch.console.commands
                         _host.StdOut.WriteLine($"No variables applied!");
                     else
                     {
-                        var fn = new FileInfo("vars.fx");
-                        File.WriteAllText(fn.FullName, vars.ToString());
-                        _host.StdOut.WriteLine($"Applied variables saved in {new Uri(fn.FullName).AbsoluteUri}");
+                        var tempDir = Path.Combine(AppContext.BaseDirectory, "temp");
+                        Directory.CreateDirectory(tempDir);
+
+                        var fn = Path.Combine(tempDir, "vars.fx");
+                        File.WriteAllText(fn, vars.ToString());
+                        _host.StdOut.WriteLine($"Applied variables saved in {new Uri(fn).AbsoluteUri}");
                     }
                         
                     if (options.Atomic)

@@ -68,14 +68,6 @@ namespace orch.ef.Core
 
         }
 
-        protected override void OnModelCreating(ModelBuilder modelBuilder)
-        {
-            base.OnModelCreating(modelBuilder);
-
-            RegisterDbFunction(modelBuilder, nameof(CoreEFmodule.Functions.ClusterDBSCAN));
-            RegisterDbFunction(modelBuilder, nameof(CoreEFmodule.Functions.ClusterKMeans));
-        }
-
         public override int SaveChanges()
         {
             CheckReadOnly();
@@ -87,16 +79,7 @@ namespace orch.ef.Core
             CheckReadOnly();
             return await base.SaveChangesAsync(cancellationToken);
         }
-
-        protected static void RegisterDbFunction(ModelBuilder modelBuilder, string methodName)
-        {
-            var methodInfo = typeof(CoreEFDbFunctions).GetMethod(methodName);
-            if (methodInfo != null)
-            {
-                modelBuilder.HasDbFunction(methodInfo);
-            }
-        }
-
+        
         private void CheckReadOnly()
         {
             if (Mode == DatabaseMode.ReadOnly)

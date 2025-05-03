@@ -8,10 +8,5 @@ namespace orch.core.ef
         {
             QueryComposer.LoadViews(Assembly.GetExecutingAssembly());
         }
-
-        public static CoreEFDbFunctions Functions
-        => CoreEFDbFunctions.Instance;
-
-
     }
 }
