@@ -288,6 +288,11 @@ namespace orch.core
         {
             return (!userId.Equals(Guid.Empty)) && (Db.GetRootUser()?.Id == userId);
         }
+        
+        public bool IsSystemUser(Guid userId)
+        {
+            return (!userId.Equals(Guid.Empty)) && (Db.GetSystemUser()?.Id == userId);
+        }
 
         private void Bootstrap(
             OTransaction tran,
