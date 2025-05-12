@@ -657,7 +657,6 @@ namespace orch.core.ef.System
         [OViewFunction]
         public UserInfo? GetUserById(Guid userId) => GetUserInfo(userId, false);
 
-
         [OViewFunction(permissions: new string[] { CoreModule.PERMISSION_GET_USER })]
         public PagedList<UserInfo> GetUsers(int index, int count, UserInfoFilter? filter = null)
         {
@@ -955,6 +954,18 @@ namespace orch.core.ef.System
         [OViewFunction("IsPermittedAll")]
         public bool IsPermitted(Guid userId, string[] permissionKeys, out string[] notGrantedPermissions)
         {
+            if (userId == Guid.Empty)
+            {
+                notGrantedPermissions = Array.Empty<string>();
+                return false;
+            }
+
+            if (permissionKeys.Length == 0)
+            {
+                notGrantedPermissions = Array.Empty<string>();
+                return true;
+            }
+
             var permissions = _db.Permissions.Where(x => permissionKeys.Contains(x.PermissionKey)).ToList();
             if (permissions.Count != permissionKeys.Length)
             {
