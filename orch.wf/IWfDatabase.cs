@@ -9,7 +9,10 @@ namespace orch.wf
     {        
         void DetachEntities();
 
-        IList<OTask> GetUserTasks(Guid userId, List<OTaskStatus>? filterStatuses = null);
+        IList<OTask> GetUserTasks(
+            Guid userId,
+            List<OTaskStatus>? filterStatuses = null,
+            List<Guid>? excludedTaskTypeIds = null);
 
         PagedList<OTask> GetUserTasksPaged(
             Guid userId,

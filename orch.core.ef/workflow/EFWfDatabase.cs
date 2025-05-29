@@ -213,23 +213,34 @@ namespace orch.ef.workflow
         }
 
         [OViewFunction]
-        public IList<OTask> GetUserTasks(Guid userId, List<OTaskStatus>? filterStatuses = null)
+        public IList<OTask> GetUserTasks(
+            Guid userId,
+            List<OTaskStatus>? filterStatuses = null,
+            List<Guid>? excludedTaskTypeIds = null)
         {
-            IQueryable<DALOTask> query = _dbContext.TaskAssignee.Where(x => x.UserId == userId)
+            var query = _dbContext.TaskAssignee
+                .Where(x => x.UserId == userId)
                 .Join(_dbContext.Tasks.AsNoTracking(), x => x.TaskId, x => x.Id, (x, y) => y);
 
-            if (filterStatuses != null && filterStatuses.Count > 0)
+            if (filterStatuses is { Count: > 0 })
             {
                 query = query.Where(x => filterStatuses.Contains(x.Status));
             }
 
-            var ret = query.OrderByDescending(x => x.UpdateTime)
+            if (excludedTaskTypeIds is { Count: > 0 })
+            {
+                query = query.Where(x => !excludedTaskTypeIds.Contains(x.TaskTypeId));
+            }
+
+            var ret = query
+                .OrderByDescending(x => x.UpdateTime)
                 .AsEnumerable()
                 .Select(x => new OTask(x))
                 .ToList();
 
             return ret;
         }
+
 
         [OViewFunction(name: "GetUserTasksPaged")]
         public PagedList<OTask> GetUserTasksPaged(
@@ -317,7 +328,7 @@ namespace orch.ef.workflow
         private void assertCommand(OCommand command)
         {
             if (_tranDb.GetCommand(command.Id) == null)
-                throw new orch.core.errors.InconsitentDbStateException($"Invalid command id{command.Id}");
+                throw new orch.core.errors.InconsistentDbStateException($"Invalid command id{command.Id}");
         }
 
         public void CreateTask<T>(OCommand command, OTask task, T taskData, TaskNote note) where T : WfStateData

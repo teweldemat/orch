@@ -6,12 +6,11 @@ using System.Threading.Tasks;
 
 namespace orch.core.errors
 {
-    public class InconsitentDbStateException:Exception
+    public class InconsistentDbStateException : ApplicationException
     {
-        public InconsitentDbStateException(string message):base(message)
+        public InconsistentDbStateException(string message) : base(message)
         {
 
         }
-
     }
 }
