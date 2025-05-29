@@ -8,8 +8,8 @@ internal partial class Program
     {
         // Set up the configuration builder
         var builder = new ConfigurationBuilder()
-            .AddJsonFile("appsettings.console.json", optional: false, reloadOnChange: true)
-            .AddJsonFile($"appsettings.console.{Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Production"}.json", optional: true, reloadOnChange: true)
+            .AddJsonFile("appsettings.console.json", optional: true, reloadOnChange: true)
+            .AddJsonFile($"appsettings.console.{Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT")}.json", optional: true, reloadOnChange: true)
             .AddEnvironmentVariables();
 
         // Build the configuration
@@ -19,7 +19,7 @@ internal partial class Program
         {
         }
 
-        Console.WriteLine("Welcome to the Orchastrator command line");
+        Console.WriteLine("Welcome to the Orchestrator command line");
         Console.WriteLine("Loading orch application");
 
         RunCommandLine(args);

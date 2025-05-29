@@ -5,14 +5,30 @@ using System.Globalization;
 using System.IO.Pipes;
 using System.Text;
 using CsvHelper;
+using System.Reflection.PortableExecutable;
+using orch.core;
+ 
 
 namespace orch.report.Generators
 {
     public static class CsvGenerator
     {
+        
         public static FileContentResult ToCsvFileContentResult<T>(this IEnumerable<T> list, string fileName, params string[] includedProperties)
         {
             var csvData = GenerateCsvFromList(list, includedProperties);
+            var contentBytes = Encoding.UTF8.GetBytes(csvData);
+            var contentType = "text/csv";
+            return new FileContentResult(contentBytes, contentType)
+            {
+                FileDownloadName = FormatFileName(fileName)
+            };
+        } 
+        public static FileContentResult ToCsvFileContentResultWithHeader<T>(this IEnumerable<T> list, string fileName,List<string> headerData, params string[] includedProperties)
+        {
+
+            
+          var csvData = GenerateCsvFromListWithHeader(list, headerData, includedProperties);
             var contentBytes = Encoding.UTF8.GetBytes(csvData);
             var contentType = "text/csv";
             return new FileContentResult(contentBytes, contentType)
@@ -114,6 +130,50 @@ namespace orch.report.Generators
             return stringBuilder.ToString();
         }
 
+        private static string GenerateCsvFromListWithHeader<T>(IEnumerable<T> list, List<string>? headerData, params string[] includedProperties)
+        {
+            var properties = TypeDescriptor.GetProperties(typeof(T))
+                .Cast<PropertyDescriptor>()
+                .Where(prop => includedProperties.Length == 0 || includedProperties.Contains(prop.Name))
+                .ToArray();
+             
+            var stringBuilder = new StringBuilder();
+
+            if (headerData != null)
+            {
+                foreach (var header in headerData)
+                {
+                    stringBuilder.Append(header);
+                   
+                    stringBuilder.AppendLine();
+                }
+                stringBuilder.AppendLine();
+            }
+           
+            foreach (var prop in properties)
+            {
+                stringBuilder.Append(prop.Name);
+                stringBuilder.Append(",");
+               
+            }
+
+            stringBuilder.AppendLine();
+
+            foreach (var item in list)
+            {
+                foreach (var prop in properties)
+                {
+                    var value = prop.GetValue(item)?.ToString() ?? "";
+                    stringBuilder.Append(value);
+                    stringBuilder.Append(",");
+                }
+
+                stringBuilder.AppendLine();
+            }
+
+            return stringBuilder.ToString();
+        }
+        [Obsolete("Use GenerateCsvFromDataTableV2 instead")]
         private static string GenerateCsvFromDataTable(DataTable dataTable)
         {
             var stringBuilder = new StringBuilder();
