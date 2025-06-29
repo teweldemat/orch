@@ -88,12 +88,19 @@ namespace orch.core.job
             }
         };
 
-        // TODO: make asynchronous
         protected void SendProgress(P progress)
         {
             HubContext.Clients?.Group(_jobInfo.Id).SendAsync(
                 JobProgressHub.ProgressMethod,
                 JsonConvert.SerializeObject(progress, _settings), cancellationToken: CancellationToken).Wait();
+        }
+        
+        protected async Task SendProgressAsync(P progress)
+        {
+            await HubContext.Clients?.Group(_jobInfo.Id).SendAsync(
+                JobProgressHub.ProgressMethod,
+                JsonConvert.SerializeObject(progress, _settings),
+                cancellationToken: CancellationToken);
         }
 
         public abstract Task Execute();
