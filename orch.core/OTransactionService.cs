@@ -63,6 +63,7 @@ namespace orch.core
             command.TranId = CurrentTran.Id;
             command.SeqNo = DataSeqNo;
             command.UserId = CurrentTran.UserId;
+            command.SystemID = CurrentTran.SystemID;
             command.Time = CurrentTran.Time;
             command.MainCommand = mainCommand;
 
