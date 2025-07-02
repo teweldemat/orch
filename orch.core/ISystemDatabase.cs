@@ -15,5 +15,6 @@ namespace orch.core
         ContentFile GetFile(Guid file_id);
         PagedList<ContentFile> GetFiles(int pageNumber, int pageSize, ContentFileFilter? filter = null);
         ContentFile SaveFile(string fileName, Stream r, Guid? fileId = null, bool overwrite = false);
+        int ExpireTokensNotUsedSince(long lastUsedCutoff);
     }
 }

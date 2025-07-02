@@ -26,15 +26,15 @@ namespace orch.core.ef.System
             _dbContext.Dispose();
         }
 
-        private  void AssertActiveAccessToken(Guid tokenId, AccessTokenProps? accessToken)
+        private void AssertActiveAccessToken(Guid tokenId, AccessTokenProps? accessToken)
         {
             if (accessToken == null)
                 throw new InvalidOperationException($"Access token {tokenId} doesn't exist");
-            
+
             var now = _host.CurrentTime();
-            
+
             if (accessToken.ExpiryTime != null && accessToken.ExpiryTime < now)
-                throw new InvalidOperationException($"Access token {tokenId} has expired, it can't be used.");
+                throw new InvalidOperationException($"Access token {tokenId} has expired.");
         }
 
         public void CreateAccessToken(AccessTokenProps accessToken)
@@ -165,10 +165,10 @@ namespace orch.core.ef.System
                 CreateTime = _host.CurrentTime()
             };
 
-            
+
             if (string.IsNullOrWhiteSpace(_contentServerConfig.BaseDir))
                 throw new InvalidOperationException($"{nameof(_contentServerConfig.BaseDir)} must be configured and non-empty.");
-            
+
             if (!Directory.Exists(_contentServerConfig.BaseDir))
             {
                 Directory.CreateDirectory(_contentServerConfig.BaseDir);
@@ -207,7 +207,7 @@ namespace orch.core.ef.System
             hashFunc.Dispose();
 
             var transaction = _dbContext.Database.BeginTransaction();
-            
+
             var existingFile = GetFile(item.FileId);
 
             try
@@ -228,7 +228,7 @@ namespace orch.core.ef.System
                 CreateFile(item);
 
                 transaction.Commit();
-                
+
                 return item;
             }
             catch
@@ -245,9 +245,29 @@ namespace orch.core.ef.System
                 {
                     throw new IOException("Error trying to rollback file creation", deleteException);
                 }
-                
+
                 throw;
             }
+        }
+
+        /// <summary>
+        /// Expires all tokens that have not been used since the given cutoff (i.e., LastUsed < lastUsedCutoff).
+        /// Sets ExpiryTime to now for those tokens and returns the number of tokens expired.
+        /// </summary>
+        public int ExpireTokensNotUsedSince(long lastUsedCutoff)
+        {
+            var now = _host.CurrentTime();
+
+            var affected = _dbContext.AccessTokens
+                .Where(t =>
+                    (t.ExpiryTime == null || t.ExpiryTime > now) &&
+                    t.LastUsed < lastUsedCutoff
+                )
+                .ExecuteUpdate(setters =>
+                    setters.SetProperty(t => t.ExpiryTime, now)
+                );
+
+            return affected;
         }
     }
 }

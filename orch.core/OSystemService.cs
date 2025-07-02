@@ -55,15 +55,11 @@ namespace orch.core
             if (rootUser == null)
                 throw new InvalidOperationException("Root user doesn't exist, has the system been initialized?");
 
-            if (user == null)
-                throw new InvalidOperationException($"User {userName} doesn't exist");
+            if (user == null || !user.PasswordHash.SequenceEqual(HashPassword(password)))
+                throw new InvalidOperationException($"Incorrect username and/or password");
 
             if (!user.Enabled)
                 throw new InvalidOperationException($"User {userName} is disabled");
-
-            var hash = HashPassword(password);
-            if (!user.PasswordHash.SequenceEqual(hash))
-                throw new InvalidOperationException($"Incorrect username and/or password");
 
             if (maxTokens is > 0 && user.Id != rootUser.Id)
             {
