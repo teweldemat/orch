@@ -217,7 +217,7 @@ namespace orch.wf
             return new WfTypeInfoSummary(wfTypeInfo);
         }
 
-        [OViewFunction(permissions: new string[] { CoreModule.PERMISSION_SYSTEM_ROOT })]
+        [OViewFunction]
         public IList<WfTypeInfoSummary> GetWorkflowTypes()
         {
             return WfModule.GetWorkflowTypes().Select(typeInfo => new WfTypeInfoSummary(typeInfo)).ToList();
