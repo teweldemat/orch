@@ -27,6 +27,11 @@ namespace orch.common
             //long milliseconds = (long)(time - new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc)).TotalMilliseconds;
             // return milliseconds;
         }
+        public static long AddDaysToLongTime(this long time, int days)
+        {
+            var singleDay = (long)1_000_000_000;
+            return time + (long)(singleDay * days);
+        }
 
         public static long TimeToLongWithOutSeccond(DateTime time)
         {
@@ -239,32 +244,32 @@ namespace orch.common
                     return tens[(int)Math.Floor(num / 10)] +
                            (num % 10 != 0 ? " " + ones[(int)Math.Floor(num % 10)] : "");
                 case < 1000:
-                {
-                    var hundreds = (int)Math.Floor(num / 100);
-                    var remainder = num % 100;
-                    return ones[hundreds] + " " + hundred + (remainder != 0 ? " " + NumberToAmharic(remainder) : "");
-                }
+                    {
+                        var hundreds = (int)Math.Floor(num / 100);
+                        var remainder = num % 100;
+                        return ones[hundreds] + " " + hundred + (remainder != 0 ? " " + NumberToAmharic(remainder) : "");
+                    }
                 case < 1_000_000:
-                {
-                    var thousands = (int)Math.Floor(num / 1000);
-                    var remainder = num % 1000;
-                    return NumberToAmharic(thousands) + " " + thousand +
-                           (remainder != 0 ? " " + NumberToAmharic(remainder) : "");
-                }
+                    {
+                        var thousands = (int)Math.Floor(num / 1000);
+                        var remainder = num % 1000;
+                        return NumberToAmharic(thousands) + " " + thousand +
+                               (remainder != 0 ? " " + NumberToAmharic(remainder) : "");
+                    }
                 case < 1_000_000_000:
-                {
-                    var millions = (int)Math.Floor(num / 1_000_000);
-                    var remainder = num % 1_000_000;
-                    return NumberToAmharic(millions) + " " + million +
-                           (remainder != 0 ? " " + NumberToAmharic(remainder) : "");
-                }
+                    {
+                        var millions = (int)Math.Floor(num / 1_000_000);
+                        var remainder = num % 1_000_000;
+                        return NumberToAmharic(millions) + " " + million +
+                               (remainder != 0 ? " " + NumberToAmharic(remainder) : "");
+                    }
                 case < 1_000_000_000_000:
-                {
-                    var billions = (int)Math.Floor(num / 1_000_000_000);
-                    var remainder = num % 1_000_000_000;
-                    return NumberToAmharic(billions) + " " + billion +
-                           (remainder != 0 ? " " + NumberToAmharic(remainder) : "");
-                }
+                    {
+                        var billions = (int)Math.Floor(num / 1_000_000_000);
+                        var remainder = num % 1_000_000_000;
+                        return NumberToAmharic(billions) + " " + billion +
+                               (remainder != 0 ? " " + NumberToAmharic(remainder) : "");
+                    }
             }
 
             if (num % 1 != 0)
@@ -274,6 +279,14 @@ namespace orch.common
             }
 
             return num.ToString();
+        }
+        public static string EscapeString(string str)
+        {
+            if (string.IsNullOrWhiteSpace(str)) return "";
+
+            var cleaned = Regex.Replace(str, @"\s+", " ").Trim(); // collapses all whitespace
+            var escaped = cleaned.Replace("\"", "\"\"");           // escape quotes
+            return $"\"{escaped}\"";
         }
     }
 
