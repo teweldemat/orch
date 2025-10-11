@@ -29,8 +29,7 @@ namespace orch.common
         }
         public static long AddDaysToLongTime(this long time, int days)
         {
-            var singleDay = (long)1_000_000_000;
-            return time + (long)(singleDay * days);
+            return time.LongToTime().AddDays(days).TimeToLong();
         }
 
         public static long TimeToLongWithOutSeccond(DateTime time)
