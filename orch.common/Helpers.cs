@@ -280,7 +280,7 @@ namespace orch.common
 
             return num.ToString();
         }
-        public static string EscapeString(string str)
+        public static string EscapeStringForCsvField(string str)
         {
             if (string.IsNullOrWhiteSpace(str)) return "";
 
