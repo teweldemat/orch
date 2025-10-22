@@ -2,7 +2,6 @@
 using System.ComponentModel;
 using System.Data;
 using System.Globalization;
-using System.IO.Pipes;
 using System.Text;
 using CsvHelper;
 using System.Reflection.PortableExecutable;
@@ -36,8 +35,8 @@ namespace orch.report.Generators
                 FileDownloadName = FormatFileName(fileName)
             };
         }
-        
-        [Obsolete("Use DataTableToCsvFileStreamResult instead")]
+
+        [Obsolete("Use DataTableToCsvFileContentResultV2 instead")]
         public static FileContentResult DataTableToCsvFileContentResult(this DataTable dataTable, string fileName)
         {
             var csvData = GenerateCsvFromDataTable(dataTable);
@@ -48,38 +47,15 @@ namespace orch.report.Generators
                 FileDownloadName = FormatFileName(fileName)
             };
         }
-        
-        public static FileStreamResult DataTableToCsvFileStreamResult(this DataTable dataTable, string fileName)
+
+        public static FileContentResult DataTableToCsvFileContentResultV2(this DataTable dataTable, string fileName)
         {
-            var memoryStream = new MemoryStream();
-
-            using (var writer = new StreamWriter(memoryStream, Encoding.UTF8, leaveOpen: true))
-            using (var csv = new CsvWriter(writer, CultureInfo.InvariantCulture))
-            {
-                foreach (DataColumn column in dataTable.Columns)
-                {
-                    csv.WriteField(column.ColumnName);
-                }
-                csv.NextRecord();
-
-                foreach (DataRow row in dataTable.Rows)
-                {
-                    foreach (var field in row.ItemArray)
-                    {
-                        csv.WriteField(field);
-                    }
-                    csv.NextRecord();
-                }
-
-                writer.Flush();
-            }
-
-            memoryStream.Position = 0;
-
+            var csvData = GenerateCsvFromDataTableV2(dataTable);
+            var contentBytes = Encoding.UTF8.GetBytes(csvData);
             const string contentType = "text/csv";
-            return new FileStreamResult(memoryStream, contentType)
+            return new FileContentResult(contentBytes, contentType)
             {
-                FileDownloadName = fileName
+                FileDownloadName = FormatFileName(fileName)
             };
         }
 
@@ -189,6 +165,31 @@ namespace orch.report.Generators
             }
             
             return stringBuilder.ToString();
+        }
+
+        public static string GenerateCsvFromDataTableV2(DataTable dataTable)
+        {
+            using var writer = new StringWriter();
+            using var csv = new CsvWriter(writer, CultureInfo.InvariantCulture);
+
+            foreach (DataColumn column in dataTable.Columns)
+            {
+                csv.WriteField(column.ColumnName);
+            }
+
+            csv.NextRecord();
+
+            foreach (DataRow row in dataTable.Rows)
+            {
+                foreach (var field in row.ItemArray)
+                {
+                    csv.WriteField(field);
+                }
+
+                csv.NextRecord();
+            }
+
+            return writer.ToString();
         }
     }
 }
