@@ -1,6 +1,6 @@
-﻿using funcscript;
-using funcscript.core;
-using funcscript.model;
+﻿using Walya;
+using Walya.Core;
+using Walya.Model;
 using orch.common;
 
 namespace orch.core.model
@@ -40,7 +40,7 @@ namespace orch.core.model
                     object result;
                     try
                     {
-                        result = FuncScript.Evaluate(new KvcProvider(new ObjectKvc(new
+                        result = Engine.Evaluate(new KvcProvider(new ObjectKvc(new
                             {
                                 serialNo = sn
                             }),

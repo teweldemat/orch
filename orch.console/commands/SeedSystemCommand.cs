@@ -1,11 +1,12 @@
-﻿using funcscript;
-using funcscript.model;
-using funcscript.sql.core;
+﻿using Walya;
+using Walya.Model;
+using Walya.Functions;
 using Microsoft.Extensions.DependencyInjection;
 using orch.core;
 using System.Diagnostics;
 using System.Text.RegularExpressions;
 using System.Web;
+using Walya.Sql.Core;
 
 namespace orch.console.commands
 {
@@ -94,7 +95,7 @@ namespace orch.console.commands
                 var res = ExecuteInDirectory(fi.DirectoryName, () =>
                 {
                     _host.StdOut.WriteLine($"Evaluating {mainFile}");
-                    seedData = FuncScript.Evaluate(p, mainFileContent) as KeyValueCollection;
+                    seedData = Engine.Evaluate(p, mainFileContent) as KeyValueCollection;
                     if (seedData == null)
                     {
                         _host.StdOut.WriteLine($"Seed file didn't evaluate to kvc");
@@ -166,7 +167,7 @@ namespace orch.console.commands
                 {
                     _host.StdOut.WriteLine($"Evaluating {commandFile}");
 
-                    commands = FuncScript.Evaluate(commandProvider, commandFileContent) as FsList;
+                    commands = Engine.Evaluate(commandProvider, commandFileContent) as FsList;
                     if (commands == null)
                     {
                         _host.StdOut.WriteLine($"No command was found in {commandFile}");
@@ -258,7 +259,7 @@ namespace orch.console.commands
 
             try
             {
-                if (FuncScript.EvaluateSpaceSeparatedList(parameters) is not List<string> pars || pars.Count == 0)
+                if (Engine.EvaluateSpaceSeparatedList(parameters) is not List<string> pars || pars.Count == 0)
                 {
                     _host.StdOut.WriteLine("Invalid command");
                     return;

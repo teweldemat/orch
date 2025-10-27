@@ -1,5 +1,5 @@
-﻿using funcscript;
-using funcscript.core;
+﻿using Walya;
+using Walya.Core;
 using orch.core;
 using orch.wf.model;
 
@@ -60,9 +60,9 @@ namespace orch.wf
             object res;
             try
             {
-                res = funcscript.FuncScript.Evaluate(provider, f);
+                res = Engine.Evaluate(provider, f);
             }
-            catch (funcscript.error.EvaluationException evex)
+            catch (Walya.Error.EvaluationException evex)
             {
                 throw new InvalidOperationException($"Evaluation of {configName} failed", evex);
 
@@ -88,15 +88,15 @@ namespace orch.wf
             object res;
             try
             {
-                res = FuncScript.Evaluate(provider, f);
+                res = Engine.Evaluate(provider, f);
             }
             catch (Exception ex)
             {
                 throw new InvalidOperationException($"Evaluation of task formula failed", ex);
             }
-            if (!(res is funcscript.model.KeyValueCollection))
+            if (!(res is Walya.Model.KeyValueCollection))
                 throw new InvalidOperationException($"Evaluation of task formal returned invalid result: {(res == null ? "<null>" : res.ToString())}. Boolean value expected");
-            return ((funcscript.model.KeyValueCollection)res).ConvertTo<TaskChange>();
+            return ((Walya.Model.KeyValueCollection)res).ConvertTo<TaskChange>();
 
         }
 

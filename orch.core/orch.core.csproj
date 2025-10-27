@@ -15,11 +15,10 @@
     <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="6.0.0" />
     <PackageReference Include="NCrontab.Signed" Version="3.3.3" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
+    <PackageReference Include="Walya" Version="0.1.1" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\function-script\funcscript.sql\funcscript.sql.csproj" />
-    <ProjectReference Include="..\..\function-script\funcscript\funcscript.csproj" />
     <ProjectReference Include="..\orch.common\orch.common.csproj" />
   </ItemGroup>
 

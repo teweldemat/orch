@@ -45,10 +45,10 @@
     <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
     <PackageReference Include="System.Configuration.ConfigurationManager" Version="7.0.0" />
     <PackageReference Include="System.Text.Json" Version="7.0.3" />
+    <PackageReference Include="Walya.Sql" Version="0.1.1" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\function-script\funcscript.sql\funcscript.sql.csproj" />
     <ProjectReference Include="..\orch.core\orch.core.csproj" />
     <ProjectReference Include="..\orch.utils.web\orch.utils.web.csproj" />
   </ItemGroup>

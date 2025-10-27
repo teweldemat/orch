@@ -1,6 +1,6 @@
-﻿using funcscript;
-using funcscript.core;
-using funcscript.model;
+﻿using Walya;
+using Walya.Core;
+using Walya.Model;
 using Microsoft.Extensions.DependencyInjection;
 using orch.core.job;
 using System.Collections;
@@ -69,7 +69,7 @@ namespace orch.core
         public Dictionary<ParameterInfo, object> DefaultValues = new();
     }
 
-    public class ViewFunctionCaller : IFsFunction
+    public class ViewFunctionCaller : Walya.Core.IFsFunction
     {
         private OTransactionService _tranService;
         private ViewFunction _func;
@@ -87,8 +87,8 @@ namespace orch.core
         public CallType CallType => CallType.Prefix;
 
         public string Symbol => _func.Name;
+        public int Precedence { get; }
 
-        public int Precidence => 0;
 
         public object Evaluate(IFsDataProvider parent, IParameterList pars)
         {
@@ -192,7 +192,7 @@ namespace orch.core
                     index++;
                 }
             }
-            return FuncScript.NormalizeDataType(_func.Method.Invoke(serviceObject, parVals));
+            return Engine.NormalizeDataType(_func.Method.Invoke(serviceObject, parVals));
         }
 
 
@@ -363,7 +363,7 @@ namespace orch.core
         {
             if (!System.IO.File.Exists(fileName))
                 return null;
-            return FuncScript.FromJson(System.IO.File.ReadAllText(fileName));
+            return Engine.FromJson(System.IO.File.ReadAllText(fileName));
         }
 
         [OViewFunction]
@@ -419,15 +419,15 @@ namespace orch.core
     public class QueryComposer
     {
         [OViewFunction]
-        public FuncScriptParser.ParseNode ParseFuncScript(string exp)
+        public WalyaParser.ParseNode ParseFuncScript(string exp)
         {
-            var p = new funcscript.DefaultFsDataProvider();
-            var err = new List<FuncScriptParser.SyntaxErrorData>();
-            FuncScriptParser.Parse(p, exp, out var node, err);
+            var p = new Walya.DefaultFsDataProvider();
+            var err = new List<WalyaParser.SyntaxErrorData>();
+            WalyaParser.Parse(p, exp, out var node, err);
             return node;
         }
 
-        private int SyntaxHighlight(StringBuilder sb, String exp, int i, FuncScriptParser.ParseNode node)
+        private int SyntaxHighlight(StringBuilder sb, String exp, int i, WalyaParser.ParseNode node)
         {
             if (node == null)
             {
@@ -458,37 +458,37 @@ namespace orch.core
                 }
                 switch (node.NodeType)
                 {
-                    case FuncScriptParser.ParseNodeType.Key:
+                    case WalyaParser.ParseNodeType.Key:
                         sb.Append("<span style='color:DarkGreen'>");
                         sb.Append(HttpUtility.HtmlEncode(exp.Substring(node.Pos, node.Length)));
                         sb.Append("</span>");
                         break;
 
-                    case FuncScriptParser.ParseNodeType.Identifier:
+                    case WalyaParser.ParseNodeType.Identifier:
                         sb.Append("<span style='color:DarkCyan'>");
                         sb.Append(HttpUtility.HtmlEncode(exp.Substring(node.Pos, node.Length)));
                         sb.Append("</span>");
                         break;
 
-                    case FuncScriptParser.ParseNodeType.KeyWord:
+                    case WalyaParser.ParseNodeType.KeyWord:
                         sb.Append("<span style='color:Blue'>");
                         sb.Append(HttpUtility.HtmlEncode(exp.Substring(node.Pos, node.Length)));
                         sb.Append("</span>");
                         break;
 
-                    case FuncScriptParser.ParseNodeType.LiteralInteger:
+                    case WalyaParser.ParseNodeType.LiteralInteger:
                         sb.Append("<span style='color:Gray'>");
                         sb.Append(HttpUtility.HtmlEncode(exp.Substring(node.Pos, node.Length)));
                         sb.Append("</span>");
                         break;
 
-                    case FuncScriptParser.ParseNodeType.LiteralDouble:
+                    case WalyaParser.ParseNodeType.LiteralDouble:
                         sb.Append("<span style='color:Brown'>");
                         sb.Append(HttpUtility.HtmlEncode(exp.Substring(node.Pos, node.Length)));
                         sb.Append("</span>");
                         break;
 
-                    case FuncScriptParser.ParseNodeType.LiteralString:
+                    case WalyaParser.ParseNodeType.LiteralString:
                         sb.Append("<span style='color:Red'>");
                         sb.Append(HttpUtility.HtmlEncode(exp.Substring(node.Pos, node.Length)));
                         sb.Append("</span>");
@@ -507,9 +507,9 @@ namespace orch.core
         [OViewFunction]
         public String HighlightFuncScript(string exp)
         {
-            var serr = new List<FuncScriptParser.SyntaxErrorData>();
-            var p = new funcscript.DefaultFsDataProvider();
-            FuncScriptParser.Parse(p, exp, out var node, serr);
+            var serr = new List<WalyaParser.SyntaxErrorData>();
+            var p = new DefaultFsDataProvider();
+            WalyaParser.Parse(p, exp, out var node, serr);
             var sb = new StringBuilder();
             sb.Append("<p>");
             var i = SyntaxHighlight(sb, exp, 0, node);
@@ -617,7 +617,7 @@ namespace orch.core
         {
             var provider = new ViewQueryProvider(tranService, userId, parsVal);
 
-            var ret = FuncScript.Evaluate(provider, query);
+            var ret = Engine.Evaluate(provider, query);
             return ret;
         }
     }

@@ -9,7 +9,7 @@ using orch.core.model.dto;
 using orch.ef.Core;
 using System.Data;
 using System.Data.Common;
-using funcscript.core;
+using Walya.Core;
 
 
 namespace orch.core.ef.System

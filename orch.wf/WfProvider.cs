@@ -1,14 +1,14 @@
-﻿using funcscript;
-using funcscript.core;
+﻿using Walya;
+using Walya.Core;
 using orch.core;
 using orch.core.model;
 using orch.wf.model;
 
 namespace orch.wf
 {
-    public class WfProvider : funcscript.core.IFsDataProvider
+    public class WfProvider : Walya.Core.IFsDataProvider
     {
-        DefaultFsDataProvider global = new funcscript.DefaultFsDataProvider();
+        DefaultFsDataProvider global = new DefaultFsDataProvider();
         common.CachedObject<string, object> _cache;
         WfServiceCollection _services;
         OTask _task;
@@ -33,13 +33,13 @@ namespace orch.wf
                     switch (name)
                     {
                         case "user":
-                            return FuncScript.NormalizeDataType(_checkUser);
+                            return Engine.NormalizeDataType(_checkUser);
                         case "task":
-                            return FuncScript.NormalizeDataType(_task);
+                            return Engine.NormalizeDataType(_task);
                         case "wfstate":
-                            return FuncScript.NormalizeDataType(_wfState);
+                            return Engine.NormalizeDataType(_wfState);
                         case "action":
-                            return FuncScript.NormalizeDataType(action);
+                            return Engine.NormalizeDataType(action);
                         default:
                             break;
                     }
