@@ -1,12 +1,12 @@
-﻿using Walya;
-using Walya.Core;
+﻿using FuncScript;
+using FuncScript.Core;
 using orch.core;
 using orch.core.model;
 using orch.wf.model;
 
 namespace orch.wf
 {
-    public class WfProvider : Walya.Core.IFsDataProvider
+    public class WfProvider : FuncScript.Core.IFsDataProvider
     {
         DefaultFsDataProvider global = new DefaultFsDataProvider();
         common.CachedObject<string, object> _cache;

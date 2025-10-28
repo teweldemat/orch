@@ -1,6 +1,6 @@
-﻿using Walya;
-using Walya.Core;
-using Walya.Model;
+﻿using FuncScript;
+using FuncScript.Core;
+using FuncScript.Model;
 using orch.common;
 
 namespace orch.core.model

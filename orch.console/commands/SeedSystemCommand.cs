@@ -1,12 +1,12 @@
-﻿using Walya;
-using Walya.Model;
-using Walya.Functions;
+﻿using FuncScript;
+using FuncScript.Model;
+using FuncScript.Functions;
 using Microsoft.Extensions.DependencyInjection;
 using orch.core;
 using System.Diagnostics;
 using System.Text.RegularExpressions;
 using System.Web;
-using Walya.Sql.Core;
+using FuncScript.Sql.Core;
 
 namespace orch.console.commands
 {
