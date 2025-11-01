@@ -15,7 +15,6 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-    <ProjectReference Include="..\..\function-script\funcscript\funcscript.csproj" />
     <ProjectReference Include="..\orch.common\orch.common.csproj" />
     <ProjectReference Include="..\orch.core\orch.core.csproj" />
     <ProjectReference Include="..\orch.utils.web\orch.utils.web.csproj" />
