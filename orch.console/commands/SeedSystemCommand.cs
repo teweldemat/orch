@@ -1,4 +1,5 @@
-﻿using FuncScript;
+﻿using System;
+using FuncScript;
 using FuncScript.Model;
 using FuncScript.Functions;
 using Microsoft.Extensions.DependencyInjection;
@@ -71,7 +72,6 @@ namespace orch.console.commands
 
             try
             {
-                
                 var rootUser = tranDb.GetRootUser();
 
                 var p = new KvcProvider(new ObjectKvc(new
@@ -137,7 +137,9 @@ namespace orch.console.commands
                             });
 
                             if (!execRes)
+                            {
                                 return false;
+                            }
                         }
                         nCommands = nc;
                     }
@@ -212,13 +214,15 @@ namespace orch.console.commands
                                 + $"\nmdData: \n{(cmdData == null ? "null" : Newtonsoft.Json.JsonConvert.SerializeObject(cmdData))}"
                                 );
                         }
-                        
+
+
                         var commandId = service.ExecuteCommandUntyped(
                             userId,
                             systemId,
                             typeId,
                             0,
                             cmdData, out _);
+
 
                         var command = tranDb.GetCommand(commandId);
 
@@ -237,6 +241,7 @@ namespace orch.console.commands
                 outvars = thisVar;
                 nCommands = index;
 
+
                 return true;
             }
             catch (Exception ex)
@@ -249,6 +254,9 @@ namespace orch.console.commands
                 }
                 return false;
             }
+            finally
+            {
+            }
         }
 
         public override void Execute(string parameters)
@@ -259,20 +267,33 @@ namespace orch.console.commands
 
             try
             {
-                if (Engine.EvaluateSpaceSeparatedList(parameters) is not List<string> pars || pars.Count == 0)
+                var parsedParameters = Engine.EvaluateSpaceSeparatedList(parameters);
+                if (parsedParameters == null)
                 {
                     _host.StdOut.WriteLine("Invalid command");
                     return;
                 }
+
+
+                if (parsedParameters is not IEnumerable<string> pars || pars.Count() == 0)
+                {
+                    _host.StdOut.WriteLine("Invalid command");
+                    return;
+                }
+
+
+                var parsList = pars.ToArray();
                 var parIndex = 0;
-                var assemblyFile = pars[parIndex++].ToString();
-                var typeName = pars[parIndex++].ToString();
+                var assemblyFile = parsList[parIndex++].ToString();
+                var typeName = parsList[parIndex++].ToString();
+
 
                 using var service = IApplicationScopeFactory.LoadFromAssembly(assemblyFile, typeName);
-                var seedIndexFileName = pars[parIndex++].ToString();
+
+                var seedIndexFileName = parsList[parIndex++].ToString();
                 var options = new ProcessOptions();
-                for (int i = parIndex; i < pars.Count; i++)
-                    switch (pars[i].ToString())
+                for (int i = parIndex; i < parsList.Length; i++)
+                    switch (parsList[i].ToString())
                     {
                         case "--isolated":
                             options.Isolated = true;
@@ -288,7 +309,7 @@ namespace orch.console.commands
                             break;
 
                         case "--skip":
-                            if (i + 1 < pars.Count && int.TryParse(pars[i + 1], out int skip))
+                            if (i + 1 < parsList.Length && int.TryParse(parsList[i + 1], out int skip))
                             {
                                 options.SkipCommands = skip;
                                 i++; // Skip the next argument since we've processed it
@@ -302,11 +323,12 @@ namespace orch.console.commands
 
                 currentService = service;
                 Attachments = new Dictionary<string, Guid>();
-                
+
                 var tranDb = service.Services.GetRequiredService<ITransactionDatabase>();
 
                 if (options.Atomic)
                     tranDb.BeginTransaction();
+
 
                 if (ProcessFile(service, seedIndexFileName, options, null, out var vars, 0, out var n))
                 {

@@ -19,6 +19,10 @@
     <Optimize>False</Optimize>
   </PropertyGroup>
 
+  <PropertyGroup>
+    <RestoreAdditionalProjectSources>$(RestoreAdditionalProjectSources);$(MSBuildThisFileDirectory)../../../funcscript-1/artifacts/NuGet</RestoreAdditionalProjectSources>
+  </PropertyGroup>
+
 
   <ItemGroup>
     <None Remove="appsettings.console.json" />
@@ -45,7 +49,7 @@
     <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
     <PackageReference Include="System.Configuration.ConfigurationManager" Version="7.0.0" />
     <PackageReference Include="System.Text.Json" Version="7.0.3" />
-    <PackageReference Include="Tewelde.FuncScript.Sql" Version="0.1.3" />
+    <PackageReference Include="Tewelde.FuncScript.Sql" Version="0.1.7" />
   </ItemGroup>
 
   <ItemGroup>

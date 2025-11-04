@@ -423,8 +423,9 @@ namespace orch.core
         {
             var p = new FuncScript.DefaultFsDataProvider();
             var err = new List<FuncScriptParser.SyntaxErrorData>();
-            FuncScriptParser.Parse(p, exp, out var node, err);
-            return node;
+            var context = new FuncScriptParser.ParseContext(p, exp, err);
+            var res=FuncScriptParser.Parse(context);
+            return res.ParseNode;
         }
 
         private int SyntaxHighlight(StringBuilder sb, String exp, int i, FuncScriptParser.ParseNode node)
@@ -509,10 +510,12 @@ namespace orch.core
         {
             var serr = new List<FuncScriptParser.SyntaxErrorData>();
             var p = new DefaultFsDataProvider();
-            FuncScriptParser.Parse(p, exp, out var node, serr);
+            var context = new FuncScriptParser.ParseContext(p, exp, serr);
+            var res=FuncScriptParser.Parse(context);
+
             var sb = new StringBuilder();
             sb.Append("<p>");
-            var i = SyntaxHighlight(sb, exp, 0, node);
+            var i = SyntaxHighlight(sb, exp, 0, res.ParseNode);
             if (exp.Length > i)
             {
                 sb.Append("<span style='color:Black'>");

@@ -1,4 +1,5 @@
-﻿using System.Reflection;
+﻿using System;
+using System.Reflection;
 
 namespace orch.core
 {
@@ -34,7 +35,6 @@ namespace orch.core
                 }
 
                 var factory = (IApplicationScopeFactory)Activator.CreateInstance(type);
-                
                 return factory.CreateApplicationScope();
             }
             finally
@@ -65,12 +65,10 @@ namespace orch.core
                 {
                     try
                     {
-                        Console.WriteLine($"Resolving assembly: {assemblyName.Name}");
                         return Assembly.LoadFrom(path);
                     }
                     catch (Exception ex)
                     {
-                        Console.WriteLine($"Error while resolving assembly {path}: {ex.Message}");
                     }
                 }
             }
