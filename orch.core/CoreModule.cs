@@ -17,6 +17,7 @@ namespace orch.core
         public static void InitializeModule()
         {
             OTransactionService.LoadTTFromAssembly(typeof(CoreModule).Assembly);
+            OTransactionService.RegisterCommandFiltersFromAssembly(typeof(CoreModule).Assembly);
             QueryComposer.LoadViews(Assembly.GetExecutingAssembly());
         }
 

@@ -88,6 +88,7 @@ namespace orch.wf
             var assembly = Assembly.GetExecutingAssembly();
             QueryComposer.LoadViews(assembly);
             OTransactionService.LoadTTFromAssembly(assembly);
+            OTransactionService.RegisterCommandFiltersFromAssembly(assembly);
         }
 
         public static void ResetModule()

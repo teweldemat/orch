@@ -32,6 +32,12 @@ namespace orch.core
             s_transactionTypesByKey.Clear();
             s_transactionTypesByAssembly.Clear();
             s_transactionHandlerInfos.Clear();
+            s_transactionInitializerInfos.Clear();
+
+            lock (s_commandFilterLock)
+            {
+                s_commandFilters.Clear();
+            }
 
             QueryComposer.Reset();
         }

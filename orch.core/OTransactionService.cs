@@ -75,6 +75,8 @@ namespace orch.core
                 initializer.Init();
             }
 
+            EnsureCommandAllowed(command, data);
+
             handler = GetHandler(command.DataTypeID);
 
             if (handler != null)
