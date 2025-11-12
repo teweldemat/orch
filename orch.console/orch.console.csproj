@@ -19,10 +19,7 @@
     <Optimize>False</Optimize>
   </PropertyGroup>
 
-  <PropertyGroup>
-    <RestoreAdditionalProjectSources>$(RestoreAdditionalProjectSources);$(MSBuildThisFileDirectory)../../../funcscript-1/artifacts/NuGet</RestoreAdditionalProjectSources>
-  </PropertyGroup>
-
+  
 
   <ItemGroup>
     <None Remove="appsettings.console.json" />
