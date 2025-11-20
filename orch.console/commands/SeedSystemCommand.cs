@@ -21,7 +21,8 @@ namespace orch.console.commands
         private static bool ExecuteInDirectory(string directory, Func<bool> action)
         {
             var cur = Directory.GetCurrentDirectory();
-            Directory.SetCurrentDirectory(directory);
+            var targetDirectory = Path.GetFullPath(directory);
+            Directory.SetCurrentDirectory(targetDirectory);
             try
             {
                 return action();
@@ -91,6 +92,8 @@ namespace orch.console.commands
 
                 var mainFileContent = File.ReadAllText(mainFile);
                 KeyValueCollection seedData = null;
+                KeyValueCollection thisVar = null;
+                object fromValue = null;
 
                 var res = ExecuteInDirectory(fi.DirectoryName, () =>
                 {
@@ -101,24 +104,28 @@ namespace orch.console.commands
                         _host.StdOut.WriteLine($"Seed file didn't evaluate to kvc");
                         return false;
                     }
+
+                    var evaluatedVars = seedData.Get("vars") as KeyValueCollection;
+                    thisVar = KeyValueCollection.Merge(vars, evaluatedVars);
+
+                    if (!options.Isolated)
+                    {
+                        fromValue = seedData.Get("from");
+                    }
                     return true;
                 });
 
                 if (!res)
                     return false;
 
-                var _thisVar = seedData.Get("vars");
-                var thisVar = _thisVar as KeyValueCollection;
-                thisVar = KeyValueCollection.Merge(vars, thisVar);
                 if (!options.Isolated)
                 {
-                    var from = seedData.Get("from");
                     IList<string> baseFiles = null;
 
-                    if (from is string @string)
+                    if (fromValue is string @string)
                         baseFiles = new string[] { @string };
 
-                    if (from is FsList list)
+                    if (fromValue is FsList list)
                     {
                         baseFiles = list
                             .Select(x => x as string)
@@ -181,63 +188,74 @@ namespace orch.console.commands
                     return false;
                 var index = nCommands;
 
-                foreach (KeyValueCollection c in commands)
+                var commandExecutionResult = ExecuteInDirectory(fi.DirectoryName, () =>
                 {
-                    if (c == null)
-                        continue;
-                    index++;
-                    var commandType = c.Get("cmd") as string;
-                    var user = c.Get("user") as string;
-                    var data = c.Get("data") as KeyValueCollection;
-                    CommandTypeInfo cmdt;
-                    if (commandType == null || (cmdt = OTransactionService.GetTypeIdByKey(commandType)) == null)
+                    foreach (KeyValueCollection c in commands)
                     {
-                        _host.StdOut.WriteLine($"Invalid command type {commandType}");
-                        return false;
-                    }
-                    var userInfo = tranDb.GetUserInfo(user);
-                    var systemInfo = tranDb.GetCurrentSystemInformation();
-
-                    _host.StdOut.Write($"{index}: {commandType}...");
-                    if ((options.Isolated || systemInfo == null || options.IgnoreCount || index > tranDb.Count) && index > options.SkipCommands)
-                    {
-                        Guid? userId = userInfo == null ? null : userInfo.Id;
-                        Guid? systemId = systemInfo == null ? null : systemInfo.SystemId;
-                        Guid typeId = cmdt.TypeId;
-                        object cmdData = data.ConvertTo(cmdt.Type);
-                        if (options.Verbose)
+                        if (c == null)
+                            continue;
+                        index++;
+                        var commandType = c.Get("cmd") as string;
+                        var user = c.Get("user") as string;
+                        var data = c.Get("data") as KeyValueCollection;
+                        CommandTypeInfo cmdt;
+                        if (commandType == null || (cmdt = OTransactionService.GetTypeIdByKey(commandType)) == null)
                         {
-                            _host.StdOut.WriteLine($"Executing command type:{cmdt.Type}"
-                                + $"\nuserId: {userId}"
-                                + $"\bsystemId: {systemId}"
-                                + $"\ntypeId: {typeId}"
-                                + $"\nmdData: \n{(cmdData == null ? "null" : Newtonsoft.Json.JsonConvert.SerializeObject(cmdData))}"
-                                );
+                            _host.StdOut.WriteLine($"Invalid command type {commandType}");
+                            return false;
                         }
+                        var userInfo = tranDb.GetUserInfo(user);
+                        var systemInfo = tranDb.GetCurrentSystemInformation();
 
-
-                        var commandId = service.ExecuteCommandUntyped(
-                            userId,
-                            systemId,
-                            typeId,
-                            0,
-                            cmdData, out _);
-
-
-                        var command = tranDb.GetCommand(commandId);
-
-                        if (!string.IsNullOrWhiteSpace(command.TextSummary))
+                        _host.StdOut.Write($"{index}: {commandType}...");
+                        if ((options.Isolated || systemInfo == null || options.IgnoreCount || index > tranDb.Count) && index > options.SkipCommands)
                         {
-                            var plainText = Regex.Replace(command.TextSummary, "<.*?>", ""); // Strip HTML tags
-                            plainText = HttpUtility.HtmlDecode(plainText); // Decode HTML entities
-                            _host.StdOut.WriteLine($"OK - {plainText}");
+                            Guid? userId = userInfo == null ? null : userInfo.Id;
+                            Guid? systemId = systemInfo == null ? null : systemInfo.SystemId;
+                            Guid typeId = cmdt.TypeId;
+                            object cmdData = data.ConvertTo(cmdt.Type);
+                            if (options.Verbose)
+                            {
+                                _host.StdOut.WriteLine($"Executing command type:{cmdt.Type}"
+                                    + $"\nuserId: {userId}"
+                                    + $"\bsystemId: {systemId}"
+                                    + $"\ntypeId: {typeId}"
+                                    + $"\nmdData: \n{(cmdData == null ? "null" : Newtonsoft.Json.JsonConvert.SerializeObject(cmdData))}"
+                                    );
+                            }
+
+
+                            var commandId = service.ExecuteCommandUntyped(
+                                userId,
+                                systemId,
+                                typeId,
+                                0,
+                                cmdData, out _);
+
+
+                            var command = tranDb.GetCommand(commandId);
+
+                            if (!string.IsNullOrWhiteSpace(command.TextSummary))
+                            {
+                                var plainText = Regex.Replace(command.TextSummary, "<.*?>", ""); // Strip HTML tags
+                                plainText = HttpUtility.HtmlDecode(plainText); // Decode HTML entities
+                                _host.StdOut.WriteLine($"OK - {plainText}");
+                            }
+                            else
+                                _host.StdOut.WriteLine($"OK");
                         }
                         else
-                            _host.StdOut.WriteLine($"OK");
+                            _host.StdOut.WriteLine("Skipped");
                     }
-                    else
-                        _host.StdOut.WriteLine("Skipped");
+
+                    return true;
+                });
+
+                if (!commandExecutionResult)
+                {
+                    return false;
                 }
+
                 outvars = thisVar;
                 nCommands = index;
 
