@@ -90,8 +90,10 @@ namespace orch.core
         public int Precedence { get; }
 
 
-        public object Evaluate(IFsDataProvider parent, IParameterList pars)
+        public object Evaluate(object par)
         {
+            if (!(par is FsList pars))
+                throw new FuncScript.Error.EvaluationTimeException("List expected");
             var serviceType = _func.Service;
             object serviceObject;
 
@@ -121,7 +123,7 @@ namespace orch.core
                 }
                 else
                 {
-                    object parVal = index < pars.Count ? pars.GetParameter(parent, index) : null;
+                    object parVal = index < pars.Length ? pars[index] : null;
                     Type parType = currentPar.ParameterType;
 
                     // Use default value if parameter is missing and a default exists
@@ -234,12 +236,12 @@ namespace orch.core
             _funcs = funcs;
         }
 
-        public override bool IsDefined(string key)
+        public bool IsDefined(string key)
         {
             return _funcs.ContainsKey(key);
         }
 
-        public override object Get(string key)
+        public object Get(string key)
         {
             if (_callers.TryGetValue(key, out var f))
             {
@@ -257,7 +259,7 @@ namespace orch.core
             return ret;
         }
 
-        public override IFsDataProvider ParentProvider => null;
+        public  KeyValueCollection ParentProvider => null;
 
         private void Authorize(ViewFunction vf)
         {
@@ -271,13 +273,13 @@ namespace orch.core
             }
         }
 
-        public override IList<KeyValuePair<string, object>> GetAll()
+        public IList<KeyValuePair<string, object>> GetAll()
         {
             return _funcs.Select(x => KeyValuePair.Create(x.Key, this.Get(x.Key))).ToList();
         }
     }
 
-    public class ViewQueryProvider : IFsDataProvider
+    public class ViewQueryProvider : KeyValueCollection
     {
         private readonly OTransactionService _tranService;
         private readonly Guid _userId;
@@ -314,7 +316,7 @@ namespace orch.core
             return g.Get(name);
         }
 
-        public IFsDataProvider ParentProvider => g;
+        public KeyValueCollection ParentProvider => g;
         public bool IsDefined(string name)
         {
             if (_services.ContainsKey(name))
@@ -328,6 +330,11 @@ namespace orch.core
             if ("pars".Equals(name))
                 return true;
             return g.IsDefined(name);
+        }
+
+        public IList<KeyValuePair<string, object>> GetAll()
+        {
+            throw new NotImplementedException();
         }
     }
 

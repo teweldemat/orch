@@ -1,4 +1,5 @@
 ﻿using FuncScript.Core;
+using FuncScript.Model;
 using orch.common;
 using orch.core.model;
 using orch.core.model.dto;
@@ -85,7 +86,7 @@ namespace orch.core
 
         List<Guid> GetUserWithPermissions(IList<Guid> userWithPermissions);
 
-        SerialNo UseNextSerialNo(OCommand command, Guid batchId, IFsDataProvider provider = null);
+        SerialNo UseNextSerialNo(OCommand command, Guid batchId, KeyValueCollection provider = null);
 
         PermissionAdminInfo GetPermissionAdminInfo(string pk);
 

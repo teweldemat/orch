@@ -46,7 +46,7 @@
     <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
     <PackageReference Include="System.Configuration.ConfigurationManager" Version="7.0.0" />
     <PackageReference Include="System.Text.Json" Version="7.0.3" />
-    <PackageReference Include="Tewelde.FuncScript.Sql" Version="0.1.7" />
+    <PackageReference Include="Tewelde.FuncScript.Sql" Version="0.2.12" />
   </ItemGroup>
 
   <ItemGroup>

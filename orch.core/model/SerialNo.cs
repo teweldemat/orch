@@ -26,7 +26,7 @@ namespace orch.core.model
         public SerialNoFormattingType FormatType { get; set; }
         public string AuthorizationLevel { get; set; }
 
-        public string FormatSerialNo(int sn, IFsDataProvider provider = null)
+        public string FormatSerialNo(int sn, KeyValueCollection provider = null)
         {
             if (string.IsNullOrWhiteSpace(FormatString))
                 return sn.ToString();

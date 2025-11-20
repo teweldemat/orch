@@ -10,6 +10,7 @@ using orch.ef.Core;
 using System.Data;
 using System.Data.Common;
 using FuncScript.Core;
+using FuncScript.Model;
 
 
 namespace orch.core.ef.System
@@ -568,7 +569,7 @@ namespace orch.core.ef.System
                     .Select(userRole => userRole.UserId).Distinct().ToList();
         }
 
-        public SerialNo UseNextSerialNo(OCommand command, Guid batchId, IFsDataProvider? provider = null)
+        public SerialNo UseNextSerialNo(OCommand command, Guid batchId, KeyValueCollection? provider = null)
         {
 
             var batch = _db.SerialBatches.FirstOrDefault(serialBatch

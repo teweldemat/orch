@@ -1,5 +1,6 @@
 ﻿using FuncScript;
 using FuncScript.Core;
+using FuncScript.Model;
 using orch.core;
 using orch.wf.model;
 
@@ -14,7 +15,7 @@ namespace orch.wf
     public abstract class ActionConfigurationFormulaBase
     {
         public abstract WfActionFormula Formula(Guid actionId);
-        public RuleCheckResult CheckAction(IFsDataProvider provider, Guid actionId, bool returnTrueIfNotSet)
+        public RuleCheckResult CheckAction(KeyValueCollection provider, Guid actionId, bool returnTrueIfNotSet)
         {
             var f = AssertActionConfigSet(actionId);
 
@@ -26,7 +27,7 @@ namespace orch.wf
             }
             return EvaluateFormula(provider, "Check Action", f.ActionCheckFormula);
         }
-        public RuleCheckResult CheckUser(IFsDataProvider provider, Guid actionId, bool returnTrueIfNotSet)
+        public RuleCheckResult CheckUser(KeyValueCollection provider, Guid actionId, bool returnTrueIfNotSet)
         {
             var f = AssertActionConfigSet(actionId);
             if (f == null || f.ActionCheckFormula == null)
@@ -38,7 +39,7 @@ namespace orch.wf
 
             return EvaluateFormula(provider, "Check User", f.UserCheckFormula);
         }
-        public RuleCheckResult CheckUserAction(IFsDataProvider provider, Guid actionId, bool returnTrueIfNotSet)
+        public RuleCheckResult CheckUserAction(KeyValueCollection provider, Guid actionId, bool returnTrueIfNotSet)
         {
             var f = AssertActionConfigSet(actionId);
             if (f == null || f.UserActionCheckFormula == null)
@@ -55,7 +56,7 @@ namespace orch.wf
             return f;
         }
 
-        private RuleCheckResult EvaluateFormula(IFsDataProvider provider, string configName, string f)
+        private RuleCheckResult EvaluateFormula(KeyValueCollection provider, string configName, string f)
         {
             object res;
             try
@@ -80,7 +81,7 @@ namespace orch.wf
             throw new InvalidOperationException($"{configName} evaluation returned invalid result: {(res == null ? "<null>" : res.ToString())}. Boolean value expected");
         }
 
-        private TaskChange EvaluateTaskFormula(IFsDataProvider provider, string f)
+        private TaskChange EvaluateTaskFormula(KeyValueCollection provider, string f)
         {
             if (f == null)
                 return null;

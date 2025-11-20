@@ -1,12 +1,13 @@
 ﻿using FuncScript;
 using FuncScript.Core;
+using FuncScript.Model;
 using orch.core;
 using orch.core.model;
 using orch.wf.model;
 
 namespace orch.wf
 {
-    public class WfProvider : FuncScript.Core.IFsDataProvider
+    public class WfProvider : FuncScript.Model.KeyValueCollection
     {
         DefaultFsDataProvider global = new DefaultFsDataProvider();
         common.CachedObject<string, object> _cache;
@@ -15,6 +16,8 @@ namespace orch.wf
         WfStateData _wfState;
         UserInfo _checkUser;
         ViewQueryProvider _viewProvider;
+        private KeyValueCollection _parentProvider;
+
         public WfProvider(
             WfServiceCollection services,
             UserInfo user,
@@ -51,7 +54,12 @@ namespace orch.wf
             return _cache[name];
         }
 
-        public IFsDataProvider ParentProvider => null;
+        public KeyValueCollection ParentProvider => _parentProvider;
         public bool IsDefined(string key) => true;
+        public IList<KeyValuePair<string, object>> GetAll()
+        {
+            throw new NotImplementedException();
+        }
+
     }
 }
