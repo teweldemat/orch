@@ -429,8 +429,7 @@ namespace orch.core
         public FuncScriptParser.ParseNode ParseFuncScript(string exp)
         {
             var p = new FuncScript.DefaultFsDataProvider();
-            var err = new List<FuncScriptParser.SyntaxErrorData>();
-            var context = new FuncScriptParser.ParseContext(p, exp, err);
+            var context = new FuncScriptParser.ParseContext(p, exp);
             var res=FuncScriptParser.Parse(context);
             return res.ParseNode;
         }
@@ -517,7 +516,7 @@ namespace orch.core
         {
             var serr = new List<FuncScriptParser.SyntaxErrorData>();
             var p = new DefaultFsDataProvider();
-            var context = new FuncScriptParser.ParseContext(p, exp, serr);
+            var context = new FuncScriptParser.ParseContext(p, exp);
             var res=FuncScriptParser.Parse(context);
 
             var sb = new StringBuilder();
