@@ -277,6 +277,12 @@ namespace orch.core
         {
             return _funcs.Select(x => KeyValuePair.Create(x.Key, this.Get(x.Key))).ToList();
         }
+        
+        public IList<string> GetAllKeys()
+        {
+            throw new NotImplementedException();
+        }
+
     }
 
     public class ViewQueryProvider : KeyValueCollection
