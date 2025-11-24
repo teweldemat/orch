@@ -336,6 +336,11 @@ namespace orch.core
         {
             throw new NotImplementedException();
         }
+
+        public IList<string> GetAllKeys()
+        {
+            throw new NotImplementedException();
+        }
     }
 
     [OView("util")]
