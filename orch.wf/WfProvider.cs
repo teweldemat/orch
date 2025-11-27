@@ -55,15 +55,28 @@ namespace orch.wf
         }
 
         public KeyValueCollection ParentProvider => _parentProvider;
-        public bool IsDefined(string key) => true;
+
+        public bool IsDefined(string key,bool hierarchy=false)
+        {
+            var here= new string[] { "user", "task", "wfstate", "action" }.Contains(key.ToLower());
+            if (here)
+                return true;
+            return _viewProvider.IsDefined(key, hierarchy);
+        }
         public IList<KeyValuePair<string, object>> GetAll()
         {
-            throw new NotImplementedException();
+            return (new string[] { "user", "task", "wfstate", "action" }
+                .Select(name => KeyValuePair.Create(name, this.Get(name))))
+                .Concat(_viewProvider.GetAll())
+                .ToList();
         }
+        
+
         public IList<string> GetAllKeys()
         {
-            throw new NotImplementedException();
+            return new string[] { "user", "task", "wfstate", "action" }
+                .Concat(_viewProvider.GetAllKeys())
+                .ToList();;
         }
-
     }
 }

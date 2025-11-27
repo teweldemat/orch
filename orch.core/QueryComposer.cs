@@ -236,7 +236,7 @@ namespace orch.core
             _funcs = funcs;
         }
 
-        public bool IsDefined(string key)
+        public bool IsDefined(string key, bool hierarchy = true)
         {
             return _funcs.ContainsKey(key);
         }
@@ -277,12 +277,11 @@ namespace orch.core
         {
             return _funcs.Select(x => KeyValuePair.Create(x.Key, this.Get(x.Key))).ToList();
         }
-        
+
         public IList<string> GetAllKeys()
         {
-            throw new NotImplementedException();
+            return _funcs.Select(x => x.Key).ToList();
         }
-
     }
 
     public class ViewQueryProvider : KeyValueCollection
@@ -323,7 +322,7 @@ namespace orch.core
         }
 
         public KeyValueCollection ParentProvider => g;
-        public bool IsDefined(string name)
+        public bool IsDefined(string name, bool hierarchy = true)
         {
             if (_services.ContainsKey(name))
                 return true;
@@ -335,18 +334,20 @@ namespace orch.core
             }
             if ("pars".Equals(name))
                 return true;
-            return g.IsDefined(name);
+            if(hierarchy)
+                return g.IsDefined(name);
+            return false;
         }
 
         public IList<KeyValuePair<string, object>> GetAll()
         {
-            throw new NotImplementedException();
+            return _services.ToList().Select(kv => KeyValuePair.Create(kv.Key, this.Get(kv.Key))).ToList();
         }
-
         public IList<string> GetAllKeys()
         {
-            throw new NotImplementedException();
+            return _services.Keys.ToList();
         }
+
     }
 
     [OView("util")]
