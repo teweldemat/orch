@@ -340,5 +340,33 @@ namespace orch.report.Generators
                 };
             }
         }
+        public static FileContentResult DataTableToXlsFileContentResult(
+            this DataTable dataTable, string fileName)
+        {
+            var workbook = new XLWorkbook();
+            // Use the file name as the sheet name, truncating to 31 chars (Excel limit)
+            var sheetName = string.IsNullOrEmpty(fileName) ? "Sheet1" : fileName;
+            if (sheetName.Length > 31)
+                sheetName = sheetName.Substring(0, 31);
+
+            var worksheet = workbook.Worksheets.Add(sheetName);
+            worksheet.Cell(1, 1).InsertTable(dataTable, true);
+            worksheet.Row(1).Style.Font.Bold = true;
+            worksheet.Columns().AdjustToContents();
+            using (var stream = new MemoryStream())
+            {
+                workbook.SaveAs(stream);
+                var content = stream.ToArray();
+
+                // Append .xlsx extension for the download name
+                var fileDownloadName = $"{fileName}.xlsx";
+
+                // Return the result with the correct MIME type for .xlsx
+                return new FileContentResult(content, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+                {
+                    FileDownloadName = fileDownloadName
+                };
+            }
+        }
     }
 }
