@@ -1,4 +1,10 @@
-﻿namespace orch.report.Generators
+﻿using ClosedXML.Excel;
+using Microsoft.AspNetCore.Mvc;
+using System.ComponentModel;
+using System.Data;
+
+
+namespace orch.report.Generators
 {
     public static class XlsGenerator
     {
