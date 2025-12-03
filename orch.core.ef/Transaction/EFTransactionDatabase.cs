@@ -701,29 +701,37 @@ namespace orch.core.ef.System
         [OViewFunction(permissions: new string[] { CoreModule.PERMISSION_GET_USER })]
         public PagedList<UserInfo> SearchUsers(string query, int index, int count, bool? enabled = null)
         {
-            var matchingUsers = _db.Users
+            var queryable = _db.Users
                 .Include(userInfo => userInfo.Roles)
-                .Where(userInfo =>
-                    (enabled == null || userInfo.Enabled == enabled.Value) &&
+                .AsQueryable();
+
+            if (!string.IsNullOrWhiteSpace(query))
+            {
+                query = query.Trim();
+                queryable = queryable.Where(userInfo =>
                     EF.Functions.ILike(userInfo.UserName, $"%{query}%") ||
                     EF.Functions.ILike(userInfo.FullName, $"%{query}%") ||
                     EF.Functions.ILike(userInfo.Email, $"%{query}%") ||
                     EF.Functions.ILike(userInfo.PhoneNo, $"%{query}%"));
+            }
 
-            var size = matchingUsers.Count();
-
-            var slicedUserInfoList = matchingUsers
-                .OrderBy(userInfo => userInfo.UserName)
-                .Skip(index).Take(count).ToList();
-
+            if (enabled.HasValue)
+            {
+                queryable = queryable.Where(userInfo => userInfo.Enabled == enabled.Value);
+            }
+            
             return new PagedList<UserInfo>
             {
-                List = slicedUserInfoList.Select(userInfo => new UserInfo(userInfo)
-                {
-                    PasswordHash = null,
-                    Roles = userInfo.Roles.OrderBy(userRole => userRole.Order).Select(userRole => userRole.RoleId).ToList()
-                }).ToList(),
-                Count = size
+                List = queryable
+                    .OrderBy(userInfo => userInfo.UserName)
+                    .Skip(index).Take(count).ToList().Select(userInfo => new UserInfo(userInfo)
+                    {
+                        PasswordHash = null,
+                        Roles = userInfo.Roles.OrderBy(userRole => userRole.Order)
+                            .Select(userRole => userRole.RoleId)
+                            .ToList()
+                    }).ToList(),
+                Count = queryable.Count()
             };
         }
 
