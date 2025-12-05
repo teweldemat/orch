@@ -150,33 +150,70 @@ namespace orch.report.Generators
                 };
             }
         }
-        public static FileContentResult DataTableToXlsFileContentResult(
-            this DataTable dataTable, string fileName)
+        public static FileContentResult DataTableToXlsFileContentResult(this DataTable dataTable, string fileName)
         {
-            var workbook = new XLWorkbook();
-            // Use the file name as the sheet name, truncating to 31 chars (Excel limit)
+            var csvData = CsvGenerator.GenerateCsvFromDataTableV2(dataTable);
+
             var sheetName = string.IsNullOrEmpty(fileName) ? "Sheet1" : fileName;
             if (sheetName.Length > 31)
                 sheetName = sheetName.Substring(0, 31);
 
+            var workbook = new XLWorkbook();
             var worksheet = workbook.Worksheets.Add(sheetName);
-            worksheet.Cell(1, 1).InsertTable(dataTable, true);
-            worksheet.Row(1).Style.Font.Bold = true;
+            var currentRow = 1;
+
+            using (var reader = new StringReader(csvData))
+            using (var csv = new CsvHelper.CsvReader(reader, System.Globalization.CultureInfo.InvariantCulture))
+            {
+                // Read header
+                csv.Read();
+                csv.ReadHeader();
+                int col = 1;
+                foreach (var header in csv.HeaderRecord)
+                {
+                    worksheet.Cell(currentRow, col++).Value = header;
+                }
+                currentRow++;
+
+                // Read data rows
+                while (csv.Read())
+                {
+                    col = 1;
+                    foreach (var header in csv.HeaderRecord)
+                    {
+                        var text = csv.GetField(header);
+                        object value = ParseToBestType(text);
+                        worksheet.Cell(currentRow, col++).Value = XLCellValue.FromObject(value);
+                    }
+                    currentRow++;
+                }
+            }
+
             worksheet.Columns().AdjustToContents();
+
             using (var stream = new MemoryStream())
             {
                 workbook.SaveAs(stream);
                 var content = stream.ToArray();
-
-                // Append .xlsx extension for the download name
                 var fileDownloadName = $"{fileName}.xlsx";
-
-                // Return the result with the correct MIME type for .xlsx
                 return new FileContentResult(content, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
                 {
                     FileDownloadName = fileDownloadName
                 };
             }
         }
+
+        private static object ParseToBestType(string? text)
+        {
+            if (string.IsNullOrEmpty(text)) return string.Empty;
+            if (bool.TryParse(text, out var b)) return b;
+            if (int.TryParse(text, System.Globalization.NumberStyles.Integer, System.Globalization.CultureInfo.InvariantCulture, out var i)) return i;
+            if (long.TryParse(text, System.Globalization.NumberStyles.Integer, System.Globalization.CultureInfo.InvariantCulture, out var l)) return l;
+            if (decimal.TryParse(text, System.Globalization.NumberStyles.Number, System.Globalization.CultureInfo.InvariantCulture, out var d)) return d;
+            if (double.TryParse(text, System.Globalization.NumberStyles.Number, System.Globalization.CultureInfo.InvariantCulture, out var dbl)) return dbl;
+            if (DateTime.TryParse(text, System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.AssumeLocal, out var dt)) return dt;
+            return text;
+        }
+
     }
 }
