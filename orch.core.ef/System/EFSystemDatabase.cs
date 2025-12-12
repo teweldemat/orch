@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using orch.common;
+using orch.core.errors;
 using orch.core.ef.System.Entities;
 using orch.core.model;
 using orch.core.model.dto;
@@ -184,7 +185,7 @@ namespace orch.core.ef.System
             var filePath = Path.Combine(_contentServerConfig.BaseDir, $"{item.FileId}.content");
 
             if (File.Exists(filePath) && !overwrite)
-                throw new InvalidOperationException($"File '{item.FileId}' already exists on file system");
+                throw new FileAlreadyExistsException($"File '{item.FileId}' already exists on file system");
 
             // Create file and write stream data to it
             using (var os = File.Create(filePath))
@@ -220,7 +221,7 @@ namespace orch.core.ef.System
                     }
                     else
                     {
-                        throw new InvalidOperationException(
+                        throw new FileAlreadyExistsException(
                             $"Content index for file '{existingFile.FileId}' already exists");
                     }
                 }
