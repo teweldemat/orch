@@ -227,8 +227,14 @@ namespace orch.common
             const string billion = "ቢሊዮን";
             const string cent = "ሳንቲም";
 
-            var cents = (int)Math.Round(num * 100) % 100;
-            var birrs = (int)Math.Floor(num);
+            var birrs = Math.Floor(num);
+            var centsDecimal = Math.Round((num - birrs) * 100);
+            if (centsDecimal == 100)
+            {
+                birrs += 1;
+                centsDecimal = 0;
+            }
+            var cents = (int)centsDecimal;
 
             if (cents > 0)
             {
