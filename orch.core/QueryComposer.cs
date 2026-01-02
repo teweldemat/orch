@@ -4,6 +4,7 @@ using FuncScript.Model;
 using Microsoft.Extensions.DependencyInjection;
 using orch.core.job;
 using System.Collections;
+using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Web;
@@ -89,6 +90,139 @@ namespace orch.core
         public string Symbol => _func.Name;
         public int Precedence { get; }
 
+        private static bool IsListParameter(Type parType)
+        {
+            if (parType.IsArray || typeof(IList).IsAssignableFrom(parType))
+            {
+                return true;
+            }
+
+            if (parType.IsGenericType &&
+                parType.GetGenericTypeDefinition() == typeof(IList<>))
+            {
+                return true;
+            }
+
+            return parType.GetInterfaces()
+                .Any(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IList<>));
+        }
+
+        private static object ConvertListItem(object item, Type elementType)
+        {
+            if (item is KeyValueCollection kv)
+            {
+                return kv.ConvertTo(elementType);
+            }
+
+            var underlyingType = Nullable.GetUnderlyingType(elementType);
+            var targetType = underlyingType ?? elementType;
+
+            if (item == null)
+            {
+                return null;
+            }
+
+            if (targetType.IsEnum)
+            {
+                if (item is string enumString)
+                {
+                    return Enum.Parse(targetType, enumString);
+                }
+
+                var enumValue = Convert.ChangeType(item, Enum.GetUnderlyingType(targetType));
+                return Enum.ToObject(targetType, enumValue);
+            }
+
+            if (targetType == typeof(Guid))
+            {
+                if (item is Guid guid)
+                {
+                    return guid;
+                }
+
+                if (item is string guidString && Guid.TryParse(guidString, out var parsedGuid))
+                {
+                    return parsedGuid;
+                }
+            }
+
+            return Convert.ChangeType(item, targetType);
+        }
+
+        private static object ConvertToListParameter(object parVal, Type parType)
+        {
+            IEnumerable enumerable = null;
+
+            if (parVal is FsList fsList)
+            {
+                var items = new List<object>();
+                for (var i = 0; i < fsList.Length; i++)
+                {
+                    items.Add(fsList[i]);
+                }
+                enumerable = items;
+            }
+            else if (parVal is string)
+            {
+                return parVal;
+            }
+            else if (parVal is IEnumerable listEnumerable)
+            {
+                enumerable = listEnumerable;
+            }
+
+            if (enumerable == null)
+            {
+                return parVal;
+            }
+
+            Type elementType;
+            if (parType.IsArray)
+            {
+                elementType = parType.GetElementType() ?? typeof(object);
+            }
+            else if (parType.IsGenericType)
+            {
+                elementType = parType.GetGenericArguments().FirstOrDefault() ?? typeof(object);
+            }
+            else
+            {
+                elementType = typeof(object);
+            }
+
+            var listType = typeof(List<>).MakeGenericType(elementType);
+            var list = (IList)Activator.CreateInstance(listType);
+
+            foreach (var item in enumerable)
+            {
+                list.Add(ConvertListItem(item, elementType));
+            }
+
+            if (parType.IsArray)
+            {
+                Array array = Array.CreateInstance(elementType, list.Count);
+                list.CopyTo(array, 0);
+                return array;
+            }
+
+            if (parType.IsAssignableFrom(listType))
+            {
+                return list;
+            }
+
+            if (typeof(IList).IsAssignableFrom(parType) && parType.GetConstructor(Type.EmptyTypes) != null)
+            {
+                var concreteList = (IList)Activator.CreateInstance(parType);
+                foreach (var item in list)
+                {
+                    concreteList.Add(item);
+                }
+                return concreteList;
+            }
+
+            return list;
+        }
+
 
         public object Evaluate(object par)
         {
@@ -148,46 +282,9 @@ namespace orch.core
                         parVal = Enum.Parse(parType, parValStr);
                     }
 
-                    if (parVal is FsList list1 && (parType.IsArray || parType.GetInterfaces().Contains(typeof(IList))))
+                    if (IsListParameter(parType))
                     {
-                        var listData = list1;
-                        Type elementType;
-
-                        if (parType.IsArray)
-                        {
-                            elementType = parType.GetElementType();
-                        }
-                        else // for IList or List
-                        {
-                            elementType = parType.GetGenericArguments()[0];
-                        }
-
-                        var listType = typeof(List<>).MakeGenericType(elementType);
-                        var list = (IList)Activator.CreateInstance(listType);
-
-
-                        foreach (var x in listData)
-                        {
-                            if (elementType.IsEnum && x is string xStr)
-                            {
-                                list.Add(Enum.Parse(elementType, xStr));
-                            }
-                            else
-                            {
-                                list.Add(Convert.ChangeType(x, elementType));
-                            }
-                        }
-                        // if type is array, we convert the list to an array
-                        if (parType.IsArray)
-                        {
-                            Array array = Array.CreateInstance(elementType, list.Count);
-                            list.CopyTo(array, 0);
-                            parVal = array;
-                        }
-                        else // for IList or List, we leave it as a list
-                        {
-                            parVal = list;
-                        }
+                        parVal = ConvertToListParameter(parVal, parType);
                     }
 
                     parVals[i] = parVal;
