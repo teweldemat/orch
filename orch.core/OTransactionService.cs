@@ -268,6 +268,12 @@ namespace orch.core
             return ExecuteChildCommandTyped(command, data);
         }
 
+        public virtual Guid ExecuteChildCommandTyped<DataType>(int formatVersion, Guid? userId, DataType data)
+        {
+            var command = new OCommand { FormatVersion = formatVersion, UserId = userId };
+            return ExecuteChildCommandTyped(command, data);
+        }
+
         private Guid ExecuteChildCommandTyped<T>(OCommand command, T data)
         {
             var type = GetTypeIdByType(typeof(T))
