@@ -1,4 +1,4 @@
-﻿using HtmlAgilityPack;
+using HtmlAgilityPack;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -16,6 +16,10 @@ namespace orch.core.report.Converters.ChromiumPdf
 {
     public class ChromiumHtmlToPdfConverter : IHtmlToPdfConverter
     {
+        private static readonly object s_pdfSemaphoreLock = new();
+        private static SemaphoreSlim? s_pdfSemaphore;
+        private static int s_pdfSemaphoreSize;
+
         private readonly ChromiumSettings _chromiumSettings;
         private readonly ICompositeViewEngine _viewEngine;
         private readonly IHttpContextAccessor _httpContextAccessor;
@@ -47,39 +51,140 @@ namespace orch.core.report.Converters.ChromiumPdf
 
             var chromiumPath = _chromiumSettings.GetChromiumPath();
 
-            using var browser = await Puppeteer.LaunchAsync(new LaunchOptions { Headless = true, ExecutablePath = chromiumPath, Args = new[] { "--no-sandbox" } });
-            using var page = await browser.NewPageAsync();
+            var semaphore = GetPdfSemaphore();
+            await semaphore.WaitAsync();
 
-            await page.EmulateMediaTypeAsync((request.MediaType) switch
+            IBrowser? browser = null;
+            IPage? page = null;
+
+            try
             {
-                MediaType.Screen => PuppeteerSharp.Media.MediaType.Screen,
-                MediaType.Print => PuppeteerSharp.Media.MediaType.Print,
-                _ => throw new InvalidDataException($"Unsupported media type: {request.MediaType}")
-            });
-
-            await page.SetContentAsync(htmlContent);
-
-            var pdfOptions = new PdfOptions
-            {
-                Format = SizeToFormat(request.PaperSize),
-                PrintBackground = request.PrintBackground,
-                PreferCSSPageSize = false,
-                MarginOptions = request.Margins is null ? new() : new MarginOptions
+                browser = await Puppeteer.LaunchAsync(new LaunchOptions
                 {
-                    Top = request.Margins.Top,
-                    Bottom = request.Margins.Bottom,
-                    Left = request.Margins.Left,
-                    Right = request.Margins.Right
-                },
-                Landscape = request.PageOrientation == Orientation.Landscape
-            };
+                    Headless = true,
+                    ExecutablePath = chromiumPath,
+                    Args = new[]
+                    {
+                        "--no-sandbox",
+                        "--disable-dev-shm-usage",
+                        "--disable-gpu"
+                    }
+                });
+                page = await browser.NewPageAsync();
+                page.DefaultTimeout = (int)_chromiumSettings.GetPdfOperationTimeout().TotalMilliseconds;
+                page.DefaultNavigationTimeout = (int)_chromiumSettings.GetPdfOperationTimeout().TotalMilliseconds;
 
-            var pdfStream = await page.PdfStreamAsync(pdfOptions);
-            
-            return new FileStreamResult(pdfStream, "application/pdf")
+                await page.EmulateMediaTypeAsync((request.MediaType) switch
+                {
+                    MediaType.Screen => PuppeteerSharp.Media.MediaType.Screen,
+                    MediaType.Print => PuppeteerSharp.Media.MediaType.Print,
+                    _ => throw new InvalidDataException($"Unsupported media type: {request.MediaType}")
+                });
+
+                await page.SetContentAsync(htmlContent, new NavigationOptions
+                {
+                    Timeout = (int)_chromiumSettings.GetPdfOperationTimeout().TotalMilliseconds,
+                    WaitUntil = new[] { WaitUntilNavigation.Networkidle0 }
+                });
+
+                var pdfOptions = new PdfOptions
+                {
+                    Format = SizeToFormat(request.PaperSize),
+                    PrintBackground = request.PrintBackground,
+                    PreferCSSPageSize = false,
+                    MarginOptions = request.Margins is null ? new() : new MarginOptions
+                    {
+                        Top = request.Margins.Top,
+                        Bottom = request.Margins.Bottom,
+                        Left = request.Margins.Left,
+                        Right = request.Margins.Right
+                    },
+                    Landscape = request.PageOrientation == Orientation.Landscape
+                };
+
+                var pdfBytes = await page.PdfDataAsync(pdfOptions);
+
+                return new FileContentResult(pdfBytes, "application/pdf")
+                {
+                    FileDownloadName = request.FileDownloadName
+                };
+            }
+            finally
             {
-                FileDownloadName = request.FileDownloadName
-            };
+                await TryClosePageAsync(page);
+                await TryCloseBrowserAsync(browser);
+                semaphore.Release();
+            }
+        }
+
+        private SemaphoreSlim GetPdfSemaphore()
+        {
+            var maxConcurrentJobs = _chromiumSettings.GetMaxConcurrentPdfJobs();
+            lock (s_pdfSemaphoreLock)
+            {
+                if (s_pdfSemaphore is null || s_pdfSemaphoreSize != maxConcurrentJobs)
+                {
+                    s_pdfSemaphore?.Dispose();
+                    s_pdfSemaphore = new SemaphoreSlim(maxConcurrentJobs, maxConcurrentJobs);
+                    s_pdfSemaphoreSize = maxConcurrentJobs;
+                }
+
+                return s_pdfSemaphore;
+            }
+        }
+
+        private async Task TryClosePageAsync(IPage? page)
+        {
+            if (page is null)
+            {
+                return;
+            }
+
+            try
+            {
+                using var cts = new CancellationTokenSource(_chromiumSettings.GetBrowserCloseTimeout());
+                await page.CloseAsync().WaitAsync(cts.Token);
+            }
+            catch
+            {
+            }
+        }
+
+        private async Task TryCloseBrowserAsync(IBrowser? browser)
+        {
+            if (browser is null)
+            {
+                return;
+            }
+
+            try
+            {
+                using var cts = new CancellationTokenSource(_chromiumSettings.GetBrowserCloseTimeout());
+                await browser.CloseAsync().WaitAsync(cts.Token);
+            }
+            catch
+            {
+            }
+
+            try
+            {
+                if (browser.Process is { HasExited: false } process)
+                {
+                    process.Kill(entireProcessTree: true);
+                    process.WaitForExit(5000);
+                }
+            }
+            catch
+            {
+            }
+
+            try
+            {
+                browser.Dispose();
+            }
+            catch
+            {
+            }
         }
 
         private async Task<string> RenderRazorViewAsync(HttpContext httpContext, string viewName, object? model)
