@@ -67,8 +67,11 @@ namespace orch.core.report.Converters.ChromiumPdf
                     {
                         "--no-sandbox",
                         "--disable-dev-shm-usage",
-                        "--disable-gpu"
-                    }
+                        "--disable-gpu",
+                        "--no-zygote",
+                        "--disable-crash-reporter"
+                    },
+                    Timeout = (int)_chromiumSettings.GetPdfOperationTimeout().TotalMilliseconds
                 });
                 page = await browser.NewPageAsync();
                 page.DefaultTimeout = (int)_chromiumSettings.GetPdfOperationTimeout().TotalMilliseconds;

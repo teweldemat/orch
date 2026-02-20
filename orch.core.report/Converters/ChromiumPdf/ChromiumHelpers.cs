@@ -30,7 +30,15 @@ namespace orch.core.report.Converters.ChromiumPdf
                 {
                     Headless = true,
                     ExecutablePath = chromiumPath,
-                    Args = new[] { "--no-sandbox", "--disable-dev-shm-usage", "--disable-gpu" }
+                    Args = new[]
+                    {
+                        "--no-sandbox",
+                        "--disable-dev-shm-usage",
+                        "--disable-gpu",
+                        "--no-zygote",
+                        "--disable-crash-reporter"
+                    },
+                    Timeout = (int)_settings.GetPdfOperationTimeout().TotalMilliseconds
                 });
 
                 page = await browser.NewPageAsync();
