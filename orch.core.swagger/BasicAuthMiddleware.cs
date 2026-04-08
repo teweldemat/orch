@@ -2,6 +2,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
+using orch.core.model;
 using orch.common;
 using orch.utils.web;
 using System.Text;
@@ -58,18 +59,19 @@ namespace orch.core.swagger
             using var scope = _serviceProvider.CreateScope();
             var sysService = scope.ServiceProvider.GetRequiredService<OSystemService>();
             var host = scope.ServiceProvider.GetRequiredService<IOHost>();
+            var requestContext = CreateRequestContext(context);
 
             if (context.Session.TryGetValue(username, out var sessionTokenBytes) && Guid.TryParse(Encoding.UTF8.GetString(sessionTokenBytes), out var existingToken))
             {
-                if (sysService.PingAccessToken(existingToken) is { ExpiryTime: not null } existingAccessToken && Helpers.LongToTime((long)existingAccessToken.ExpiryTime) <= Helpers.LongToTime(host.CurrentTime()))
+                if (sysService.PingAccessToken(existingToken, requestContext) is { ExpiryTime: not null } existingAccessToken && Helpers.LongToTime((long)existingAccessToken.ExpiryTime) <= Helpers.LongToTime(host.CurrentTime()))
                 {
                     TryDeleteAccessToken(sysService, existingToken);
-                    return CreateSessionToken(context, sysService, username, password);
+                    return CreateSessionToken(context, sysService, username, password, requestContext);
                 }
                 return existingToken;
             }
 
-            return CreateSessionToken(context, sysService, username, password);
+            return CreateSessionToken(context, sysService, username, password, requestContext);
         }
 
         private void TryDeleteAccessToken(ISystemService sysService, Guid existingToken)
@@ -84,11 +86,40 @@ namespace orch.core.swagger
             }
         }
 
-        private static Guid CreateSessionToken(HttpContext context, ISystemService sysService, string username, string password)
+        private static Guid CreateSessionToken(
+            HttpContext context,
+            ISystemService sysService,
+            string username,
+            string password,
+            AccessTokenRequestContext requestContext)
         {
-            var newToken = sysService.CreateAccessToken(username, password, "SwaggerUI").Token;
+            var accessToken = sysService.CreateAccessToken(username, password, requestContext);
+            var newToken = accessToken.Token;
             context.Session.Set(username, newToken.ToByteArray());
             return newToken;
+        }
+
+        private static AccessTokenRequestContext CreateRequestContext(HttpContext context)
+        {
+            string? GetHeader(string name)
+            {
+                var value = context.Request.Headers[name].ToString();
+                return string.IsNullOrWhiteSpace(value) ? null : value;
+            }
+
+            return new AccessTokenRequestContext
+            {
+                AuthMethod = "swagger-basic",
+                RemoteIp = context.Connection.RemoteIpAddress?.ToString(),
+                XForwardedFor = GetHeader("X-Forwarded-For"),
+                ForwardedHeader = GetHeader("Forwarded"),
+                UserAgent = GetHeader("User-Agent"),
+                AcceptLanguage = GetHeader("Accept-Language"),
+                Origin = GetHeader("Origin"),
+                Referer = GetHeader("Referer"),
+                ServerRequestId = GetHeader("X-Request-ID") ?? context.TraceIdentifier,
+                ClientInfoRaw = "SwaggerUI"
+            };
         }
 
         private void ModifyRequestHeadersAndQueryString(HttpContext context, Guid token)

@@ -121,7 +121,7 @@ namespace orch.core.ef.System
             };
         }
 
-        public AccessToken? PingAccessToken(Guid tokenId)
+        public AccessToken? PingAccessToken(Guid tokenId, AccessTokenRequestContext context = null)
         {
             var token = _dbContext.AccessTokens
                 .AsNoTracking()
@@ -136,6 +136,22 @@ namespace orch.core.ef.System
             }
 
             token.LastUsed = _host.CurrentTime();
+            if (context != null)
+            {
+                token.LastSeenIp = context.RemoteIp ?? token.LastSeenIp;
+                token.XForwardedFor = context.XForwardedFor ?? token.XForwardedFor;
+                token.ForwardedHeader = context.ForwardedHeader ?? token.ForwardedHeader;
+                token.UserAgent = context.UserAgent ?? token.UserAgent;
+                token.AcceptLanguage = context.AcceptLanguage ?? token.AcceptLanguage;
+                token.Origin = context.Origin ?? token.Origin;
+                token.Referer = context.Referer ?? token.Referer;
+                token.ServerRequestId = context.ServerRequestId ?? token.ServerRequestId;
+                token.ClientInfoRaw = context.ClientInfoRaw ?? token.ClientInfoRaw;
+                token.ClientInfoJson = context.ClientInfoJson ?? token.ClientInfoJson;
+                token.ClientInfoHash = context.ClientInfoHash ?? token.ClientInfoHash;
+                token.BrowserFingerprintHash = context.BrowserFingerprintHash ?? token.BrowserFingerprintHash;
+                token.NetworkFingerprintHash = context.NetworkFingerprintHash ?? token.NetworkFingerprintHash;
+            }
             _dbContext.AccessTokens.Update(token);
             _dbContext.SaveChanges();
             _dbContext.Entry(token).State = EntityState.Detached;

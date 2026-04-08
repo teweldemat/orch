@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -25,7 +26,7 @@ namespace orch.core.auth
         protected override Task<AuthenticateResult> HandleAuthenticateAsync()
         {
             // Check in the cookies first
-            if (!Request.Cookies.TryGetValue("access_token", out string? tokenString))
+            if (!Request.Cookies.TryGetValue("access_token", out string tokenString))
             {
                 // If not in cookies, then check in the query string
                 tokenString = Request.Query["access_token"];
@@ -37,8 +38,9 @@ namespace orch.core.auth
                 {
                     var systemService = Context.RequestServices.GetRequiredService<ISystemService>();
                     var tranDb = Context.RequestServices.GetRequiredService<ITransactionDatabase>();
+                    var requestContext = CreateRequestContext(Request);
 
-                    var token = Authenticate(accessToken, systemService, tranDb);
+                    var token = Authenticate(accessToken, systemService, tranDb, requestContext);
 
                     var user = tranDb.GetUserInfo(token.UserId);
 
@@ -62,14 +64,18 @@ namespace orch.core.auth
             return Task.FromResult(AuthenticateResult.NoResult());
         }
 
-        private static AccessToken Authenticate(Guid accessToken, ISystemService systemService, ITransactionDatabase tranDb)
+        private static AccessToken Authenticate(
+            Guid accessToken,
+            ISystemService systemService,
+            ITransactionDatabase tranDb,
+            AccessTokenRequestContext requestContext)
         {
             if (accessToken == Guid.Empty)
             {
                 throw new AuthenticationException("Authentication required. Please log in.");
             }
 
-            var token = systemService.PingAccessToken(accessToken);
+            var token = systemService.PingAccessToken(accessToken, requestContext);
             if (token == null)
             {
                 throw new AuthenticationException("The provided access token does not match any existing tokens.");
@@ -83,6 +89,27 @@ namespace orch.core.auth
             }
 
             return token;
+        }
+
+        private static AccessTokenRequestContext CreateRequestContext(HttpRequest request)
+        {
+            string GetHeader(string name)
+            {
+                var value = request.Headers[name].ToString();
+                return string.IsNullOrWhiteSpace(value) ? null : value;
+            }
+
+            return new AccessTokenRequestContext
+            {
+                RemoteIp = request.HttpContext.Connection.RemoteIpAddress?.ToString(),
+                XForwardedFor = GetHeader("X-Forwarded-For"),
+                ForwardedHeader = GetHeader("Forwarded"),
+                UserAgent = GetHeader("User-Agent"),
+                AcceptLanguage = GetHeader("Accept-Language"),
+                Origin = GetHeader("Origin"),
+                Referer = GetHeader("Referer"),
+                ServerRequestId = GetHeader("X-Request-ID") ?? request.HttpContext.TraceIdentifier
+            };
         }
     }
 }

@@ -13,6 +13,8 @@ namespace orch.core.ef.System.EntityConfigurations
         {
             builder.ToTable(nameof(DALAccessToken), OSystemDbContext.SYS_SCHEMA);
             builder.HasKey(DALAccessToken => DALAccessToken.Token);
+            builder.Property(x => x.ClientInfoJson).HasColumnType("jsonb").IsRequired(false);
+            builder.Property(x => x.XForwardedFor).HasColumnName("x_forwarded_for").IsRequired(false);
         }
     }
 }

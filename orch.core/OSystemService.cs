@@ -6,7 +6,9 @@ namespace orch.core
     {
         AccessToken CreateAccessToken(
             string userName, string password, string clientInfo, int? maxTokens = null, long? expiryTime = null);
-        AccessToken PingAccessToken(Guid? access_token);
+        AccessToken CreateAccessToken(
+            string userName, string password, AccessTokenRequestContext requestContext, int? maxTokens = null, long? expiryTime = null);
+        AccessToken PingAccessToken(Guid? access_token, AccessTokenRequestContext requestContext = null);
         void DeleteAccessToken(params Guid[] accessTokens);
         AccessToken GetAccessTokenInfo(Guid accessToken);
         ContentFile SaveFile(string fileName, Stream r, Guid? fileId = null);
@@ -36,6 +38,15 @@ namespace orch.core
 
         public AccessToken CreateAccessToken(
             string userName, string password,  string clientInfo,  int? maxTokens = null, long? expiryTime = null)
+        {
+            return CreateAccessToken(userName, password, new AccessTokenRequestContext
+            {
+                ClientInfoRaw = clientInfo
+            }, maxTokens, expiryTime);
+        }
+
+        public AccessToken CreateAccessToken(
+            string userName, string password, AccessTokenRequestContext requestContext, int? maxTokens = null, long? expiryTime = null)
         {
             if (maxTokens < 0)
                 throw new ArgumentException($"{nameof(maxTokens)} cannot be less than 0");
@@ -84,7 +95,22 @@ namespace orch.core
                 ExpiryTime = expiryTime,
                 LastUsed = now,
                 Token = host.NextGuid(),
-                UserId = user.Id
+                UserId = user.Id,
+                AuthMethod = requestContext?.AuthMethod,
+                ClientInfoRaw = requestContext?.ClientInfoRaw,
+                ClientInfoJson = requestContext?.ClientInfoJson,
+                ClientInfoHash = requestContext?.ClientInfoHash,
+                BrowserFingerprintHash = requestContext?.BrowserFingerprintHash,
+                NetworkFingerprintHash = requestContext?.NetworkFingerprintHash,
+                CreatedIp = requestContext?.RemoteIp,
+                LastSeenIp = requestContext?.RemoteIp,
+                XForwardedFor = requestContext?.XForwardedFor,
+                ForwardedHeader = requestContext?.ForwardedHeader,
+                UserAgent = requestContext?.UserAgent,
+                AcceptLanguage = requestContext?.AcceptLanguage,
+                Origin = requestContext?.Origin,
+                Referer = requestContext?.Referer,
+                ServerRequestId = requestContext?.ServerRequestId
             };
 
             sysDb.CreateAccessToken(accessToken);
@@ -92,11 +118,11 @@ namespace orch.core
             return accessToken;
         }
 
-        public AccessToken PingAccessToken(Guid? access_token)
+        public AccessToken PingAccessToken(Guid? access_token, AccessTokenRequestContext requestContext = null)
         {
             if (access_token == null)
                 throw new UnauthorizedAccessException();
-            return sysDb.PingAccessToken(access_token.Value);
+            return sysDb.PingAccessToken(access_token.Value, requestContext);
         }
 
         public void DeleteAccessToken(params Guid[] accessTokens)

@@ -6,14 +6,14 @@ namespace orch.core
 {
     public interface ISystemDatabase : IDisposable
     {
-        AccessToken PingAccessToken(Guid tokenId);
+        AccessToken PingAccessToken(Guid tokenId, AccessTokenRequestContext context = null);
         AccessToken GetAccessTokenInfo(Guid tokenId);
         List<AccessToken> GetTokensByUserId(Guid userId);
         void DeleteAccessToken(params Guid[] accessTokens);
         void CreateAccessToken(AccessTokenProps accessToken);
         void CreateFile(ContentFile cf);
         ContentFile GetFile(Guid file_id);
-        PagedList<ContentFile> GetFiles(int pageNumber, int pageSize, ContentFileFilter? filter = null);
+        PagedList<ContentFile> GetFiles(int pageNumber, int pageSize, ContentFileFilter filter = null);
         ContentFile SaveFile(string fileName, Stream r, Guid? fileId = null, bool overwrite = false);
         int ExpireTokensNotUsedSince(long lastUsedCutoff);
     }

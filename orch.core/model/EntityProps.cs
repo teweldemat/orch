@@ -12,6 +12,7 @@
             CommandUserId = command.UserId;
         }
     }
+#nullable enable
     public abstract class AccessTokenProps
     {
         public Guid Token { get; set; }
@@ -19,7 +20,23 @@
         public long CreatedTime { get; set; }
         public long? ExpiryTime { get; set; }
         public long LastUsed { get; set; }
+        public string? AuthMethod { get; set; }
+        public string? ClientInfoRaw { get; set; }
+        public string? ClientInfoJson { get; set; }
+        public string? ClientInfoHash { get; set; }
+        public string? BrowserFingerprintHash { get; set; }
+        public string? NetworkFingerprintHash { get; set; }
+        public string? CreatedIp { get; set; }
+        public string? LastSeenIp { get; set; }
+        public string? XForwardedFor { get; set; }
+        public string? ForwardedHeader { get; set; }
+        public string? UserAgent { get; set; }
+        public string? AcceptLanguage { get; set; }
+        public string? Origin { get; set; }
+        public string? Referer { get; set; }
+        public string? ServerRequestId { get; set; }
     }
+#nullable disable
 
     public abstract class ContentFileProps
     {
