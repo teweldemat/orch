@@ -26,7 +26,8 @@ namespace orch.core.auth
         protected override Task<AuthenticateResult> HandleAuthenticateAsync()
         {
             // Check in the cookies first
-            if (!Request.Cookies.TryGetValue("access_token", out string tokenString))
+            var tokenFromCookie = Request.Cookies.TryGetValue("access_token", out string tokenString);
+            if (!tokenFromCookie)
             {
                 // If not in cookies, then check in the query string
                 tokenString = Request.Query["access_token"];
@@ -57,11 +58,25 @@ namespace orch.core.auth
                 }
                 catch (AuthenticationException authEx)
                 {
+                    ClearAccessTokenCookieIfPresent();
                     return Task.FromResult(AuthenticateResult.Fail(authEx.Message));
+                }
+                catch (InvalidOperationException)
+                {
+                    ClearAccessTokenCookieIfPresent();
+                    return Task.FromResult(AuthenticateResult.NoResult());
                 }
             }
 
             return Task.FromResult(AuthenticateResult.NoResult());
+        }
+
+        private void ClearAccessTokenCookieIfPresent()
+        {
+            if (Request.Cookies.ContainsKey("access_token"))
+            {
+                Response.Cookies.Delete("access_token");
+            }
         }
 
         private static AccessToken Authenticate(

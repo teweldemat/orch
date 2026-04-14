@@ -903,15 +903,17 @@ namespace orch.core.ef.System
 
         public List<Guid> GetUsersWithPermissions(string[] permissionKeys)
         {
+            var permissionKeyList = permissionKeys.ToList();
+
             // Validation: Check if all provided permission keys exist in the database
             var validPermissionIds = _db.Permissions.AsNoTracking()
-                                                    .Where(p => permissionKeys.Contains(p.PermissionKey))
+                                                    .Where(p => permissionKeyList.Contains(p.PermissionKey))
                                                     .Select(p => p.Id)
                                                     .ToList();
 
-            if (validPermissionIds.Count != permissionKeys.Length)
+            if (validPermissionIds.Count != permissionKeyList.Count)
             {
-                var invalidKeys = permissionKeys.Except(_db.Permissions.AsNoTracking()
+                var invalidKeys = permissionKeyList.Except(_db.Permissions.AsNoTracking()
                                                                         .Where(p => validPermissionIds.Contains(p.Id))
                                                                         .Select(p => p.PermissionKey))
                                                                         .ToList();
@@ -955,22 +957,24 @@ namespace orch.core.ef.System
         [OViewFunction("IsPermittedAll")]
         public bool IsPermitted(Guid userId, string[] permissionKeys, out string[] notGrantedPermissions)
         {
+            var permissionKeyList = permissionKeys.ToList();
+
             if (userId == Guid.Empty)
             {
                 notGrantedPermissions = Array.Empty<string>();
                 return false;
             }
 
-            if (permissionKeys.Length == 0)
+            if (permissionKeyList.Count == 0)
             {
                 notGrantedPermissions = Array.Empty<string>();
                 return true;
             }
 
-            var permissions = _db.Permissions.Where(x => permissionKeys.Contains(x.PermissionKey)).ToList();
-            if (permissions.Count != permissionKeys.Length)
+            var permissions = _db.Permissions.Where(x => permissionKeyList.Contains(x.PermissionKey)).ToList();
+            if (permissions.Count != permissionKeyList.Count)
             {
-                var notFoundKeys = permissionKeys.Except(permissions.Select(p => p.PermissionKey));
+                var notFoundKeys = permissionKeyList.Except(permissions.Select(p => p.PermissionKey));
                 throw new InvalidOperationException($"Permission key(s) {string.Join(", ", notFoundKeys)} not found");
             }
 
@@ -1004,10 +1008,11 @@ namespace orch.core.ef.System
         [OViewFunction("IsPermittedAny")]
         public bool IsPermittedAny(Guid userId, params string[] permissionKeys)
         {
-            var permissions = _db.Permissions.Where(x => permissionKeys.Contains(x.PermissionKey)).ToList();
+            var permissionKeyList = permissionKeys.ToList();
+            var permissions = _db.Permissions.Where(x => permissionKeyList.Contains(x.PermissionKey)).ToList();
             if (permissions.Count == 0)
             {
-                var notFoundKeys = permissionKeys.Except(permissions.Select(p => p.PermissionKey));
+                var notFoundKeys = permissionKeyList.Except(permissions.Select(p => p.PermissionKey));
                 throw new InvalidOperationException($"Permission key(s) {string.Join(", ", notFoundKeys)} not found");
             }
 
@@ -1532,8 +1537,8 @@ namespace orch.core.ef.System
         public class CommandType
         {
             public Guid TypeId;
-            public string Key;
-            public String TypeName;
+            public string Key = string.Empty;
+            public string TypeName = string.Empty;
         }
 
         [OViewFunction]
@@ -1550,8 +1555,8 @@ namespace orch.core.ef.System
         public class JobType
         {
             public Guid TypeId;
-            public string Key;
-            public String TypeName;
+            public string Key = string.Empty;
+            public string TypeName = string.Empty;
         }
 
         [OViewFunction]

@@ -63,12 +63,23 @@ namespace orch.core.swagger
 
             if (context.Session.TryGetValue(username, out var sessionTokenBytes) && Guid.TryParse(Encoding.UTF8.GetString(sessionTokenBytes), out var existingToken))
             {
-                if (sysService.PingAccessToken(existingToken, requestContext) is { ExpiryTime: not null } existingAccessToken && Helpers.LongToTime((long)existingAccessToken.ExpiryTime) <= Helpers.LongToTime(host.CurrentTime()))
+                try
                 {
-                    TryDeleteAccessToken(sysService, existingToken);
+                    if (sysService.PingAccessToken(existingToken, requestContext) is { ExpiryTime: not null } existingAccessToken &&
+                        Helpers.LongToTime((long)existingAccessToken.ExpiryTime) <= Helpers.LongToTime(host.CurrentTime()))
+                    {
+                        TryDeleteAccessToken(sysService, existingToken);
+                        context.Session.Remove(username);
+                        return CreateSessionToken(context, sysService, username, password, requestContext);
+                    }
+
+                    return existingToken;
+                }
+                catch (InvalidOperationException)
+                {
+                    context.Session.Remove(username);
                     return CreateSessionToken(context, sysService, username, password, requestContext);
                 }
-                return existingToken;
             }
 
             return CreateSessionToken(context, sysService, username, password, requestContext);
