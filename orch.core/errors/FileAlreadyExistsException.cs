@@ -17,6 +17,12 @@ namespace orch.core.errors
         {
         }
 
+
+
+        [Obsolete]
+
+
+
         protected FileAlreadyExistsException(SerializationInfo info, StreamingContext context) : base(info, context)
         {
         }

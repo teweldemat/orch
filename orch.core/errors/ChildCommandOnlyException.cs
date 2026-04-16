@@ -10,10 +10,22 @@ namespace orch.core.errors
         {
         }
 
+
+
+        [Obsolete]
+
+
+
         protected ChildCommandOnlyException(SerializationInfo info, StreamingContext context)
             : base(info, context)
         {
         }
+
+
+
+        [Obsolete]
+
+
 
         public override void GetObjectData(SerializationInfo info, StreamingContext context)
         {

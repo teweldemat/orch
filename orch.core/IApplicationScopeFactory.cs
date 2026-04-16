@@ -67,7 +67,7 @@ namespace orch.core
                     {
                         return Assembly.LoadFrom(path);
                     }
-                    catch (Exception ex)
+                    catch (Exception)
                     {
                     }
                 }

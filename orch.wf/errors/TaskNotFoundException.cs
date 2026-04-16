@@ -10,6 +10,12 @@ namespace orch.wf.errors
         {
         }
 
+
+
+        [Obsolete]
+
+
+
         protected TaskNotFoundException(SerializationInfo info, StreamingContext context)
             : base(info, context)
         {

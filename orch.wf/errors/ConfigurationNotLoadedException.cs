@@ -10,10 +10,22 @@ namespace orch.wf.errors
         {
         }
 
+
+
+        [Obsolete]
+
+
+
         protected ConfigurationNotLoadedException(SerializationInfo info, StreamingContext context)
             : base(info, context)
         {
         }
+
+
+
+        [Obsolete]
+
+
 
         public override void GetObjectData(SerializationInfo info, StreamingContext context)
         {

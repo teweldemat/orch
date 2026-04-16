@@ -10,6 +10,12 @@ namespace orch.core.errors
         {
         }
 
+
+
+        [Obsolete]
+
+
+
         protected JobTypeIdNotFoundException(SerializationInfo info, StreamingContext context)
             : base(info, context)
         {

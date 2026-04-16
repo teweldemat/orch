@@ -7,8 +7,20 @@ namespace orch.core.errors
     {
         public InvalidHandlerException(string message) : base(message) { }
 
+
+
+        [Obsolete]
+
+
+
         protected InvalidHandlerException(SerializationInfo info, StreamingContext context)
             : base(info, context) { }
+
+
+
+        [Obsolete]
+
+
 
         public override void GetObjectData(SerializationInfo info, StreamingContext context)
         {

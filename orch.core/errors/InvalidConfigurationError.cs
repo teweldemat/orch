@@ -17,6 +17,12 @@ namespace orch.core.errors
         {
         }
 
+
+
+        [Obsolete]
+
+
+
         protected InvalidConfigurationError(SerializationInfo info, StreamingContext context) : base(info, context)
         {
         }
