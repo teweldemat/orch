@@ -140,7 +140,7 @@ namespace orch.common
                 return input;
             }
 
-            TextInfo textInfo = new CultureInfo("en-US", false).TextInfo;
+            TextInfo textInfo = CultureInfo.InvariantCulture.TextInfo;
             return textInfo.ToTitleCase(Regex.Replace(input, "([A-Z])", " $1").ToLower()).Trim();
         }
 
