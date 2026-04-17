@@ -64,9 +64,14 @@ namespace orch.core.ef.System
         public void DeleteAccessToken(params Guid[] accessTokens)
         {
             var now = _host.CurrentTime();
-            var tokensToDelete = _dbContext.AccessTokens
-                .Where(t => accessTokens.Contains(t.Token))
-                .ToList();
+            var tokensToDelete = new List<DALAccessToken>();
+
+            foreach (var accessToken in accessTokens.Distinct())
+            {
+                var token = _dbContext.AccessTokens.FirstOrDefault(t => t.Token == accessToken);
+                if (token != null)
+                    tokensToDelete.Add(token);
+            }
 
             foreach (var token in tokensToDelete)
             {
