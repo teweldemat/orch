@@ -41,6 +41,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="Npgsql.NetTopologySuite" Version="7.0.7" />
     <PackageReference Include="Npgsql" Version="7.0.7" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
     <PackageReference Include="System.Configuration.ConfigurationManager" Version="7.0.0" />
