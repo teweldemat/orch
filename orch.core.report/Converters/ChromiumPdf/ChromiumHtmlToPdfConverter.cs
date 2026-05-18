@@ -87,7 +87,7 @@ namespace orch.core.report.Converters.ChromiumPdf
                 await page.SetContentAsync(htmlContent, new NavigationOptions
                 {
                     Timeout = (int)_chromiumSettings.GetPdfOperationTimeout().TotalMilliseconds,
-                    WaitUntil = new[] { WaitUntilNavigation.Networkidle0 }
+                    WaitUntil = new[] { WaitUntilNavigation.Load }
                 });
 
                 var pdfOptions = new PdfOptions
