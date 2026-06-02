@@ -101,6 +101,8 @@
         public bool Enabled { get; set; }
         public Guid? EmployeeId { get; set; }
         public Guid? ReaderId { get; set; }
+        public int FailedLoginCount { get; set; }
+        public long? LockoutUntil { get; set; }
 
     }
     public abstract class UserHistoryProps : HistoryProps

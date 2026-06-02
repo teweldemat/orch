@@ -41,7 +41,7 @@ namespace orch.core.command
             _commandData.User.Time = _commandInfo.Time;
             _commandData.User.Enabled = true;
 
-            var _passwordHash = OSystemService.HashPassword(_commandData.Password);
+            var _passwordHash = new Pbkdf2PasswordHasher().Hash(_commandData.Password);
             _commandData.User.PasswordHash = _passwordHash;
         }
     }

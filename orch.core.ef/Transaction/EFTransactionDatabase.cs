@@ -1,5 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
+using Npgsql;
+using NpgsqlTypes;
 using orch.common;
 using orch.core.ef.Transaction;
 using orch.core.ef.Transaction.Entities;
@@ -264,7 +266,7 @@ namespace orch.core.ef.System
         public UserInfo? GetUserInfo(string userName, bool includePassword = false)
         {
 
-            return _db.Users.Include(userInfo => userInfo.Roles).Where(userInfo => userInfo.UserName.ToUpper() == userName.ToUpper())
+            return _db.Users.AsNoTracking().Include(userInfo => userInfo.Roles).Where(userInfo => userInfo.UserName.ToUpper() == userName.ToUpper())
             .AsEnumerable()
             .Select(userInfo => new UserInfo(userInfo)
             {
@@ -1470,6 +1472,48 @@ namespace orch.core.ef.System
             existing.SetUpdate<ChangeProps>(command);
             _db.Users.Update(existing);
             _db.SaveChanges();
+        }
+
+        public void RecordFailedLogin(Guid userId, int maxFailedAttempts, int lockoutMinutes, long now)
+        {
+            var lockoutUntil = now + (long)lockoutMinutes * 60 * 1000;
+            _db.Database.ExecuteSqlRaw(
+                """
+                UPDATE core.user_info
+                SET failed_login_count = failed_login_count + 1,
+                    lockout_until = CASE
+                        WHEN failed_login_count + 1 >= {1} THEN {2}
+                        ELSE lockout_until
+                    END
+                WHERE id = {0}
+                """,
+                userId,
+                maxFailedAttempts,
+                lockoutUntil);
+        }
+
+        public void ResetLoginFailures(Guid userId)
+        {
+            _db.Database.ExecuteSqlRaw(
+                """
+                UPDATE core.user_info
+                SET failed_login_count = 0,
+                    lockout_until = NULL
+                WHERE id = {0}
+                """,
+                userId);
+        }
+
+        public void UpdatePasswordHash(Guid userId, byte[] passwordHash)
+        {
+            _db.Database.ExecuteSqlRaw(
+                """
+                UPDATE core.user_info
+                SET password_hash = @passwordHash
+                WHERE id = @userId
+                """,
+                new NpgsqlParameter("passwordHash", NpgsqlDbType.Bytea) { Value = passwordHash },
+                new NpgsqlParameter("userId", NpgsqlDbType.Uuid) { Value = userId });
         }
 
         [OViewFunction]

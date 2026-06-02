@@ -1,4 +1,5 @@
-﻿using orch.core.model;
+﻿using Microsoft.Extensions.Options;
+using orch.core.model;
 
 namespace orch.core
 {
@@ -25,15 +26,36 @@ namespace orch.core
             return sha.ComputeHash(bytes);
         }
 
+        internal static string BuildAccountLockedMessage(long lockoutUntil, long now)
+        {
+            var remainingMs = Math.Max(0, lockoutUntil - now);
+            var remainingMinutes = Math.Max(1, (int)Math.Ceiling(remainingMs / 60000.0));
+            return remainingMinutes == 1
+                ? "Too many failed login attempts. Your account is temporarily locked. Try again in about 1 minute or contact your administrator."
+                : $"Too many failed login attempts. Your account is temporarily locked. Try again in about {remainingMinutes} minutes or contact your administrator.";
+        }
+
         protected readonly IOHost host;
         protected readonly ISystemDatabase sysDb;
         protected readonly ITransactionDatabase tranDb;
+        private readonly IPasswordHasher _passwordHasher;
+        private readonly ILoginRateLimiter _loginRateLimiter;
+        private readonly LoginSecurityOptions _loginSecurityOptions;
 
-        public OSystemService(IOHost host, ISystemDatabase db, ITransactionDatabase command)
+        public OSystemService(
+            IOHost host,
+            ISystemDatabase db,
+            ITransactionDatabase command,
+            IPasswordHasher passwordHasher = null,
+            ILoginRateLimiter loginRateLimiter = null,
+            IOptions<LoginSecurityOptions> loginSecurityOptions = null)
         {
             this.host = host;
             this.sysDb = db;
             this.tranDb = command;
+            _passwordHasher = passwordHasher ?? new Pbkdf2PasswordHasher();
+            _loginRateLimiter = loginRateLimiter ?? new NoOpLoginRateLimiter();
+            _loginSecurityOptions = loginSecurityOptions?.Value ?? new LoginSecurityOptions();
         }
 
         public AccessToken CreateAccessToken(
@@ -59,6 +81,8 @@ namespace orch.core
             
             if (expiryTime <= now)
                 throw new ArgumentException("Access token expiry time must be in the future.");
+
+            _loginRateLimiter.CheckRateLimit(userName, requestContext?.RemoteIp);
             
             var user = tranDb.GetUserInfo(userName, true);
             var rootUser = tranDb.GetRootUser();
@@ -66,11 +90,30 @@ namespace orch.core
             if (rootUser == null)
                 throw new InvalidOperationException("Root user doesn't exist, has the system been initialized?");
 
-            if (user == null || !user.PasswordHash.SequenceEqual(HashPassword(password)))
-                throw new InvalidOperationException($"Incorrect username and/or password");
+            if (user != null && user.LockoutUntil is > 0 && user.LockoutUntil > now)
+                throw new InvalidOperationException(BuildAccountLockedMessage(user.LockoutUntil.Value, now));
+
+            if (user == null || !_passwordHasher.Verify(password, user.PasswordHash))
+            {
+                if (user != null)
+                {
+                    tranDb.RecordFailedLogin(
+                        user.Id,
+                        _loginSecurityOptions.MaxFailedAttempts,
+                        _loginSecurityOptions.LockoutMinutes,
+                        now);
+                }
+
+                throw new InvalidOperationException("Incorrect username and/or password");
+            }
 
             if (!user.Enabled)
                 throw new InvalidOperationException($"User {userName} is disabled");
+
+            tranDb.ResetLoginFailures(user.Id);
+
+            if (_passwordHasher.IsLegacyHash(user.PasswordHash))
+                tranDb.UpdatePasswordHash(user.Id, _passwordHasher.Hash(password));
 
             if (maxTokens is > 0 && user.Id != rootUser.Id)
             {

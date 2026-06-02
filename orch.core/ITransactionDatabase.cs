@@ -173,6 +173,12 @@ namespace orch.core
 
         void ChangePassword(OCommand command, Guid userId, byte[] passwordHash);
 
+        void RecordFailedLogin(Guid userId, int maxFailedAttempts, int lockoutMinutes, long now);
+
+        void ResetLoginFailures(Guid userId);
+
+        void UpdatePasswordHash(Guid userId, byte[] passwordHash);
+
         OrganizationData GetOrganizationData();
 
         List<OrganizationData> GetAllOrganizationData();

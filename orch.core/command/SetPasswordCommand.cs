@@ -99,7 +99,7 @@ namespace orch.core.command
 
         protected override void Execute()
         {
-            var passwordHash = OSystemService.HashPassword(_newPassword);
+            var passwordHash = new Pbkdf2PasswordHasher().Hash(_newPassword);
             _services.TranDb.ChangePassword(_commandInfo, _commandData.UserId, passwordHash);
             
             _commandData.Password = string.Empty;
