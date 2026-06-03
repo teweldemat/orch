@@ -1,4 +1,4 @@
-﻿namespace orch.report
+namespace orch.report
 {
     public class ReportTypeInfo
     {

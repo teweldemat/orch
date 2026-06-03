@@ -1,4 +1,4 @@
-﻿using FuncScript;
+using FuncScript;
 using FuncScript.Core;
 using FuncScript.Model;
 using orch.core;

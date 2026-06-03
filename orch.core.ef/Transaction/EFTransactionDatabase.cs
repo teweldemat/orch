@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
 using Npgsql;
 using NpgsqlTypes;
@@ -118,6 +118,7 @@ namespace orch.core.ef.System
             _dbTransaction?.Commit();
             _dbTransaction = null;
             DetachFromAllContexts();
+            ReleaseConnections();
         }
 
         /// <summary>
@@ -130,6 +131,21 @@ namespace orch.core.ef.System
             _dbTransaction?.Rollback();
             _dbTransaction = null;
             DetachFromAllContexts();
+            ReleaseConnections();
+        }
+
+        private void ReleaseConnections()
+        {
+            ReleaseConnection(_db);
+            foreach (var context in _contexts)
+                ReleaseConnection(context);
+        }
+
+        private static void ReleaseConnection(ODbContext context)
+        {
+            var conn = context.Connection;
+            if (conn.State != ConnectionState.Closed)
+                conn.Close();
         }
 
         public void EnableReadOnlyMode()
@@ -1617,6 +1633,9 @@ namespace orch.core.ef.System
         public void Dispose()
         {
             _dbTransaction?.Dispose();
+            foreach (var context in _contexts)
+                context.Dispose();
+            _contexts.Clear();
             _db.Dispose();
             _systemDatabase.Dispose();
         }

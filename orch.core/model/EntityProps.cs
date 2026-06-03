@@ -1,4 +1,4 @@
-﻿namespace orch.core.model
+namespace orch.core.model
 {
     public abstract class HistoryProps
     {
@@ -60,7 +60,7 @@
         public Guid TranId { get; set; }
         public String PermissionName { get; set; } = string.Empty;
         public String PermissionKey { get; set; } = string.Empty;
-        public string ModuleName { get; set; } = string.Empty;
+        public string? ModuleName { get; set; }
 
         internal static bool ValidatePermissionKey(string key)
         {
@@ -74,7 +74,7 @@
         public Guid Id { get; set; }
         public String Key { get; set; } = string.Empty;
         public String RoleName { get; set; } = string.Empty;
-        public string Description { get; set; } = string.Empty;
+        public string? Description { get; set; }
 
         internal static bool ValidateRoleName(string roleName)
         {
@@ -92,10 +92,10 @@
         public long Time { get; set; }
         public string UserName { get; set; } = string.Empty;
         public string FullName { get; set; } = string.Empty;
-        public string Email { get; set; } = string.Empty;
-        public string PhoneNo { get; set; } = string.Empty;
-        public byte[] PasswordHash { get; set; } = Array.Empty<byte>();
-        public byte[] PublicKey { get; set; } = Array.Empty<byte>();
+        public string? Email { get; set; }
+        public string? PhoneNo { get; set; }
+        public byte[]? PasswordHash { get; set; }
+        public byte[]? PublicKey { get; set; }
         public bool Enabled { get; set; }
         public Guid? EmployeeId { get; set; }
         public Guid? ReaderId { get; set; }

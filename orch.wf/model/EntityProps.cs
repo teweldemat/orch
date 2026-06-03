@@ -1,4 +1,4 @@
-﻿using orch.core.model;
+using orch.core.model;
 
 namespace orch.wf.model
 {
@@ -19,7 +19,7 @@ namespace orch.wf.model
     {
         public Guid Id { get; set; }
         public string Key { get; set; } = string.Empty;
-        public string Name { get; set; } = string.Empty;
+        public string? Name { get; set; }
     }
     public enum OTaskStatus
     {
@@ -34,8 +34,8 @@ namespace orch.wf.model
         public Guid Id { get; set; }
         public string Reference { get; set; } = string.Empty;
         public Guid TaskTypeId { get; set; }
-        public string Name { get; set; } = string.Empty;
-        public string Description { get; set; } = string.Empty;
+        public string? Name { get; set; }
+        public string? Description { get; set; }
         public OTaskStatus Status { get; set; }
     }
     public enum CheckListState
@@ -52,7 +52,7 @@ namespace orch.wf.model
     public class CheckListItemProps
     {
         public string Key { get; set; } = string.Empty;
-        public string Name { get; set; } = string.Empty;
+        public string? Name { get; set; }
         public CheckListState State { get; set; }
 
     }

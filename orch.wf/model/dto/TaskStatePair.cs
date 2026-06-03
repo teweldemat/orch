@@ -1,4 +1,4 @@
-﻿namespace orch.wf.model.dto
+namespace orch.wf.model.dto
 {
     public class TaskStatePair<T> where T : WfStateData
     {

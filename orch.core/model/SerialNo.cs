@@ -1,4 +1,4 @@
-﻿using FuncScript;
+using FuncScript;
 using FuncScript.Core;
 using FuncScript.Model;
 using orch.common;
@@ -21,10 +21,10 @@ namespace orch.core.model
     {
         public Guid Id { get; set; }
         public string Key { get; set; } = string.Empty;
-        public string Name { get; set; } = string.Empty;
+        public string? Name { get; set; }
         public string FormatString { get; set; } = string.Empty;
         public SerialNoFormattingType FormatType { get; set; }
-        public string AuthorizationLevel { get; set; } = string.Empty;
+        public string? AuthorizationLevel { get; set; }
 
         public string FormatSerialNo(int sn, KeyValueCollection? provider = null)
         {

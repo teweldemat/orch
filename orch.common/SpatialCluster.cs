@@ -1,4 +1,4 @@
-﻿namespace orch.common
+namespace orch.common
 {
     public class SpatialCluster<T>
     {
