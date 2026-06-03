@@ -12,8 +12,8 @@ namespace orch.core
     {
         private class CommandFilterInfo
         {
-            public Type FilterType { get; init; }
-            public Type[] ConstructorParameters { get; init; }
+            public Type FilterType { get; init; } = null!;
+            public Type[] ConstructorParameters { get; init; } = Array.Empty<Type>();
         }
 
         private static readonly Dictionary<Guid, List<CommandFilterInfo>> s_commandFilters = new();
@@ -121,7 +121,8 @@ namespace orch.core
                     return Services.GetService(parameterType);
                 }).ToArray();
 
-                yield return (ICommandFilter)Activator.CreateInstance(filterInfo.FilterType, parameters);
+                yield return (ICommandFilter)(Activator.CreateInstance(filterInfo.FilterType, parameters)
+                    ?? throw new InvalidOperationException($"Failed to create command filter '{filterInfo.FilterType.FullName}'."));
             }
         }
 

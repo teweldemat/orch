@@ -5,7 +5,7 @@ namespace orch.wf.model
     public class WfNotificationProps
     {
         public Guid Id { get; set; }
-        public string Message { get; set; }
+        public string Message { get; set; } = string.Empty;
         public Guid? TaskId { get; set; }
         public long Time { get; set; }
     }
@@ -18,8 +18,8 @@ namespace orch.wf.model
     public class OTaskTypeProps
     {
         public Guid Id { get; set; }
-        public string Key { get; set; }
-        public string Name { get; set; }
+        public string Key { get; set; } = string.Empty;
+        public string Name { get; set; } = string.Empty;
     }
     public enum OTaskStatus
     {
@@ -32,10 +32,10 @@ namespace orch.wf.model
     public class OTaskProps : ChangeProps
     {
         public Guid Id { get; set; }
-        public string Reference { get; set; }
+        public string Reference { get; set; } = string.Empty;
         public Guid TaskTypeId { get; set; }
-        public string Name { get; set; }
-        public string Description { get; set; }
+        public string Name { get; set; } = string.Empty;
+        public string Description { get; set; } = string.Empty;
         public OTaskStatus Status { get; set; }
     }
     public enum CheckListState
@@ -46,13 +46,13 @@ namespace orch.wf.model
     }
     public class CheckListStatusProps
     {
-        public string Key { get; set; }
+        public string Key { get; set; } = string.Empty;
         public CheckListState State { get; set; }
     }
     public class CheckListItemProps
     {
-        public string Key { get; set; }
-        public string Name { get; set; }
+        public string Key { get; set; } = string.Empty;
+        public string Name { get; set; } = string.Empty;
         public CheckListState State { get; set; }
 
     }
@@ -85,8 +85,7 @@ namespace orch.wf.model
     {
         public Guid Id { get; set; }
         public Guid TaskId { get; set; }
-        public string Note { get; set; }
+        public string Note { get; set; } = string.Empty;
         public Guid CommandId { get; set; }
     }
 }
-

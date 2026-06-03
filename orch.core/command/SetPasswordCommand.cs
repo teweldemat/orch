@@ -13,9 +13,9 @@ namespace orch.core.command
         public const string COMMAND_TYPE_KEY = "SYS_SET_PASSWORD";
         public const string TYPE_ID = "cbacc7d6-1ff4-483c-96d9-c4d3162c4c2f";
         public Guid UserId { get; set; }
-        public string Password { get; set; }
+        public required string Password { get; set; }
 
-        [OGeneratedData] public string UserName { get; set; }
+        [OGeneratedData] public string UserName { get; set; } = string.Empty;
     }
 
     public class SetPasswordCommandInitializer : CommandInitializerBase<SetPasswordCommand>
@@ -79,7 +79,7 @@ namespace orch.core.command
             }
         }
         
-        private string _newPassword;
+        private string _newPassword = null!;
         public override void Preprocess()
         {
             if (_services.TranDb.GetUserInfo(_commandData.UserId) is not { } targetUser)
@@ -88,7 +88,7 @@ namespace orch.core.command
             _commandData.UserName = targetUser.UserName;
             
             _newPassword = _commandData.Password;
-            _commandData.Password = default;
+            _commandData.Password = string.Empty;
         }
 
         public override string Summarize(out bool html)

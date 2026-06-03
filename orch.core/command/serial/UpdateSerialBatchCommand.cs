@@ -15,7 +15,7 @@ namespace orch.core.command.serial
         public const string TYPE_ID = "b2f3c6d8-a4e5-4f67-9c12-d3e8f5a7b901";
 
         public Guid BatchId { get; set; }
-        public string Description { get; set; }
+        public required string Description { get; set; }
         public int FromSerialNo { get; set; }
         public int ToSerialNo { get; set; }
         public int MaxUsed { get; set; }
@@ -32,7 +32,7 @@ namespace orch.core.command.serial
             if (_commandData.BatchId == Guid.Empty)
                 throw new InvalidOperationException("BatchId must not be empty.");
 
-            _commandData.Description = _commandData.Description?.Trim();
+            _commandData.Description = (_commandData.Description ?? string.Empty).Trim();
             if (string.IsNullOrWhiteSpace(_commandData.Description))
                 throw new InvalidOperationException("Description must not be empty.");
 
@@ -54,7 +54,7 @@ namespace orch.core.command.serial
                 throw new UnauthorizedAccessException("You are not authorized to manage serials.");
         }
 
-        private SerialBatch _serialBatch;
+        private SerialBatch _serialBatch = null!;
 
         private SerialBatch SerialBatch
         {

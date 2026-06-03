@@ -60,7 +60,7 @@ public class UpdateSerialTypeCommand
             return $"Serial type '{SerialType.Key}' updated";
         }
 
-        private SerialType _serialType;
+        private SerialType _serialType = null!;
 
         private SerialType SerialType
         {
@@ -76,7 +76,8 @@ public class UpdateSerialTypeCommand
             if (_commandData.FormatString is not null)
                 SerialType.FormatString = _commandData.FormatString;
             
-            SerialType.AuthorizationLevel = _commandData.AuthorizationLevel;
+            if (_commandData.AuthorizationLevel is not null)
+                SerialType.AuthorizationLevel = _commandData.AuthorizationLevel;
         }
 
         protected override void Execute()

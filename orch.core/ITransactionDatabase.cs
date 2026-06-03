@@ -86,7 +86,7 @@ namespace orch.core
 
         List<Guid> GetUserWithPermissions(IList<Guid> userWithPermissions);
 
-        SerialNo UseNextSerialNo(OCommand command, Guid batchId, KeyValueCollection provider = null);
+        SerialNo UseNextSerialNo(OCommand command, Guid batchId, KeyValueCollection? provider = null);
 
         PermissionAdminInfo GetPermissionAdminInfo(string pk);
 

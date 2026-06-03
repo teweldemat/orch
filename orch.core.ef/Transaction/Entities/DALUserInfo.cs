@@ -11,6 +11,6 @@ namespace orch.core.ef.Transaction.Entities
         public DALUserInfo(UserInfoProps props)
             => this.MapFromBase(props);
 
-        public virtual ICollection<DALUserRole> Roles { get; set; }
+        public virtual ICollection<DALUserRole> Roles { get; set; } = new List<DALUserRole>();
     }
 }

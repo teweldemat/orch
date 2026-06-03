@@ -12,10 +12,10 @@ namespace orch.core.command
     {
         public const string COMMAND_TYPE_KEY = "SYS_CHANGE_PASSWORD";
         public const string TYPE_ID = "04960c2b-0d74-4369-9496-7a6c2633e5eb";
-        public string OldPassword { get; set; }
-        public string NewPassword { get; set; }
+        public required string OldPassword { get; set; }
+        public required string NewPassword { get; set; }
 
-        [OGeneratedData] public string UserName { get; set; }
+        [OGeneratedData] public string UserName { get; set; } = string.Empty;
     }
 
     public class ChangePasswordCommandInitializer : CommandInitializerBase<ChangePasswordCommand>
@@ -48,7 +48,7 @@ namespace orch.core.command
         {
         }
 
-        private string _newPassword;
+        private string _newPassword = null!;
 
         public override void Preprocess()
         {
@@ -65,8 +65,8 @@ namespace orch.core.command
             _commandData.UserName = userInfo.UserName;
             
             _newPassword = _commandData.NewPassword;
-            _commandData.OldPassword = default;
-            _commandData.NewPassword = default;
+            _commandData.OldPassword = string.Empty;
+            _commandData.NewPassword = string.Empty;
 
         }
 
@@ -81,7 +81,7 @@ namespace orch.core.command
             _services.TranDb.ChangePassword(
                 _commandInfo,
                 // ReSharper disable once PossibleInvalidOperationException
-                _commandInfo.UserId.Value,
+                _commandInfo.UserId!.Value,
                 new Pbkdf2PasswordHasher().Hash(_newPassword));
         }
     }

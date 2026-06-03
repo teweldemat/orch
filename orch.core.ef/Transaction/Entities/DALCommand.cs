@@ -14,6 +14,6 @@ namespace orch.core.ef.Transaction.Entities
         }
 
         public DALUserInfo? User { get; set; }
-        public DALOTransaction Tran { get; set; }
+        public DALOTransaction Tran { get; set; } = null!;
     }
 }

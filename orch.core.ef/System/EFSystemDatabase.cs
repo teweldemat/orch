@@ -85,21 +85,21 @@ namespace orch.core.ef.System
             tokensToDelete.ForEach(token => _dbContext.Entry(token).State = EntityState.Detached);
         }
 
-        public AccessToken? GetAccessTokenInfo(Guid tokenId)
+        public AccessToken GetAccessTokenInfo(Guid tokenId)
         {
             var res = _dbContext.AccessTokens.Where(accessToken => accessToken.Token == tokenId)
                           .Select(accessToken => new AccessToken(accessToken))
                           .FirstOrDefault();
-            return res;
+            return res!;
         }
 
-        public ContentFile? GetFile(Guid file_id)
+        public ContentFile GetFile(Guid file_id)
         {
             return _dbContext.Files
                 .AsNoTracking()
                 .Where(file => file.FileId == file_id)
                 .Select(file => new ContentFile(file))
-                .FirstOrDefault();
+                .FirstOrDefault()!;
         }
 
         public PagedList<ContentFile> GetFiles(int pageNumber, int pageSize, ContentFileFilter? filter = null)
@@ -126,7 +126,7 @@ namespace orch.core.ef.System
             };
         }
 
-        public AccessToken? PingAccessToken(Guid tokenId, AccessTokenRequestContext context = null)
+        public AccessToken PingAccessToken(Guid tokenId, AccessTokenRequestContext? context = null)
         {
             var token = _dbContext.AccessTokens
                 .AsNoTracking()
@@ -135,12 +135,7 @@ namespace orch.core.ef.System
 
             AssertActiveAccessToken(tokenId, token);
 
-            if (token == null)
-            {
-                return null;
-            }
-
-            token.LastUsed = _host.CurrentTime();
+            token!.LastUsed = _host.CurrentTime();
             if (context != null)
             {
                 token.LastSeenIp = context.RemoteIp ?? token.LastSeenIp;

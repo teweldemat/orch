@@ -12,7 +12,6 @@
             CommandUserId = command.UserId;
         }
     }
-#nullable enable
     public abstract class AccessTokenProps
     {
         public Guid Token { get; set; }
@@ -36,13 +35,12 @@
         public string? Referer { get; set; }
         public string? ServerRequestId { get; set; }
     }
-#nullable disable
 
     public abstract class ContentFileProps
     {
         public Guid FileId { get; set; }
-        public string FileName { get; set; }
-        public string MimeType { get; set; }
+        public string FileName { get; set; } = string.Empty;
+        public string MimeType { get; set; } = string.Empty;
         public long CreateTime { get; set; }
     }
 
@@ -50,7 +48,7 @@
     {
         public Guid Id { get; set; }
         public Guid FileId { get; set; }
-        public string RefText { get; set; }
+        public string RefText { get; set; } = string.Empty;
     }
     public abstract class PermissionProps : ChangeProps
     {
@@ -60,9 +58,9 @@
         public const string PERMISSOIN_KEY_PATTERN = "[a-zA-Z0-9_-]{1,}";
         public Guid Id { get; set; }
         public Guid TranId { get; set; }
-        public String PermissionName { get; set; }
-        public String PermissionKey { get; set; }
-        public string ModuleName { get; set; }
+        public String PermissionName { get; set; } = string.Empty;
+        public String PermissionKey { get; set; } = string.Empty;
+        public string ModuleName { get; set; } = string.Empty;
 
         internal static bool ValidatePermissionKey(string key)
         {
@@ -74,9 +72,9 @@
     {
         public const string ROLE_FORMAT = "[a-zA-Z0-9_\\-]{1,}";
         public Guid Id { get; set; }
-        public String Key { get; set; }
-        public String RoleName { get; set; }
-        public string Description { get; set; }
+        public String Key { get; set; } = string.Empty;
+        public String RoleName { get; set; } = string.Empty;
+        public string Description { get; set; } = string.Empty;
 
         internal static bool ValidateRoleName(string roleName)
         {
@@ -92,12 +90,12 @@
 
         public Guid Id { get; set; }
         public long Time { get; set; }
-        public string UserName { get; set; }
-        public string FullName { get; set; }
-        public string Email { get; set; }
-        public string PhoneNo { get; set; }
-        public byte[] PasswordHash { get; set; }
-        public byte[] PublicKey { get; set; }
+        public string UserName { get; set; } = string.Empty;
+        public string FullName { get; set; } = string.Empty;
+        public string Email { get; set; } = string.Empty;
+        public string PhoneNo { get; set; } = string.Empty;
+        public byte[] PasswordHash { get; set; } = Array.Empty<byte>();
+        public byte[] PublicKey { get; set; } = Array.Empty<byte>();
         public bool Enabled { get; set; }
         public Guid? EmployeeId { get; set; }
         public Guid? ReaderId { get; set; }
@@ -118,13 +116,13 @@
         public int? ParentSeqNo { get; set; }
         public long Time { get; set; }
         public Guid? UserId { get; set; }
-        public String TextSummary { get; set; }
+        public String TextSummary { get; set; } = string.Empty;
         public Guid DataTypeID { get; set; }
         public int FormatVersion { get; set; }
-        public String TextData { get; set; }
+        public String TextData { get; set; } = string.Empty;
         public bool MainCommand { get; set; }
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             if (obj is OCommandProps other)
             {
@@ -151,12 +149,12 @@
 
     public abstract class OJobProps
     {
-        public string Id { get; set; }
+        public string Id { get; set; } = string.Empty;
         public long Time { get; set; }
         public Guid UserId { get; set; }
-        public string TextSummary { get; internal set; }
+        public string TextSummary { get; internal set; } = string.Empty;
         public Guid DataTypeID { get; set; }
-        public string TextData { get; set; }
+        public string TextData { get; set; } = string.Empty;
         public Guid? SystemID { get; set; }
     }
 
@@ -165,12 +163,12 @@
         public Guid Id { get; set; }
         public Guid? PrevId { get; set; }
         public long SeqNo { get; set; }
-        public String TextSummary { get; set; }
+        public String TextSummary { get; set; } = string.Empty;
         public long Time { get; set; }
         public Guid? UserId { get; set; }
         public Guid? SystemID { get; set; }
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             if (obj is OTransactionProps other)
             {

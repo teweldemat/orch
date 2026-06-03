@@ -16,7 +16,7 @@ namespace orch.common
             return objectType == typeof(LongRational);
         }
 
-        public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
+        public override object? ReadJson(JsonReader reader, Type objectType, object? existingValue, JsonSerializer serializer)
         {
             if (reader.Value is double)
                 return new LongRational((double)reader.Value);
@@ -25,7 +25,7 @@ namespace orch.common
 
        
 
-        public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
+        public override void WriteJson(JsonWriter writer, object? value, JsonSerializer serializer)
         {
             writer.WriteValue(value == null ? 0 : ((LongRational)value).FloatVal);
         }

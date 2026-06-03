@@ -444,18 +444,18 @@ namespace orch.ef.workflow
             _dbContext.SaveChanges();
         }
 
-        public object? GetTaskData(Type type, Guid taskId)
+        public object GetTaskData(Type type, Guid taskId)
         {
             var x = _dbContext.TaskData.FirstOrDefault(x => x.TaskId == taskId);
-            return x?.Data == null ? null : Newtonsoft.Json.JsonConvert.DeserializeObject(x.Data, type);
+            return x?.Data == null ? null! : Newtonsoft.Json.JsonConvert.DeserializeObject(x.Data, type)!;
         }
 
-        public T? GetTaskData<T>(Guid taskId) where T : WfStateData
+        public T GetTaskData<T>(Guid taskId) where T : WfStateData
         {
             var ret = GetTaskData(typeof(T), taskId);
             if (ret is T t)
                 return t;
-            return default;
+            return default!;
         }
 
         public TaskStatePair<T>? GetTaskStatePair<T>(Guid taskId) where T : WfStateData
@@ -467,7 +467,8 @@ namespace orch.ef.workflow
 
             if (task == null) return null;
 
-            var taskInfo = WfModule.GetWfTypeInfo(task.TaskTypeId);
+            var taskInfo = WfModule.GetWfTypeInfo(task.TaskTypeId)
+                           ?? throw new InvalidOperationException($"Unknown task type '{task.TaskTypeId}'");
 
             return new TaskStatePair<T>()
             {
@@ -544,7 +545,8 @@ namespace orch.ef.workflow
             var task = _dbContext.Tasks.AsNoTracking().FirstOrDefault(x => x.CreateCommandId == commandId);
             if (task == null)
                 return null;
-            var taskInfo = WfModule.GetWfTypeInfo(task.TaskTypeId);
+            var taskInfo = WfModule.GetWfTypeInfo(task.TaskTypeId)
+                           ?? throw new InvalidOperationException($"Unknown task type '{task.TaskTypeId}'");
             return GetTaskData(taskInfo.Type, task.Id);
         }
         [OViewFunction]
@@ -553,7 +555,8 @@ namespace orch.ef.workflow
             var task = _dbContext.Tasks.AsNoTracking().FirstOrDefault(x => x.Id == taskId);
             if (task == null)
                 return null;
-            var taskInfo = WfModule.GetWfTypeInfo(task.TaskTypeId);
+            var taskInfo = WfModule.GetWfTypeInfo(task.TaskTypeId)
+                           ?? throw new InvalidOperationException($"Unknown task type '{task.TaskTypeId}'");
             return GetTaskData(taskInfo.Type, task.Id);
         }
 
@@ -563,19 +566,20 @@ namespace orch.ef.workflow
             var task = _dbContext.Tasks.AsNoTracking().FirstOrDefault(x => x.Reference == reference);
             if (task == null)
                 return null;
-            var taskInfo = WfModule.GetWfTypeInfo(task.TaskTypeId);
+            var taskInfo = WfModule.GetWfTypeInfo(task.TaskTypeId)
+                           ?? throw new InvalidOperationException($"Unknown task type '{task.TaskTypeId}'");
             return GetTaskData(taskInfo.Type, task.Id);
         }
-        public T? GetTaskDataByCommandId<T>(Guid commandId) where T : WfStateData
+        public T GetTaskDataByCommandId<T>(Guid commandId) where T : WfStateData
         {
             var task = _dbContext.Tasks.AsNoTracking().FirstOrDefault(x => x.CreateCommandId == commandId);
-            return task == null ? null : GetTaskData<T>(task.Id);
+            return task == null ? null! : GetTaskData<T>(task.Id);
         }
 
-        public T? GetTaskDataByRef<T>(string reference) where T : WfStateData
+        public T GetTaskDataByRef<T>(string reference) where T : WfStateData
         {
             var task = _dbContext.Tasks.AsNoTracking().FirstOrDefault(x => x.Reference == reference);
-            return task == null ? null : GetTaskData<T>(task.Id);
+            return task == null ? null! : GetTaskData<T>(task.Id);
         }
 
         public PagedList<T> GetOpenTasks<T>(Guid taskTypeId, int index, int count) where T : WfStateData
@@ -601,7 +605,7 @@ namespace orch.ef.workflow
         public PagedList<OTask> GetTasksByType(String taskTypeKey, int index, int length)
         {
             var taskType = WfModule.GetWfTypeInfo(taskTypeKey);
-            OrchAssert.NoneNullDbObject(taskType, taskType);
+            OrchAssert.NoneNullDbObject(taskType, taskTypeKey);
 
 
             var q = _dbContext.Tasks.AsNoTracking().Where(x => x.TaskTypeId == taskType!.Id);
@@ -745,9 +749,9 @@ namespace orch.ef.workflow
                         .ToList();
                         var ret = new TaskHistoryWithData(x)
                         {
-                            DataType = data == null ? "Unknown" : OTransactionService.GetTypeInfoById(data.DataTypeID).Key,
-                            Note = note?.Note,
-                            Attachments = attachments
+                            DataType = data == null ? "Unknown" : OTransactionService.GetTypeInfoById(data.DataTypeID)?.Key ?? "Unknown",
+                            Note = note?.Note ?? string.Empty,
+                            Attachments = attachments ?? new List<Guid>()
                         };
                         return ret;
                     })
@@ -756,7 +760,7 @@ namespace orch.ef.workflow
         }
 
         [OViewFunction]
-        public TaskHistory? GetLastTaskChange(Guid taskId)
+        public TaskHistory GetLastTaskChange(Guid taskId)
         {
             return _dbContext.TaskHistory
                 .AsNoTracking()
@@ -764,7 +768,7 @@ namespace orch.ef.workflow
                 .OrderByDescending(x => x.CommandSeqNo)
                 .Take(1)
                 .Select(x => new TaskHistory(x))
-                .FirstOrDefault();
+                .FirstOrDefault()!;
         }
         
         [OViewFunction]

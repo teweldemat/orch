@@ -12,7 +12,7 @@ namespace orch.core.command
     {
         public const string COMMAND_TYPE_KEY = "SYS_SET_PERMISSION_ADMIN";
         public const string TRAN_ID = "90fccdb8-20ae-4767-9193-dc60d39b5caf";
-        public PermissionAdminInfo PermissionAdminInfo { get; set; }
+        public required PermissionAdminInfo PermissionAdminInfo { get; set; }
 
         // Remark: This is a placeholder GUID that may or may not be used later
         [OGeneratedData]

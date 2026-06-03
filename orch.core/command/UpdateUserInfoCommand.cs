@@ -15,7 +15,7 @@ namespace orch.core.command
         public const string COMMAND_TYPE_KEY = "SYS_UPDATE_USER";
         public const string TYPE_ID = "a1d9bef1-0d8c-4573-811b-f61e9e0aa153";
 
-        public UserInfo UserInfo { get; set; }
+        public required UserInfo UserInfo { get; set; }
     }
 
     public class UpdateUserInfoCommandInitializer : CommandInitializerBase<UpdateUserInfoCommand>
@@ -36,7 +36,7 @@ namespace orch.core.command
 
     public class UpdateUserInfoCommandHandler : CommandHandlerBase<UpdateUserInfoCommand>, ICommandHandler
     {
-        UserInfo existing;
+        UserInfo existing = null!;
         public UpdateUserInfoCommandHandler(TransactionServiceCollection services) : base(services)
         {
         }

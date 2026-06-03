@@ -13,8 +13,8 @@ namespace orch.core.command.serial
     {
         public const string COMMAND_TYPE_KEY = "SYS_SET_SERIAL_BATCH";
         public const string TYPE_ID = "1f3f9b3c-11a5-40cc-aebc-42fe7a8aa8f6";
-        public SerialType SerialType { get; set; }
-        public SerialBatch SerialBatch { get; set; }
+        public required SerialType SerialType { get; set; }
+        public required SerialBatch SerialBatch { get; set; }
     }
 
     public class CreateSerialBatchInitialier : CommandInitializerBase<CreateSerialBatchCommand>
@@ -25,18 +25,10 @@ namespace orch.core.command.serial
 
         public override void Init()
         {
-            if (_commandData.SerialBatch == null && _commandData.SerialType == null)
-            {
-                throw new InvalidOperationException("Both SerialBatch and SerialType are null.");
-            }
+            _commandData.SerialType.Id = Host.NextGuid();
+            _commandData.SerialBatch.SerialTypeId = _commandData.SerialType.Id;
 
-            if (_commandData.SerialType != null)
-            {
-                _commandData.SerialType.Id = Host.NextGuid();
-                _commandData.SerialBatch.SerialTypeId = _commandData.SerialType.Id;
-            }
-
-            if (_commandData.SerialBatch != null && _commandData.SerialBatch.Id == Guid.Empty)
+            if (_commandData.SerialBatch.Id == Guid.Empty)
             {
                 _commandData.SerialBatch.Id = Host.NextGuid();
             }
@@ -62,7 +54,8 @@ namespace orch.core.command.serial
 
         protected override void Authorize()
         {
-            if (!_services.TranDb.IsPermitted(_commandInfo.UserId.Value, CoreModule.PERMISSION_MANAGE_SERIALS))
+            if (_commandInfo.UserId is not { } userId
+                || !_services.TranDb.IsPermitted(userId, CoreModule.PERMISSION_MANAGE_SERIALS))
                 throw new UnauthorizedAccessException();
         }
 

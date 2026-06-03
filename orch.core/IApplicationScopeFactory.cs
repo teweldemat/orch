@@ -17,7 +17,7 @@ namespace orch.core
         /// <returns>An instance of OTransactionService</returns>
         public static OTransactionService LoadFromAssembly(string assemblyFile, string typeName)
         {
-            Assembly resolveHandler(object sender, ResolveEventArgs args) => ResolveAssembly(args);
+            Assembly? resolveHandler(object? sender, ResolveEventArgs args) => ResolveAssembly(args);
             AppDomain.CurrentDomain.AssemblyResolve += resolveHandler;
 
             try
@@ -34,7 +34,12 @@ namespace orch.core
                         $"Please ensure that a public implementation of IApplicationScopeFactory is available.");
                 }
 
-                var factory = (IApplicationScopeFactory)Activator.CreateInstance(type);
+                if (Activator.CreateInstance(type) is not IApplicationScopeFactory factory)
+                {
+                    throw new InvalidOperationException(
+                        $"Unable to create application scope factory from type '{typeName}' in assembly '{assemblyFile}'.");
+                }
+
                 return factory.CreateApplicationScope();
             }
             finally
@@ -43,7 +48,7 @@ namespace orch.core
             }
         }
 
-        private static Assembly ResolveAssembly(ResolveEventArgs args)
+        private static Assembly? ResolveAssembly(ResolveEventArgs args)
         {
             if (string.IsNullOrEmpty(args.Name) || args.RequestingAssembly == null)
             {

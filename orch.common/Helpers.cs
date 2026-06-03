@@ -96,7 +96,7 @@ namespace orch.common
             return type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Nullable<>);
         }
 
-        public static T CloneWithJson<T>(T obj) where T : class
+        public static T? CloneWithJson<T>(T obj) where T : class
         {
             if (obj == null)
                 return null;
@@ -304,7 +304,8 @@ namespace orch.common
                 return;
             var t = typeof(T);
             foreach (var prop in t.GetProperties()
-                .Where(x => !x.GetMethod.IsStatic
+                .Where(x => x.GetMethod != null
+                            && !x.GetMethod.IsStatic
                             && x.GetMethod.GetParameters().Length == 0
                             && x.GetMethod.IsPublic
                             && x.SetMethod != null

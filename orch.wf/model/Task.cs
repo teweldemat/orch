@@ -13,7 +13,7 @@ namespace orch.wf.model
         public OTask() { }
         public OTask(OTaskProps props)
         => this.MapFromBase(props);
-        public IList<CheckListItem> CheckList { get; set; }
+        public IList<CheckListItem> CheckList { get; set; } = new List<CheckListItem>();
     }
     
     

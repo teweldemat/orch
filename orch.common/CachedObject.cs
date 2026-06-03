@@ -8,7 +8,7 @@ namespace orch.common
 {
     public delegate ObjectType RetrieveObjectDelegate<IDType, ObjectType>(IDType id);
     public delegate bool IsValueNullDelegate<T>(T v);
-    public class CachedObject<IDType, ObjectType>
+    public class CachedObject<IDType, ObjectType> where IDType : notnull
     {
         RetrieveObjectDelegate<IDType, ObjectType> rdel;
         public CachedObject(RetrieveObjectDelegate<IDType, ObjectType> retrieveDelegate)
@@ -20,8 +20,7 @@ namespace orch.common
         {
             get
             {
-                ObjectType ret;
-                if (_cache.TryGetValue(id, out ret))
+                if (_cache.TryGetValue(id, out var ret))
                     return ret;
                 ret = rdel(id);
                 _cache.Add(id, ret);
@@ -31,7 +30,7 @@ namespace orch.common
     }
     
 
-    public class ObjectDiffCache<IDType, ObjectType>
+    public class ObjectDiffCache<IDType, ObjectType> where IDType : notnull
     {
         Dictionary<IDType, ObjectType> _cache = new Dictionary<IDType, ObjectType>();
         HashSet<IDType> _deletedID = new HashSet<IDType>();
@@ -83,8 +82,7 @@ namespace orch.common
         {
             get
             {
-                ObjectType ret;
-                if (_cache.TryGetValue(id, out ret))
+                if (_cache.TryGetValue(id, out var ret))
                     return ret;
                 ret = rdel(id);
                 _cache.Add(id, ret);
@@ -92,8 +90,7 @@ namespace orch.common
             }
             set
             {
-                ObjectType ret;
-                if (_cache.TryGetValue(id, out ret))
+                if (_cache.TryGetValue(id, out var ret))
                 {
                     _cache[id] = value;
                     return;

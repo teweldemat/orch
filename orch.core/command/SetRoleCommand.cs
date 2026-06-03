@@ -12,7 +12,7 @@ namespace orch.core.command
     {
         public const string COMMAND_TYPE_KEY = "SYS_SET_ROLE";
         public const string TYPE_ID = "7a596d93-5ddd-407e-b211-8927fb2c78a0";
-        public Role Role { get; set; }
+        public required Role Role { get; set; }
 
         // Remark: This is a placeholder GUID that may or may not be used later
         [OGeneratedData]

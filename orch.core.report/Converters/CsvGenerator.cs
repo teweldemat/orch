@@ -160,7 +160,7 @@ namespace orch.report.Generators
             stringBuilder.AppendLine();
             foreach (DataRow row in dataTable.Rows)
             {
-                IEnumerable<string> fields = row.ItemArray.Select(field => field.ToString());
+                IEnumerable<string> fields = row.ItemArray.Select(field => field?.ToString() ?? string.Empty);
                 stringBuilder.AppendLine(string.Join(",", fields));
             }
             

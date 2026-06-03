@@ -14,7 +14,7 @@ namespace orch.core.command
         public const string TYPE_ID = "c4e948bc-884a-424d-b2a9-62a361d7465f";
         public Guid UserId { get; set; }
         public List<Guid> Roles { get; set; } = new List<Guid>();
-        [OGeneratedData] public string UserName { get; set; }
+        [OGeneratedData] public string UserName { get; set; } = string.Empty;
     }    
 
     public class AssignRolesCommandInitializer : CommandInitializerBase<AssignRolesCommand>
@@ -42,54 +42,14 @@ namespace orch.core.command
 
         public static void CheckPermssionToAssignRoles(ITransactionDatabase db, OCommand command, UserInfo rootUser, Guid userId, List<Guid> roles)
         {
-            var isRoot = command.UserId.Value == rootUser.Id;
-            if (!isRoot) //if user not root he/she needs PERMSSION_ADMINISTRATOR permssion
+            if (command.UserId is not { } commandUserId)
+                throw new UnauthorizedAccessException("You are not authorized to assign roles");
+
+            var isRoot = commandUserId == rootUser.Id;
+            if (!isRoot)
             {
-                {
-                    // 'PermissionAdmin' feature is incomplete
-                    // Let's use a simple permission check for now
-
-                    if (!db.IsPermitted(command.UserId.Value, CoreModule.PERMISSION_ASSIGN_ROLE))
-                        throw new UnauthorizedAccessException("You are not authorized to assign roles");
-
-                    return;
-                }
-
-                var userPermssions = db.GetUserPermissions(command.UserId.Value);
- 
-                var permAdminKeys = new List<string>();
-                foreach (var perm in userPermssions)
-                {
-                    var permKey = db.GetPermission(perm).PermissionKey;
-                    if (permKey.StartsWith(PermissionProps.PERMISSION_ADMIN_PREFIX))
-                    {
-                        permAdminKeys.Add(permKey);
-                    }
-                }
-                var adminableKeys = new HashSet<Guid>();
-                foreach (var pk in permAdminKeys)
-                {
-                    var permAdmin = db.GetPermissionAdminInfo(pk);
-                    foreach (var key in permAdmin.PermissionKeys)
-                    {
-                        if (key.Contains(PermissionProps.WILD_CARD_CHAR))
-                        {
-                            foreach (var k in db.ExpandPermssions(key))
-                                adminableKeys.Add(k.Id);
-                        }
-                        else
-                            adminableKeys.Add(db.GetPermission(key).Id);
-                    }
-                }
-                foreach (var role in roles)
-                {
-                    var r = db.GetRole(role);
-                    foreach (var rp in r.Permissions)
-                    {
-                        if (!adminableKeys.Contains(rp))
-                            throw new InvalidOperationException("User not authorized to give these permssions");
-                    }
-                }
+                if (!db.IsPermitted(commandUserId, CoreModule.PERMISSION_ASSIGN_ROLE))
+                    throw new UnauthorizedAccessException("You are not authorized to assign roles");
             }
             foreach (var role in roles)
             {
@@ -107,7 +67,8 @@ namespace orch.core.command
 
         protected override void Execute()
         {
-            var root = _services.TranDb.GetRootUser();
+            var root = _services.TranDb.GetRootUser()
+                ?? throw new InvalidOperationException("Root user not found, system has not been initialized.");
             CheckPermssionToAssignRoles(_services.TranDb, _commandInfo, root, _commandData.UserId, _commandData.Roles);
             _services.TranDb.SetUserRole(_commandInfo, _commandData.UserId, _commandData.Roles);
         }

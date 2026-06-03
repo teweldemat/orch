@@ -2,7 +2,7 @@
 {
     public class CommandQueryResult
     {
-        public string commandId { get; set; }
-        public object res { get; set; }
+        public string commandId { get; set; } = string.Empty;
+        public object? res { get; set; }
     }
 }

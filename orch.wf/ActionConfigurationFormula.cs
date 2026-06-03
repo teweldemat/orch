@@ -8,13 +8,13 @@ namespace orch.wf
 {
     public class WfActionFormula
     {
-        public string ActionCheckFormula;
-        public string UserCheckFormula;
-        public string UserActionCheckFormula;
+        public string? ActionCheckFormula;
+        public string? UserCheckFormula;
+        public string? UserActionCheckFormula;
     }
     public abstract class ActionConfigurationFormulaBase
     {
-        public abstract WfActionFormula Formula(Guid actionId);
+        public abstract WfActionFormula? Formula(Guid actionId);
         public RuleCheckResult CheckAction(KeyValueCollection provider, Guid actionId, bool returnTrueIfNotSet)
         {
             var f = AssertActionConfigSet(actionId);
@@ -23,18 +23,20 @@ namespace orch.wf
             {
                 if (returnTrueIfNotSet)
                     return new RuleCheckResult(true);
-                throw new InvalidOperationException($"Check action formula not set for {OTransactionService.GetTypeInfoById(actionId).TypeName} in {this.GetType()}. Formula:{f?.ActionCheckFormula}");
+                var typeName = OTransactionService.GetTypeInfoById(actionId)?.TypeName ?? actionId.ToString();
+                throw new InvalidOperationException($"Check action formula not set for {typeName} in {this.GetType()}. Formula:{f?.ActionCheckFormula}");
             }
             return EvaluateFormula(provider, "Check Action", f.ActionCheckFormula);
         }
         public RuleCheckResult CheckUser(KeyValueCollection provider, Guid actionId, bool returnTrueIfNotSet)
         {
             var f = AssertActionConfigSet(actionId);
-            if (f == null || f.ActionCheckFormula == null)
+            if (f == null || f.UserCheckFormula == null)
             {
                 if (returnTrueIfNotSet)
                     return new RuleCheckResult(true);
-                throw new InvalidOperationException($"Check user formula not set for {OTransactionService.GetTypeInfoById(actionId).TypeName}. Formula:{f?.ActionCheckFormula}");
+                var typeName = OTransactionService.GetTypeInfoById(actionId)?.TypeName ?? actionId.ToString();
+                throw new InvalidOperationException($"Check user formula not set for {typeName}. Formula:{f?.UserCheckFormula}");
             }
 
             return EvaluateFormula(provider, "Check User", f.UserCheckFormula);
@@ -46,11 +48,12 @@ namespace orch.wf
             {
                 if (returnTrueIfNotSet)
                     return new RuleCheckResult(true);
-                throw new InvalidOperationException($"Check user action formula not set for {OTransactionService.GetTypeInfoById(actionId).TypeName}. Formula:{f?.ActionCheckFormula}");
+                var typeName = OTransactionService.GetTypeInfoById(actionId)?.TypeName ?? actionId.ToString();
+                throw new InvalidOperationException($"Check user action formula not set for {typeName}. Formula:{f?.UserActionCheckFormula}");
             }
             return EvaluateFormula(provider, "Check User action", f.UserActionCheckFormula);
         }
-        private WfActionFormula AssertActionConfigSet(Guid actionId)
+        private WfActionFormula? AssertActionConfigSet(Guid actionId)
         {
             var f = this.Formula(actionId);
             return f;
@@ -81,7 +84,7 @@ namespace orch.wf
             throw new InvalidOperationException($"{configName} evaluation returned invalid result: {(res == null ? "<null>" : res.ToString())}. Boolean value expected");
         }
 
-        private TaskChange EvaluateTaskFormula(KeyValueCollection provider, string f)
+        private TaskChange? EvaluateTaskFormula(KeyValueCollection provider, string? f)
         {
             if (f == null)
                 return null;
@@ -107,15 +110,15 @@ namespace orch.wf
         public class ActionFormulaEntry
         {
             public Guid ActionTypeId;
-            public WfActionFormula Formula;
+            public WfActionFormula Formula = null!;
             public ActionFormulaEntry(Guid key, WfActionFormula value)
             {
                 this.ActionTypeId = key;
                 this.Formula = value;
             }
         }
-        public List<ActionFormulaEntry> ActionFormulas { get; set; }
-        public override WfActionFormula Formula(Guid actionId)
+        public List<ActionFormulaEntry> ActionFormulas { get; set; } = new();
+        public override WfActionFormula? Formula(Guid actionId)
         {
             var ret = this.ActionFormulas.Where(x => x.ActionTypeId == actionId).FirstOrDefault();
             if (ret == null)

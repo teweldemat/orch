@@ -2,10 +2,10 @@
 {
     public class ReportTypeInfo
     {
-        public string Key { get; set; }
+        public string Key { get; set; } = string.Empty;
         public string? TypeName { get; set; }
-        public Type Type { get; set; }
-        public string[] Permissions { get; set; }
+        public Type Type { get; set; } = null!;
+        public string[] Permissions { get; set; } = Array.Empty<string>();
 
         public ReportTypeInfo(string key, string[]? permissions = null)
         {

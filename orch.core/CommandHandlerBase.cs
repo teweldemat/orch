@@ -7,9 +7,9 @@ namespace orch.core
         protected TransactionServiceCollection _services;
 
         #region data
-        protected OCommand _commandInfo;
-        protected OTransaction _tranInfo;
-        protected T _commandData;
+        protected OCommand _commandInfo = null!;
+        protected OTransaction _tranInfo = null!;
+        protected T _commandData = default!;
         #endregion
 
         protected bool _mainCommand;

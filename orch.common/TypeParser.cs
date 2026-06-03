@@ -101,7 +101,7 @@ namespace orch.common
                     property.SetValue(paramValue, convertedValue);
                 }
             }
-            else if (queryParams.TryGetValue(paramInfo?.Name, out string? valueStr))
+            else if (paramInfo.Name != null && queryParams.TryGetValue(paramInfo.Name, out string? valueStr))
             {
                 paramValue = Convert(valueStr, paramInfo.ParameterType);
             }

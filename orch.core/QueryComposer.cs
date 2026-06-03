@@ -14,17 +14,17 @@ namespace orch.core
     [AttributeUsage(AttributeTargets.Class)]
     public class OViewAttribute : Attribute
     {
-        public string Name { get; set; }
-        public string[] Permissions { get; private set; }
+        public string? Name { get; set; }
+        public string[] Permissions { get; private set; } = Array.Empty<string>();
 
         public OViewAttribute()
         {
         }
 
-        public OViewAttribute(string name, string[] permissions = null)
+        public OViewAttribute(string name, string[]? permissions = null)
         {
             Name = name;
-            Permissions = permissions;
+            Permissions = permissions ?? Array.Empty<string>();
         }
 
         public OViewAttribute(string[] permissions)
@@ -36,17 +36,17 @@ namespace orch.core
     [AttributeUsage(AttributeTargets.Method)]
     public class OViewFunctionAttribute : Attribute
     {
-        public string Name { get; private set; }
-        public string[] Permissions { get; private set; }
+        public string? Name { get; private set; }
+        public string[] Permissions { get; private set; } = Array.Empty<string>();
 
         public OViewFunctionAttribute()
         {
         }
 
-        public OViewFunctionAttribute(string name, string[] permissions = null)
+        public OViewFunctionAttribute(string name, string[]? permissions = null)
         {
             Name = name;
-            Permissions = permissions;
+            Permissions = permissions ?? Array.Empty<string>();
         }
 
         public OViewFunctionAttribute(string[] permissions)
@@ -61,13 +61,13 @@ namespace orch.core
 
     public class ViewFunction
     {
-        public Type Service;
-        public MethodInfo Method;
-        public string Name;
-        public string[] Permissions;
-        public ParameterInfo UserPar = null;
-        public ParameterInfo[] Pars;
-        public Dictionary<ParameterInfo, object> DefaultValues = new();
+        public Type Service = null!;
+        public MethodInfo Method = null!;
+        public string Name = string.Empty;
+        public string[] Permissions = Array.Empty<string>();
+        public ParameterInfo? UserPar;
+        public ParameterInfo[] Pars = Array.Empty<ParameterInfo>();
+        public Dictionary<ParameterInfo, object?> DefaultValues = new();
     }
 
     public class ViewFunctionCaller : FuncScript.Core.IFsFunction
@@ -107,7 +107,7 @@ namespace orch.core
                 .Any(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IList<>));
         }
 
-        private static object ConvertListItem(object item, Type elementType)
+        private static object? ConvertListItem(object? item, Type elementType)
         {
             if (item is KeyValueCollection kv)
             {
@@ -149,9 +149,9 @@ namespace orch.core
             return Convert.ChangeType(item, targetType);
         }
 
-        private static object ConvertToListParameter(object parVal, Type parType)
+        private static object? ConvertToListParameter(object? parVal, Type parType)
         {
-            IEnumerable enumerable = null;
+            IEnumerable? enumerable = null;
 
             if (parVal is FsList fsList)
             {
@@ -191,7 +191,7 @@ namespace orch.core
             }
 
             var listType = typeof(List<>).MakeGenericType(elementType);
-            var list = (IList)Activator.CreateInstance(listType);
+            var list = (IList)Activator.CreateInstance(listType)!;
 
             foreach (var item in enumerable)
             {
@@ -212,7 +212,7 @@ namespace orch.core
 
             if (typeof(IList).IsAssignableFrom(parType) && parType.GetConstructor(Type.EmptyTypes) != null)
             {
-                var concreteList = (IList)Activator.CreateInstance(parType);
+                var concreteList = (IList)Activator.CreateInstance(parType)!;
                 foreach (var item in list)
                 {
                     concreteList.Add(item);
@@ -224,13 +224,12 @@ namespace orch.core
         }
 
 
-        public object Evaluate(object par)
+        public object? Evaluate(object? par)
         {
             if (!(par is FsList pars))
                 throw new FuncScript.Error.EvaluationTimeException("List expected");
             var serviceType = _func.Service;
-            object serviceObject;
-
+            object? serviceObject;
             if (_func.Method.IsStatic)
             {
                 serviceObject = null;
@@ -244,7 +243,7 @@ namespace orch.core
                 serviceObject = _tranService.Services.GetRequiredService(serviceType);
             }
 
-            var parVals = new object[_func.Pars.Length];
+            var parVals = new object?[_func.Pars.Length];
             var index = 0;
 
             for (int i = 0; i < parVals.Length; i++)
@@ -257,7 +256,7 @@ namespace orch.core
                 }
                 else
                 {
-                    object parVal = index < pars.Length ? pars[index] : null;
+                    object? parVal = index < pars.Length ? pars[index] : null;
                     Type parType = currentPar.ParameterType;
 
                     // Use default value if parameter is missing and a default exists
@@ -274,7 +273,7 @@ namespace orch.core
 
                     if (Nullable.GetUnderlyingType(parType)?.IsEnum == true)
                     {
-                        parType = Nullable.GetUnderlyingType(parType);
+                        parType = Nullable.GetUnderlyingType(parType)!;
                     }
 
                     if (parType.IsEnum && parVal is string parValStr)
@@ -298,8 +297,8 @@ namespace orch.core
         public string ParName(int index)
         {
             if (_func.UserPar != null && index >= _func.UserPar.Position)
-                return _func.Pars[index + 1].Name;
-            return _func.Pars[index].Name;
+                return _func.Pars[index + 1].Name ?? string.Empty;
+            return _func.Pars[index].Name ?? string.Empty;
         }
 
         public override string ToString()
@@ -356,7 +355,7 @@ namespace orch.core
             return ret;
         }
 
-        public  KeyValueCollection ParentProvider => null;
+        public KeyValueCollection? ParentProvider => null;
 
         private void Authorize(ViewFunction vf)
         {
@@ -475,7 +474,7 @@ namespace orch.core
         }
 
         [OViewFunction]
-        public object JFile(string fileName)
+        public object? JFile(string fileName)
         {
             if (!System.IO.File.Exists(fileName))
                 return null;
@@ -483,7 +482,7 @@ namespace orch.core
         }
 
         [OViewFunction]
-        public CommandTypeInfo GetCommandTypeInfo(String key)
+        public CommandTypeInfo? GetCommandTypeInfo(String key)
         {
             var ret = OTransactionService.GetTypeIdByKey(key);
 
@@ -499,7 +498,7 @@ namespace orch.core
         }
 
         [OViewFunction(name: "GetCommandTypeInfoById")]
-        public CommandTypeInfo GetCommandTypeInfo(Guid id)
+        public CommandTypeInfo? GetCommandTypeInfo(Guid id)
         {
             var ret = OTransactionService.GetTypeInfoById(id);
 
@@ -515,7 +514,7 @@ namespace orch.core
         }
 
         [OViewFunction(name: "GetJobTypeInfoById")]
-        public JobTypeInfo GetJobTypeInfo(Guid id)
+        public JobTypeInfo? GetJobTypeInfo(Guid id)
         {
             var ret = OJobService.GetTypeInfoById(id);
 
@@ -697,7 +696,7 @@ namespace orch.core
                         }
                         else if (par.HasDefaultValue)
                         {
-                            funcInfo.DefaultValues[par] = par.DefaultValue;
+                            funcInfo.DefaultValues[par] = par.HasDefaultValue ? par.DefaultValue : null;
                         }
                     }
                     funcs.Add(funcNameLower, funcInfo);
@@ -714,7 +713,7 @@ namespace orch.core
             return f;
         }
 
-        public static Dictionary<String, ViewFunction> GetViewFunctionCollection(String service)
+        public static Dictionary<String, ViewFunction>? GetViewFunctionCollection(String service)
         {
             if (!s_views.TryGetValue(service, out var v))
                 return null;

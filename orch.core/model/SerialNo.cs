@@ -20,13 +20,13 @@ namespace orch.core.model
     public abstract class SerialTypeProps : ChangeProps
     {
         public Guid Id { get; set; }
-        public string Key { get; set; }
-        public string Name { get; set; }
-        public string FormatString { get; set; }
+        public string Key { get; set; } = string.Empty;
+        public string Name { get; set; } = string.Empty;
+        public string FormatString { get; set; } = string.Empty;
         public SerialNoFormattingType FormatType { get; set; }
-        public string AuthorizationLevel { get; set; }
+        public string AuthorizationLevel { get; set; } = string.Empty;
 
-        public string FormatSerialNo(int sn, KeyValueCollection provider = null)
+        public string FormatSerialNo(int sn, KeyValueCollection? provider = null)
         {
             if (string.IsNullOrWhiteSpace(FormatString))
                 return sn.ToString();
@@ -80,7 +80,7 @@ namespace orch.core.model
     {
         public Guid Id { get; set; }
         public Guid SerialTypeId { get; set; }
-        public string Description { get; set; }
+        public string Description { get; set; } = string.Empty;
         public int FromSerialNo { get; set; }
         public int ToSerialNo { get; set; }
         public int MaxUsed { get; set; }
@@ -95,7 +95,7 @@ namespace orch.core.model
     {
         public Guid BatchId { get; set; }
         public int Sn { get; set; }
-        public string Formatted { get; set; }
+        public string Formatted { get; set; } = string.Empty;
         public bool IsVoid { get; set; }
 
     }

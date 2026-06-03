@@ -8,7 +8,7 @@ namespace orch.core.model
         public OTransaction(OTransactionProps props)
             => this.MapFromBase(props);
 
-        public virtual ICollection<OCommand> Commands { get; set; }
+        public virtual ICollection<OCommand> Commands { get; set; } = new List<OCommand>();
 
     }
 }

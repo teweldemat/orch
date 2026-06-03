@@ -46,7 +46,8 @@ namespace orch.core
             job.Id = context.BackgroundJob.Id;
             job.TextData = JsonConvert.SerializeObject(data);
 
-            handler = GetHandler(job.DataTypeID);
+            handler = GetHandler(job.DataTypeID)
+                ?? throw new InvalidOperationException($"No job handler registered for type id '{job.DataTypeID}'.");
             handler.SetData(job, data);
             handler.HubContext = HubContext;
             handler.CancellationToken = cancellationToken;
@@ -75,14 +76,14 @@ namespace orch.core
                         if (SingletonJobsByTypeId.TryGetValue(typeId, out var existingJobId))
                             return existingJobId;
 
-                        var jobId = BackgroundJob.Enqueue(() => ExecuteJob(default, job, data, CancellationToken.None));
+                        var jobId = BackgroundJob.Enqueue(() => ExecuteJob(null!, job, data, CancellationToken.None));
                         SingletonJobsByTypeId.TryAdd(typeId, jobId);
 
                         return jobId;
                     }
                 case JobProcessType.Concurrent:
                     {
-                        var jobId = BackgroundJob.Enqueue(() => ExecuteJob(default, job, data, CancellationToken.None));
+                        var jobId = BackgroundJob.Enqueue(() => ExecuteJob(null!, job, data, CancellationToken.None));
                         ConcurrentJobsByJobId.TryAdd(jobId, typeId);
                         return jobId;
                     }
@@ -116,7 +117,7 @@ namespace orch.core
                 {
                     Id = Host.NextGuid(),
                     Time = Host.CurrentTime(),
-                    Message = $"An error occured while running Job {context.BackgroundJob.Id} - '{typeInfo.Key}': {ex.Message}",
+                    Message = $"An error occured while running Job {context.BackgroundJob.Id} - '{typeInfo?.Key ?? job.DataTypeID.ToString()}': {ex.Message}",
                     Level = EventLogProps.LogLevel.Error,
                     JobId = context.BackgroundJob.Id,
                     Data = null

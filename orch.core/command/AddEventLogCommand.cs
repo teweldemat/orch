@@ -13,7 +13,7 @@ public class AddEventLogCommand
 {
     public const string COMMAND_TYPE_KEY = "ADD_EVENT_LOG";
     public const string TYPE_ID = "1c2df8dc-ab82-438e-83d7-542c6265ac7f";
-    public EventLog EventLog { get; set; }
+    public required EventLog EventLog { get; set; }
 }
 
 public class AddEventLogCommandInitializer : CommandInitializerBase<AddEventLogCommand>

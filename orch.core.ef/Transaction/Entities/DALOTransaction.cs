@@ -15,6 +15,6 @@ namespace orch.core.ef.Transaction.Entities
         }
 
         public DALUserInfo? User { get; set; }
-        public virtual ICollection<DALCommand> Commands { get; set; }
+        public virtual ICollection<DALCommand> Commands { get; set; } = new List<DALCommand>();
     }
 }

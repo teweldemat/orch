@@ -47,17 +47,17 @@ namespace orch.core
 
         public IServiceProvider Services => _services;
 
-        protected Stack<OCommand> DataStack; //this is thread safe as we don't share the instance of the service between threads
-        protected Stack<ICommandHandler> HandlersStack;
+        protected Stack<OCommand> DataStack = null!; //this is thread safe as we don't share the instance of the service between threads
+        protected Stack<ICommandHandler> HandlersStack = null!;
 
-        protected OTransaction CurrentTran;
+        protected OTransaction CurrentTran = null!;
         protected int DataSeqNo = 1;
 
         protected virtual void ProcessCommand(
             OCommand command,
             object data,
             bool mainCommand,
-            out ICommandHandler handler)
+            out ICommandHandler? handler)
         {
             command.Id = _host.NextGuid();
             command.TranId = CurrentTran.Id;
@@ -150,7 +150,7 @@ namespace orch.core
                     if (command.DataTypeID == Guid.Parse(SetSystemIdCommand.TYPE_ID))
                         throw new InvalidOperationException("Set system ID not allowed");
                     
-                    SystemIdMismatchException.ThrowIfNotEqual(sysInfo.SystemId, tran.SystemID);
+                    SystemIdMismatchException.ThrowIfNotEqual(sysInfo!.SystemId, tran.SystemID);
 
                     tran.PrevId = sysInfo.HeadTranId;
                 }
@@ -240,7 +240,7 @@ namespace orch.core
             OTransaction tran,
             OCommand command,
             DataType data,
-            out Guid tranId)
+            out Guid tranId) where DataType : notnull
         {
             var type = GetTypeIdByType(typeof(DataType))
                 ?? throw new InvalidOperationException($"{typeof(DataType)} is not command data type");
@@ -255,26 +255,26 @@ namespace orch.core
             Guid? systemId,
             int formatVersion,
             DataType data,
-            out Guid tranId)
+            out Guid tranId) where DataType : notnull
         {
             var tran = new OTransaction { UserId = userId, SystemID = systemId, };
             var command = new OCommand { FormatVersion = formatVersion, UserId = userId };
             return ExecuteCommand(tran, command, data, out tranId);
         }
 
-        public virtual Guid ExecuteChildCommandTyped<DataType>(int formatVersion, DataType data)
+        public virtual Guid ExecuteChildCommandTyped<DataType>(int formatVersion, DataType data) where DataType : notnull
         {
             var command = new OCommand { FormatVersion = formatVersion, };
             return ExecuteChildCommandTyped(command, data);
         }
 
-        public virtual Guid ExecuteChildCommandTyped<DataType>(int formatVersion, Guid? userId, DataType data)
+        public virtual Guid ExecuteChildCommandTyped<DataType>(int formatVersion, Guid? userId, DataType data) where DataType : notnull
         {
             var command = new OCommand { FormatVersion = formatVersion, UserId = userId };
             return ExecuteChildCommandTyped(command, data);
         }
 
-        private Guid ExecuteChildCommandTyped<T>(OCommand command, T data)
+        private Guid ExecuteChildCommandTyped<T>(OCommand command, T data) where T : notnull
         {
             var type = GetTypeIdByType(typeof(T))
                 ?? throw new InvalidOperationException($"{typeof(T)} is not cmmand data type");

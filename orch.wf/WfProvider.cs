@@ -12,24 +12,23 @@ namespace orch.wf
         DefaultFsDataProvider global = new DefaultFsDataProvider();
         common.CachedObject<string, object> _cache;
         WfServiceCollection _services;
-        OTask _task;
-        WfStateData _wfState;
-        UserInfo _checkUser;
+        OTask? _task;
+        WfStateData? _wfState;
+        UserInfo? _checkUser;
         ViewQueryProvider _viewProvider;
-        private KeyValueCollection _parentProvider;
 
         public WfProvider(
             WfServiceCollection services,
-            UserInfo user,
-            OTask task,
-            WfStateData wfState,
-            object action)
+            UserInfo? user,
+            OTask? task,
+            WfStateData? wfState,
+            object? action)
         {
             _services = services;
             _task = task;
             _wfState = wfState;
             _checkUser = user;
-            _viewProvider = new ViewQueryProvider(_services.TranService, user == null ? Guid.Empty : user.Id, null);
+            _viewProvider = new ViewQueryProvider(_services.TranService, user == null ? Guid.Empty : user.Id, null!);
             _cache =
                 new common.CachedObject<string, object>(name =>
                 {
@@ -54,7 +53,7 @@ namespace orch.wf
             return _cache[name];
         }
 
-        public KeyValueCollection ParentProvider => _parentProvider;
+        public KeyValueCollection? ParentProvider => null;
 
         public bool IsDefined(string key,bool hierarchy=false)
         {

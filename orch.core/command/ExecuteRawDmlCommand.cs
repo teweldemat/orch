@@ -10,7 +10,7 @@
     {
         public const string COMMAND_TYPE_KEY = "SYS_EXEC_RAW_DML";
         public const string TYPE_ID = "6ce34702-61ad-44e6-bbad-5ca4734cde5a";
-        public string Dml { get; set; }
+        public required string Dml { get; set; }
         public string? Note { get; set; }
     }
 

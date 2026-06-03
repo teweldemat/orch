@@ -7,7 +7,7 @@ namespace orch.wf
     public class RuleCheckResult
     {
         public bool Yes { get; set; }
-        public string Reason { get; set; }
+        public string? Reason { get; set; }
         public RuleCheckResult()
         {
         }
@@ -26,7 +26,7 @@ namespace orch.wf
 
     public interface IWfAction
     {
-        IList<string> RequiredPermissions(OCommand command, WfStateData stateData);
+        IList<string> RequiredPermissions(OCommand? command, WfStateData? stateData);
         bool Assignable { get; }
     }
 
@@ -43,8 +43,12 @@ namespace orch.wf
         protected virtual void PostExecuteAction() { }
         protected abstract W? StateData { get; }
         private HashSet<Guid> NotificationIds { get; } = new();
-        public abstract IList<string> RequiredPermissions(OCommand command, WfStateData stateData);
+        public abstract IList<string> RequiredPermissions(OCommand? command, WfStateData? stateData);
         protected virtual bool AssertAction => _mainCommand;
+
+        private Guid ActionTypeId =>
+            OTransactionService.GetTypeIdByType(typeof(T))?.TypeId
+            ?? throw new InvalidOperationException($"Command type {typeof(T)} is not registered.");
 
         public sealed override void Preprocess()
         {
@@ -55,7 +59,9 @@ namespace orch.wf
                 if (_commandInfo.UserId.HasValue)
                 {
                     var user = _services.TranDb.GetUserInfo(_commandInfo.UserId.Value);
-                    Services.WfService.AssertAction(WfModule.GetWfTypeInfo(typeof(W)).Id, stateBefore, user, OTransactionService.GetTypeIdByType(typeof(T)).TypeId, this._commandData);
+                    var wfType = WfModule.GetWfTypeInfo(typeof(W))
+                        ?? throw new InvalidOperationException($"Workflow type for {typeof(W)} not found");
+                    Services.WfService.AssertAction(wfType.Id, stateBefore, user, ActionTypeId, _commandData);
                 }
             }
 
@@ -63,49 +69,58 @@ namespace orch.wf
         }
         class MonitorInfo
         {
-            public OTask task;
-            public IWfHandler h;
+            public OTask task = null!;
+            public IWfHandler h = null!;
         }
 
         protected sealed override void Execute()
         {
-            IEnumerable<MonitorInfo> monitors = null;
+            IEnumerable<MonitorInfo>? monitors = null;
 
             if (StateData != null)
             {
                 monitors = Services.WfDb.GetTaskMonitors(StateData.TaskId)
                     .Select(x =>
                     {
-                        var task = Services.WfDb.GetTask(x);
-                        return new MonitorInfo
-                        {
-                            task = task,
-                            h = Services.WfService.GetWfHandler(task.TaskTypeId)
-                        };
-                    }).Where(x => x.h != null);
+                        var monitorTask = Services.WfDb.GetTask(x);
+                        if (monitorTask == null)
+                            return null;
+                        var handler = Services.WfService.GetWfHandler(monitorTask.TaskTypeId);
+                        return handler == null
+                            ? null
+                            : new MonitorInfo
+                            {
+                                task = monitorTask,
+                                h = handler
+                            };
+                    })
+                    .Where(x => x != null)
+                    .Select(x => x!);
 
+                var stateData = StateData;
                 foreach (var m in monitors)
                 {
                     m.h.OnBeforeWaitedWfChanged(
                         _commandInfo,
                         m.task.Id,
-                        StateData,
-                        OTransactionService.GetTypeIdByType(typeof(T)).TypeId,
+                        stateData,
+                        ActionTypeId,
                         _commandData);
                 }
             }
 
             ExecuteAction();
 
-            if (monitors != null)
+            if (monitors != null && StateData != null)
             {
+                var stateData = StateData;
                 foreach (var m in monitors)
                 {
                     m.h.OnAfterWaitedWfChanged(
                         _commandInfo,
                         m.task.Id,
-                        StateData,
-                        OTransactionService.GetTypeIdByType(typeof(T)).TypeId,
+                        stateData,
+                        ActionTypeId,
                         _commandData);
                 }
             }
@@ -123,6 +138,8 @@ namespace orch.wf
 
         protected internal virtual void AssignWorkflow()
         {
+            if (StateData == null)
+                return;
             Services.WfService.AssignWorkflow(_commandInfo, StateData);
         }
 
@@ -134,6 +151,9 @@ namespace orch.wf
                 var permission = _services.TranDb.GetPermission(p)
                     ?? throw new InvalidOperationException($"Permission '{p}' not found.");
 
+                if (!_commandInfo.UserId.HasValue)
+                    throw new UnauthorizedAccessException("User is not authorized. Missing user id on command.");
+
                 if (!_services.TranDb.IsPermitted(_commandInfo.UserId.Value, permission.Id))
                     throw new UnauthorizedAccessException($"User is not authorized. Missing permission: {p}");
             }
@@ -141,6 +161,9 @@ namespace orch.wf
 
         protected void SendNotification(Guid id, string message, params Guid[] users)
         {
+            if (StateData == null)
+                throw new InvalidOperationException("State data is required to send a workflow notification.");
+
             Services.WfDb.SendNotification(
                   _commandInfo,
                   new WfNotification()

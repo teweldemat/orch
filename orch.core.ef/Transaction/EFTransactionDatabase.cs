@@ -186,21 +186,21 @@ namespace orch.core.ef.System
         /// which is the most recent transaction that was added to the database.
         /// </summary>
         [OViewFunction]
-        public OCommand? GetHeadTransaction()
+        public OCommand GetHeadTransaction()
         {
             var sysInfo = _db.TransactionSystemInformation.AsNoTracking().FirstOrDefault();
             if (sysInfo == null)
-                return null;
+                return null!;
             return _db.Commands.Where(command => command.TranId == sysInfo.HeadTranId)
                 .OrderByDescending(c => c.SeqNo)
                 .Select(command => new OCommand(command))
-                .FirstOrDefault();
+                .FirstOrDefault()!;
         }
         [OViewFunction]
-        public TransactionSystemInformation? GetCurrentSystemInformation()
+        public TransactionSystemInformation GetCurrentSystemInformation()
         {
             var sysInfo = _db.TransactionSystemInformation.AsNoTracking().FirstOrDefault();
-            return sysInfo == null ? null : new TransactionSystemInformation(sysInfo);
+            return sysInfo == null ? null! : new TransactionSystemInformation(sysInfo);
         }
 
         public long LastTranSeqNo
@@ -237,11 +237,11 @@ namespace orch.core.ef.System
                 .Max(t => t.SeqNo);
         }
 
-        public T? Deserialize<T>(OCommand command)
+        public T Deserialize<T>(OCommand command)
         {
             if (string.IsNullOrEmpty(command.TextData))
-                return default;
-            return JsonConvert.DeserializeObject<T>(command.TextData);
+                return default!;
+            return JsonConvert.DeserializeObject<T>(command.TextData)!;
         }
 
         public UserInfo? GetRootUser()
@@ -251,7 +251,7 @@ namespace orch.core.ef.System
                         .Where(userInfo => userInfo.UserName.Equals(UserInfo.USER_NAME_ROOT))
                         .Select(userInfo => new UserInfo(userInfo)
                         {
-                            PasswordHash = null,
+                            PasswordHash = Array.Empty<byte>(),
                             Roles = userInfo.Roles.OrderBy(userRole => userRole.Order)
                             .Select(userRole => userRole.RoleId).ToList()
                         })
@@ -263,50 +263,50 @@ namespace orch.core.ef.System
             return GetUserInfo(UserInfo.USER_NAME_SYSTEM, false);
         }
 
-        public UserInfo? GetUserInfo(string userName, bool includePassword = false)
+        public UserInfo GetUserInfo(string userName, bool includePassword = false)
         {
 
             return _db.Users.AsNoTracking().Include(userInfo => userInfo.Roles).Where(userInfo => userInfo.UserName.ToUpper() == userName.ToUpper())
             .AsEnumerable()
             .Select(userInfo => new UserInfo(userInfo)
             {
-                PasswordHash = includePassword ? userInfo.PasswordHash : null,
+                PasswordHash = includePassword ? userInfo.PasswordHash : Array.Empty<byte>(),
                 Roles = userInfo.Roles.OrderBy(userRole => userRole.Order).Select(userRole => userRole.RoleId).ToList(),
                 EmployeeId = userInfo.EmployeeId.HasValue ? userInfo.EmployeeId.Value : null,
                 ReaderId = userInfo.ReaderId.HasValue ? userInfo.ReaderId.Value : null
             })
-            .FirstOrDefault();
+            .FirstOrDefault()!;
         }
 
-        public UserInfo? GetUserInfo(Guid agentId, bool includePassword = false)
+        public UserInfo GetUserInfo(Guid agentId, bool includePassword = false)
         {
             return _db.Users.Include(x => x.Roles).AsNoTracking().Where(userInfo => userInfo.Id == agentId)
                             .Select(userInfo => new UserInfo(userInfo)
                             {
-                                PasswordHash = includePassword ? userInfo.PasswordHash : null,
+                                PasswordHash = includePassword ? userInfo.PasswordHash : Array.Empty<byte>(),
                                 Roles = userInfo.Roles.OrderBy(userRole => userRole.Order).Select(userRole => userRole.RoleId).ToList(),
                                 EmployeeId = userInfo.EmployeeId.HasValue ? userInfo.EmployeeId.Value : null,
                                 ReaderId = userInfo.ReaderId.HasValue ? userInfo.ReaderId.Value : null
                             })
-                            .FirstOrDefault();
+                            .FirstOrDefault()!;
         }
 
         [OViewFunction]
-        public UserInfo? GetUserByCommandId(Guid id)
+        public UserInfo GetUserByCommandId(Guid id)
         {
             return _db.Users.Include(userInfo => userInfo.Roles).Where(userInfo => userInfo.UpdateCommandId == id)
                         .AsEnumerable()
                         .Select(userInfo => new UserInfo(userInfo)
                         {
-                            PasswordHash = null,
+                            PasswordHash = Array.Empty<byte>(),
                             Roles = userInfo.Roles.OrderBy(userRole => userRole.Order).Select(userRole => userRole.RoleId).ToList(),
                             EmployeeId = userInfo.EmployeeId.HasValue ? userInfo.EmployeeId.Value : null,
                             ReaderId = userInfo.ReaderId.HasValue ? userInfo.ReaderId.Value : null
                         })
-                        .FirstOrDefault();
+                        .FirstOrDefault()!;
         }
 
-        public UserInfo? GetUserInfoByEmplyeeId(Guid employeeId)
+        public UserInfo GetUserInfoByEmplyeeId(Guid employeeId)
         {
             return _db.Users.Include(x => x.Roles).AsNoTracking().Where(userInfo => userInfo.EmployeeId == employeeId)
                             .Select(userInfo => new UserInfo(userInfo)
@@ -316,7 +316,7 @@ namespace orch.core.ef.System
                                 EmployeeId = userInfo.EmployeeId.HasValue ? userInfo.EmployeeId.Value : null,
                                 ReaderId = userInfo.ReaderId.HasValue ? userInfo.ReaderId.Value : null
                             })
-                            .FirstOrDefault();
+                            .FirstOrDefault()!;
         }
         public void UpdateUserInfo(UserInfo agent)
         {
@@ -495,7 +495,7 @@ namespace orch.core.ef.System
             };
         }
         [OViewFunction("GetRoleByKey")]
-        public Role? GetRole(string key)
+        public Role GetRole(string key)
         {
             return _db.Roles
                 .Include(role => role.Permissions)
@@ -505,7 +505,7 @@ namespace orch.core.ef.System
                     Permissions = role.Permissions.OrderBy(rolePermission => rolePermission.Order)
                     .Select(rolePermission => rolePermission.PermissionId).ToList()
                 })
-                .FirstOrDefault();
+                .FirstOrDefault()!;
         }
 
         public List<Guid> GetUsersWithRoles(List<Guid> roleIds)
@@ -541,19 +541,19 @@ namespace orch.core.ef.System
         }
 
         [OViewFunction]
-        public Permission? GetPermission(Guid permssionId)
+        public Permission GetPermission(Guid permssionId)
         {
             return _db.Permissions.Where(permission => permission.Id == permssionId)
                 .Select(permission => new Permission(permission))
-                .FirstOrDefault();
+                .FirstOrDefault()!;
         }
 
         [OViewFunction("GetPermissionByKey")]
-        public Permission? GetPermission(string permKey)
+        public Permission GetPermission(string permKey)
         {
             return _db.Permissions.Where(permission => permission.PermissionKey == permKey)
                         .Select(permission => new Permission(permission))
-                        .FirstOrDefault();
+                        .FirstOrDefault()!;
         }
 
         public List<Permission> ExpandPermssions(string permKey)
@@ -592,7 +592,7 @@ namespace orch.core.ef.System
                 {
                     BatchId = batchId,
                     Sn = batch.MaxUsed,
-                    Formatted = type?.FormatSerialNo(batch.MaxUsed, provider),
+                    Formatted = type.FormatSerialNo(batch.MaxUsed, provider),
                     IsVoid = false,
                 }.SetCreate<DALSerialNo>(command);
 
@@ -685,7 +685,7 @@ namespace orch.core.ef.System
             {
                 List = slicedUserInfoList.Select(userInfo => new UserInfo(userInfo)
                 {
-                    PasswordHash = null,
+                    PasswordHash = Array.Empty<byte>(),
                     Roles = userInfo.Roles.OrderBy(userRole => userRole.Order).Select(userRole => userRole.RoleId).ToList()
                 }).ToList(),
                 Count = size
@@ -722,7 +722,7 @@ namespace orch.core.ef.System
             {
                 List = slicedUserInfoList.Select(userInfo => new UserInfo(userInfo)
                 {
-                    PasswordHash = null,
+                    PasswordHash = Array.Empty<byte>(),
                     Roles = userInfo.Roles.OrderBy(userRole => userRole.Order).Select(userRole => userRole.RoleId).ToList()
                 }).ToList(),
                 Count = size
@@ -1034,24 +1034,24 @@ namespace orch.core.ef.System
         }
 
         [OViewFunction]
-        public SerialType? GetSerialType(string key)
+        public SerialType GetSerialType(string key)
         {
             return _db.SerialTypes
                 .AsNoTracking()
                 .Where(serialType => serialType.Key == key)
                 .Select(x => new SerialType(x))
-                .FirstOrDefault();
+                .FirstOrDefault()!;
         }
 
         [OViewFunction("GetSerialTypeById")]
-        public SerialType? GetSerialType(Guid id)
+        public SerialType GetSerialType(Guid id)
         {
             return _db.SerialTypes
                 .AsNoTracking()
                 .Where(serialType => serialType.Id == id)
                 .AsEnumerable()
                 .Select(serialType => new SerialType(serialType))
-                .FirstOrDefault();
+                .FirstOrDefault()!;
         }
 
         public void CreateSerialType(OCommand command, SerialType serialType)
@@ -1197,21 +1197,21 @@ namespace orch.core.ef.System
 
 
         [OViewFunction]
-        public SerialBatch? GetSerialBatchBySerialType(Guid SerialTypeId)
+        public SerialBatch GetSerialBatchBySerialType(Guid SerialTypeId)
         {
             var batch = _db.SerialBatches
                 .Where(serialBatch => serialBatch.SerialTypeId == SerialTypeId)
                 .FirstOrDefault();
-            return batch == null ? null : new SerialBatch(batch);
+            return batch == null ? null! : new SerialBatch(batch);
         }
 
         [OViewFunction]
-        public SerialNo? GetSerialNo(Guid batchId)
+        public SerialNo GetSerialNo(Guid batchId)
         {
             return _db.UsedSerials
                 .Where(serialNo => serialNo.BatchId == batchId)
                 .Select(serialNo => new SerialNo(serialNo))
-                .FirstOrDefault();
+                .FirstOrDefault()!;
         }
 
         public SerialNo? GetLastSerialNo(Guid batchId)
@@ -1291,31 +1291,31 @@ namespace orch.core.ef.System
         }
 
         [OViewFunction]
-        public SerialBatch? GetDefaultSerialBatch(string typeKey)
+        public SerialBatch GetDefaultSerialBatch(string typeKey)
         {
             var serialType = _db.SerialTypes.Where(x => x.Key == typeKey).FirstOrDefault();
             if (serialType == null)
             {
-                return null;
+                return null!;
             }
             var batches = _db.SerialBatches.Where(x => x.SerialTypeId == serialType.Id).Take(2);
 
             return batches.Count() switch
             {
-                0 => null,
+                0 => null!,
                 2 => throw new InvalidConfigurationError($"There are multiple serial batches configrued for {typeKey}"),
                 _ => batches.Select(serialBatch => new SerialBatch(serialBatch)).First()
             };
         }
 
         [OViewFunction]
-        public SerialBatch? GetSerialBatch(Guid batchId)
+        public SerialBatch GetSerialBatch(Guid batchId)
         {
             return _db.SerialBatches
                 .AsNoTracking()
                 .Where(serialBatch => serialBatch.Id == batchId).AsEnumerable()
                 .Select(serialBatch => new SerialBatch(serialBatch))
-                .FirstOrDefault();
+                .FirstOrDefault()!;
         }
 
         public void UpdateRole(OCommand command, Role existing)
@@ -1442,13 +1442,13 @@ namespace orch.core.ef.System
 
 
         [OViewFunction]
-        public OCommand? GetMainCommand(Guid tranId)
+        public OCommand GetMainCommand(Guid tranId)
         {
             var transaction = GetTransaction(tranId);
 
             return _db.Commands.Where(command => command.TranId == transaction.Id && command.SeqNo == 1)
                      .Select(commad => new OCommand(commad))
-                     .FirstOrDefault();
+                     .FirstOrDefault()!;
         }
 
         [OViewFunction]
@@ -1517,12 +1517,12 @@ namespace orch.core.ef.System
         }
 
         [OViewFunction]
-        public OrganizationData? GetOrganizationData()
+        public OrganizationData GetOrganizationData()
         {
 
             return _db.Organizations.AsNoTracking()
                                     .Select(organizationData => new OrganizationData(organizationData))
-                                    .FirstOrDefault();
+                                    .FirstOrDefault()!;
         }
 
         public List<OrganizationData> GetAllOrganizationData()

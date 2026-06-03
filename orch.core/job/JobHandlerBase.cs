@@ -19,8 +19,8 @@ namespace orch.core.job
     {
         protected TransactionServiceCollection _services;
 
-        protected OJob _jobInfo;
-        protected T _jobData;
+        protected OJob _jobInfo = null!;
+        protected T _jobData = default!;
 
 
         protected JobHandlerBase(TransactionServiceCollection services)
@@ -28,7 +28,7 @@ namespace orch.core.job
             _services = services;
         }
 
-        public IHubContext<JobProgressHub> HubContext { get; set; }
+        public IHubContext<JobProgressHub> HubContext { get; set; } = null!;
 
         public CancellationToken CancellationToken { get; set; }
 
@@ -75,7 +75,7 @@ namespace orch.core.job
             _jobInfo = job;
 
             if (data is Newtonsoft.Json.Linq.JObject jObjectData)
-                _jobData = jObjectData.ToObject<T>();
+                _jobData = jObjectData.ToObject<T>() ?? throw new InvalidOperationException($"Failed to deserialize job data to {typeof(T).Name}.");
             else
                 _jobData = (T)data;
         }
@@ -97,7 +97,8 @@ namespace orch.core.job
         
         protected async Task SendProgressAsync(P progress)
         {
-            await HubContext.Clients?.Group(_jobInfo.Id).SendAsync(
+            if (HubContext.Clients is { } clients)
+            await clients.Group(_jobInfo.Id).SendAsync(
                 JobProgressHub.ProgressMethod,
                 JsonConvert.SerializeObject(progress, _settings),
                 cancellationToken: CancellationToken);
@@ -111,7 +112,7 @@ namespace orch.core.job
 
         #region helpers
         
-        protected void ExecuteCommand<DataType>(int formatVersion, DataType data, out Guid tranId)
+        protected void ExecuteCommand<DataType>(int formatVersion, DataType data, out Guid tranId) where DataType : notnull
         {
             using var scope = _services.TranService.Services.CreateScope();
             var transactionService = scope.ServiceProvider.GetRequiredService<OTransactionService>();
@@ -139,8 +140,8 @@ namespace orch.core.job
         protected void AddEventLog(
             EventLogProps.LogLevel level,
             string message,
-            string reference = null,
-            object data = null)
+            string? reference = null,
+            object? data = null)
         {
             
             using var scope = _services.TranService.Services.CreateScope();
@@ -157,7 +158,7 @@ namespace orch.core.job
                         JobId = _jobInfo.Id,
                         Level = level,
                         Message = message,
-                        Reference = reference,
+                        Reference = reference ?? string.Empty,
                         Data = JsonConvert.SerializeObject(data)
                     }
                 },

@@ -20,7 +20,8 @@ namespace orch.core.swagger
 
         public override IList<ViewFunction> GetTypesByTag(string tag)
         {
-            return QueryComposer.GetViewFunctionCollection(tag).Select(x => x.Value).ToList();
+            return QueryComposer.GetViewFunctionCollection(tag)?.Select(x => x.Value).ToList()
+                   ?? new List<ViewFunction>();
         }
 
         public override void AddOperation(OpenApiDocument swaggerDoc, ViewFunction viewFunc, string tag)

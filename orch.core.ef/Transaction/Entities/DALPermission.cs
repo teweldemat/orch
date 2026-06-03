@@ -13,6 +13,6 @@ namespace orch.core.ef.Transaction.Entities
             this.MapFromBase(props);
         }
 
-        public virtual ICollection<DALRolePermission> Roles { get; set; }
+        public virtual ICollection<DALRolePermission> Roles { get; set; } = new List<DALRolePermission>();
     }
 }

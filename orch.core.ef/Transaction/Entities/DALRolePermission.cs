@@ -8,7 +8,7 @@
         public Guid RoleId { get; set; }
         public Guid PermissionId { get; set; }
         public int Order { get; set; }
-        public DALRole Role { get; set; }
-        public DALPermission Permission { get; set; }
+        public DALRole Role { get; set; } = null!;
+        public DALPermission Permission { get; set; } = null!;
     }
 }

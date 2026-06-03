@@ -16,7 +16,7 @@ namespace orch.core.command
         public bool Enabled { get; set; }
 
         [OGeneratedData]
-        public string UserName { get; set; }
+        public string UserName { get; set; } = string.Empty;
     }
 
     public class ChangeUserEnabledStatusCommandInitializer : CommandInitializerBase<ChangeUserEnabledStatusCommand>
@@ -34,7 +34,7 @@ namespace orch.core.command
 
     public class ChangeUserEnabledStatusCommandHandler : CommandHandlerBase<ChangeUserEnabledStatusCommand>, ICommandHandler
     {
-        private UserInfo user;
+        private UserInfo user = null!;
 
         public ChangeUserEnabledStatusCommandHandler(TransactionServiceCollection services) : base(services)
         {

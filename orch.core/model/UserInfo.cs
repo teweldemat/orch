@@ -7,7 +7,7 @@ namespace orch.core.model
         public UserInfo() { }
         public UserInfo(UserInfoProps props)
             => this.MapFromBase(props);
-        public List<Guid> Roles { get; set; }
+        public List<Guid> Roles { get; set; } = new();
 
     }
 

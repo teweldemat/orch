@@ -8,10 +8,10 @@
     public class JobTypeInfo
     {
         public Guid TypeId { get; set; }
-        public string Key { get; set; }
-        public string TypeName { get; set; }
+        public string Key { get; set; } = string.Empty;
+        public string TypeName { get; set; } = string.Empty;
         public JobProcessType ProcessType { get; set; }
-        public Type Type { get; set; }
+        public Type Type { get; set; } = null!;
         public string[] Permissions { get; set; } = Array.Empty<string>(); 
     }
 
@@ -20,15 +20,15 @@
     public class BackgroundJobAttribute : Attribute
     {
         internal JobTypeInfo TypeInfo { get; set; }
-        public Type Handler { get; set; }
+        public Type? Handler { get; set; }
 
         public BackgroundJobAttribute(
             string typeId,
             string key,
             string typeName,
             JobProcessType processType,
-            Type handler = null,
-            string[] permissions = null)
+            Type? handler = null,
+            string[]? permissions = null)
         {
             if (!Guid.TryParse(typeId, out var parsedTypeId))
             {

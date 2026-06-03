@@ -12,8 +12,8 @@ namespace orch.core.command
     {
         public const string COMMAND_TYPE_KEY = "SYS_CREATE_USER";
         public const string TYPE_ID = "8401c1cd-f6d0-4ee1-8d80-78c02cd1a064";
-        public UserInfo User { get; set; }
-        public string Password { get; set; }
+        public required UserInfo User { get; set; }
+        public required string Password { get; set; }
 
         // RootRoleId and RootPermissionId used only during root user creation
         [OGeneratedData]
@@ -71,10 +71,12 @@ namespace orch.core.command
                 if (!_commandData.User.UserName.Equals(UserInfoProps.USER_NAME_ROOT))
                     throw new InvalidOperationException("The first user that is created should be the root user");
 
-                var permId = _commandData.RootPermissionId.Value;
+                var permId = _commandData.RootPermissionId
+                    ?? throw new InvalidOperationException("Root permission id is required when creating the root user.");
                 _services.TranDb.CreatePermission(_commandInfo, new Permission { Id = permId, PermissionKey = Permission.ROOT_PERMISSION, PermissionName = "System root permission", TranId = _commandInfo.Id });
 
-                var roleId = _commandData.RootRoleId.Value;
+                var roleId = _commandData.RootRoleId
+                    ?? throw new InvalidOperationException("Root role id is required when creating the root user.");
                 _services.TranDb.CreateRole(_commandInfo, new Role { Id = roleId, RoleName = "System root role", Key = "system-role-key", Description = "System root role" });
 
                 _services.TranDb.SetRolePermssions(_commandInfo, roleId, new List<Guid> { permId });

@@ -17,23 +17,26 @@ namespace orch.core.auth
         public AccessTokenAuthHandler(
             IOptionsMonitor<AuthenticationSchemeOptions> options,
             ILoggerFactory logger,
-            UrlEncoder encoder,
-            ISystemClock clock)
-            : base(options, logger, encoder, clock)
+            UrlEncoder encoder)
+            : base(options, logger, encoder)
         {
         }
 
         protected override Task<AuthenticateResult> HandleAuthenticateAsync()
         {
             // Check in the cookies first
-            var tokenFromCookie = Request.Cookies.TryGetValue("access_token", out string tokenString);
-            if (!tokenFromCookie)
+            string? tokenString = null;
+            if (Request.Cookies.TryGetValue("access_token", out var cookieToken))
+            {
+                tokenString = cookieToken;
+            }
+            else
             {
                 // If not in cookies, then check in the query string
                 tokenString = Request.Query["access_token"];
             }
 
-            if (Guid.TryParse(tokenString, out Guid accessToken))
+            if (!string.IsNullOrEmpty(tokenString) && Guid.TryParse(tokenString, out Guid accessToken))
             {
                 try
                 {
@@ -108,7 +111,7 @@ namespace orch.core.auth
 
         private static AccessTokenRequestContext CreateRequestContext(HttpRequest request)
         {
-            string GetHeader(string name)
+            string? GetHeader(string name)
             {
                 var value = request.Headers[name].ToString();
                 return string.IsNullOrWhiteSpace(value) ? null : value;

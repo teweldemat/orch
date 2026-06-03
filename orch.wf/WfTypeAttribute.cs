@@ -7,7 +7,7 @@ namespace orch.wf
     {
         public readonly WfTypeInformation Info;
 
-        public WfTypeAttribute(string name, string key, string id, Type handler = null, params string[] actionIs)
+        public WfTypeAttribute(string name, string key, string id, Type? handler = null, params string[] actionIs)
         {
             if(!Guid.TryParse(id,out var tid))
             {

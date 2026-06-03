@@ -13,8 +13,8 @@ namespace orch.core.command
     {
         public const string COMMAND_TYPE_KEY = "SYS_CREATE_ROLE_PERMISSION";
         public const string TYPE_ID = "ca81a9e7e0344fe6b07bf186ac5b5d59";
-        public RolePermissionDto RolePermissionDto { get; set; }
-        public Role Role { get; set; }
+        public required RolePermissionDto RolePermissionDto { get; set; }
+        public required Role Role { get; set; }
         public List<Permission> Permissions { get; set; } = new List<Permission>();
     }
 

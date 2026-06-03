@@ -5,13 +5,13 @@ namespace orch.wf
 {
     public class WfTypeInformation
     {
-        public Type Type;
-        public string Key;
-        public string Name;
-        public Guid[] AllActions;
-        public Type handler;
+        public Type Type = null!;
+        public string Key = string.Empty;
+        public string Name = string.Empty;
+        public Guid[] AllActions = Array.Empty<Guid>();
+        public Type? handler;
         public Guid Id { get; internal set; }
-        public Type[] ConstructorParameters { get; set; }
+        public Type[] ConstructorParameters { get; set; } = Array.Empty<Type>();
     }
     public class WfModule
     {
@@ -49,7 +49,7 @@ namespace orch.wf
             }
 
         }
-        public static WfTypeInformation GetWfTypeInfo(Type stateType)
+        public static WfTypeInformation? GetWfTypeInfo(Type stateType)
         {
             if (s_workflowTypes.ContainsKey(stateType))
                 return s_workflowTypes[stateType];
@@ -59,20 +59,20 @@ namespace orch.wf
         {
             return s_workflowTypes.Values.Where(t => t.AllActions.Contains(actionTypeID));
         }
-        public static WfTypeInformation GetWfTypeInfo(Guid typeId)
+        public static WfTypeInformation? GetWfTypeInfo(Guid typeId)
         {
             if (s_workflowTypesById.ContainsKey(typeId))
                 return s_workflowTypesById[typeId];
             return null;
         }
-        public static WfTypeInformation GetWfTypeInfo(string key)
+        public static WfTypeInformation? GetWfTypeInfo(string key)
         {
             if (s_workflowTypeByKey.ContainsKey(key))
                 return s_workflowTypeByKey[key];
             return null;
         }
 
-        public static WfTypeInformation GetWfTypeInfoByActionId(Guid actionId)
+        public static WfTypeInformation? GetWfTypeInfoByActionId(Guid actionId)
         {
             return s_workflowTypes.Values.FirstOrDefault(t => t.AllActions.Contains(actionId));
         }

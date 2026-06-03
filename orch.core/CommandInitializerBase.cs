@@ -6,9 +6,9 @@ namespace orch.core
     {
         protected IOHost Host { get; }
 
-        protected OTransaction _tranInfo;
-        protected OCommand _commandInfo;
-        protected T _commandData;
+        protected OTransaction _tranInfo = null!;
+        protected OCommand _commandInfo = null!;
+        protected T _commandData = default!;
 
         protected CommandInitializerBase(IOHost host)
         {

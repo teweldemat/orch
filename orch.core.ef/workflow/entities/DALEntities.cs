@@ -11,9 +11,9 @@ namespace orch.ef.workflow.entities
         public DALTaskNote(TaskNoteProps props)
         => this.MapFromBase(props);
 
-        public DALOTask Task { get; set; }
-        public virtual ICollection<DALTaskNoteContentItem> Contents { get; set; }
-        public DALTaskHistory History { get; set; }
+        public DALOTask Task { get; set; } = null!;
+        public virtual ICollection<DALTaskNoteContentItem> Contents { get; set; } = new List<DALTaskNoteContentItem>();
+        public DALTaskHistory History { get; set; } = null!;
     }
 
     public class DALTaskHistory : TaskHistoryProps
@@ -24,7 +24,7 @@ namespace orch.ef.workflow.entities
         public DALTaskHistory(TaskHistoryProps props)
         => this.MapFromBase(props);
 
-        public virtual DALOTask Task { get; set; }
+        public virtual DALOTask Task { get; set; } = null!;
         public virtual DALTaskNote? Note { get; set; }
     }
 
@@ -36,7 +36,7 @@ namespace orch.ef.workflow.entities
         public DALTaskFollower(TaskFollowerProps props)
         => this.MapFromBase(props);
 
-        public DALOTask Task { get; set; }
+        public DALOTask Task { get; set; } = null!;
     }
 
     public class DALTaskAssignee : TaskAssigneeProps
@@ -47,7 +47,7 @@ namespace orch.ef.workflow.entities
         public DALTaskAssignee(TaskAssigneeProps props)
         => this.MapFromBase(props);
 
-        public DALOTask Task { get; set; }
+        public DALOTask Task { get; set; } = null!;
     }
 
     public class DALCheckListItem : CheckListItemProps
@@ -59,7 +59,7 @@ namespace orch.ef.workflow.entities
         => this.MapFromBase(props);
 
         public Guid TaskId { get; set; }
-        public DALOTask Task { get; set; }
+        public DALOTask Task { get; set; } = null!;
         public int SeqNo { get; set; }
     }
 
@@ -71,14 +71,14 @@ namespace orch.ef.workflow.entities
         public DALOTask(OTaskProps props)
         => this.MapFromBase(props);
 
-        public virtual ICollection<DALCheckListItem> CheckList { get; set; }
-        public virtual DALTaskData Data { get; set; }
-        public virtual ICollection<DALTaskNote> Notes { get; set; }
+        public virtual ICollection<DALCheckListItem> CheckList { get; set; } = new List<DALCheckListItem>();
+        public virtual DALTaskData Data { get; set; } = null!;
+        public virtual ICollection<DALTaskNote> Notes { get; set; } = new List<DALTaskNote>();
 
-        public virtual ICollection<DALTaskAssignee> Assignees { get; set; }
-        public virtual ICollection<DALTaskFollower> Followers { get; set; }
-        public virtual ICollection<DALTaskMonitor> MonitoredTasks { get; set; }
-        public virtual ICollection<DALTaskMonitor> MonitoringTasks { get; set; }
+        public virtual ICollection<DALTaskAssignee> Assignees { get; set; } = new List<DALTaskAssignee>();
+        public virtual ICollection<DALTaskFollower> Followers { get; set; } = new List<DALTaskFollower>();
+        public virtual ICollection<DALTaskMonitor> MonitoredTasks { get; set; } = new List<DALTaskMonitor>();
+        public virtual ICollection<DALTaskMonitor> MonitoringTasks { get; set; } = new List<DALTaskMonitor>();
     }
 
     public class DALTaskMonitor
@@ -86,9 +86,9 @@ namespace orch.ef.workflow.entities
         public Guid Id { get; set; }
         public Guid MonitorTaskId { get; set; }
         public Guid MonitoredTaskId { get; set; }
-        public DALOTask MonitorTask { get; set; }
+        public DALOTask MonitorTask { get; set; } = null!;
 
-        public DALOTask MonitoredTask { get; set; }
+        public DALOTask MonitoredTask { get; set; } = null!;
     }
 
     internal class DALWfNotification : WfNotificationProps
@@ -99,8 +99,8 @@ namespace orch.ef.workflow.entities
         public DALWfNotification(WfNotificationProps props)
         => this.MapFromBase(props);
 
-        public virtual DALOTask Task { get; set; }
-        public virtual ICollection<DALWfNotificationTarget> Targets { get; set; }
+        public virtual DALOTask Task { get; set; } = null!;
+        public virtual ICollection<DALWfNotificationTarget> Targets { get; set; } = new List<DALWfNotificationTarget>();
     }
 
     internal class DALWfNotificationTarget : WfNotificationTargetProps
@@ -111,6 +111,6 @@ namespace orch.ef.workflow.entities
         public DALWfNotificationTarget(WfNotificationTargetProps props)
         => this.MapFromBase(props);
 
-        public virtual DALWfNotification Notification { get; set; }
+        public virtual DALWfNotification Notification { get; set; } = null!;
     }
 }

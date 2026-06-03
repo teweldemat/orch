@@ -7,7 +7,7 @@ namespace orch.core.model
         public Role() { }
         public Role(RoleProps props)
             => this.MapFromBase(props);
-        public IList<Guid> Permissions { get; set; } 
+        public IList<Guid> Permissions { get; set; } = new List<Guid>();
     }
     
 

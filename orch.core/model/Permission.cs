@@ -10,8 +10,8 @@ namespace orch.core.model
     }
     public class RolePermissionDto
     {
-        public List<string> PermissionNames { get; set; }
-        public string RoleName { get; set; }
+        public List<string> PermissionNames { get; set; } = new();
+        public string RoleName { get; set; } = string.Empty;
     }
 
 }

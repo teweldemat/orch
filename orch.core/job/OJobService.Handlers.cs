@@ -14,8 +14,8 @@ namespace orch.core
         
         class JobHandlerInfo
         {
-            public Type HandlerType;
-            public Type[] ConstructorParameters;
+            public Type HandlerType = null!;
+            public Type[] ConstructorParameters = Array.Empty<Type>();
         }
         
         public static void Reset()
@@ -31,7 +31,7 @@ namespace orch.core
         {
             lock (s_jobTypes)
             {
-                var assemblyName = assembly.GetName().Name;
+                var assemblyName = assembly.GetName().Name ?? throw new InvalidOperationException("Assembly name is required.");
                 if (s_jobTypesByAssembly.ContainsKey(assemblyName))
                 {
                     throw new InvalidOperationException($"Job Types for {assemblyName} have already registered.");
@@ -54,7 +54,7 @@ namespace orch.core
             if (jobAttr == null) return;
 
             jobAttr.TypeInfo.Type = t;
-            jobAttr.TypeInfo.TypeName ??= t.FullName;
+            jobAttr.TypeInfo.TypeName ??= t.FullName ?? t.Name;
 
             ValidateAttribute(jobAttr);
             
@@ -63,7 +63,7 @@ namespace orch.core
             s_jobTypesByType[t] = jobAttr.TypeInfo;
             s_jobTypesByKey[jobAttr.TypeInfo.Key] = jobAttr.TypeInfo;
 
-            if (jobAttr.Handler?.GetInterface(typeof(IJobHandler).FullName) != null)
+            if (jobAttr.Handler?.GetInterface(nameof(IJobHandler)) != null)
             {
                 ValidateHandler(jobAttr);
             }
@@ -82,7 +82,7 @@ namespace orch.core
 
         private static void ValidateHandler(BackgroundJobAttribute atr)
         {
-            var constructors = atr.Handler.GetConstructors();
+            var constructors = atr.Handler!.GetConstructors();
             if (constructors.Length == 0)
             {
                 throw new InvalidHandlerException($"Job handler {atr.Handler} doesn't have a constructor");
@@ -101,7 +101,7 @@ namespace orch.core
             };
         }
         
-        public IJobHandler GetHandler(Guid typeId)
+        public IJobHandler? GetHandler(Guid typeId)
         {
             if (!s_jobHandlerInfos.ContainsKey(typeId)) return null;
             
@@ -117,7 +117,8 @@ namespace orch.core
 
             }).ToArray();
 
-            return Activator.CreateInstance(handlerInfo.HandlerType, parameters) as IJobHandler;
+            return Activator.CreateInstance(handlerInfo.HandlerType, parameters) as IJobHandler
+                ?? throw new InvalidOperationException($"Failed to create job handler for type id '{typeId}'.");
         }
 
         public static JobTypeInfo? GetTypeIdByType(Type t)

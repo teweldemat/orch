@@ -53,8 +53,8 @@ public abstract class RecurringJobBase
         PerformContext? context,
         EventLogProps.LogLevel level,
         string message,
-        string reference = null,
-        object data = null)
+        string? reference = null,
+        object? data = null)
     {
         ExecuteScopedCommandUntyped(
             Guid.Parse(AddEventLogCommand.TYPE_ID),
@@ -65,7 +65,7 @@ public abstract class RecurringJobBase
                 {
                     Level = level,
                     Message = message,
-                    Reference = reference,
+                    Reference = reference ?? string.Empty,
                     Data = Newtonsoft.Json.JsonConvert.SerializeObject(data),
                     JobId = context?.BackgroundJob.Id,
                 }

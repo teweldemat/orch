@@ -20,9 +20,10 @@ namespace orch.core
                 throw new InvalidOperationException("Root user not created");
 
             if (userId == null || root.Id != userId.Value)
-                if (!allowSystemUser || userId.Value != db.GetSystemUserId())
+            {
+                if (!allowSystemUser || userId is not { } uid || uid != db.GetSystemUserId())
                     throw new UnauthorizedAccessException("Only root user can perform this operation");
-
+            }
         }
 
 

@@ -9,7 +9,7 @@ namespace orch.core.command
     {
         public const string COMMAND_TYPE_KEY = "SET_ORG_DATA";
         public const string TYPE_ID = "183a8fab-65ff-4dbe-98cd-6c43c0f17d03";
-        public OrganizationData OrgData { get; set; }
+        public required OrganizationData OrgData { get; set; }
     }
 
     public class SetOrganizationDataCommandInitializer : CommandInitializerBase<SetOrganizationDataCommand>
@@ -39,7 +39,9 @@ namespace orch.core.command
         }
         protected override void Authorize()
         {
-            if (_services.TranDb.GetRootUser().Id == _commandInfo.UserId.Value)
+            if (_services.TranDb.GetRootUser() is not { } rootUser
+                || _commandInfo.UserId is not { } userId
+                || rootUser.Id == userId)
                 throw new UnauthorizedAccessException("You are not allowed to change organization data");
         }
         public override void Preprocess()

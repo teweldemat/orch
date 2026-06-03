@@ -13,16 +13,16 @@ namespace orch.core
 
         class CommandHandlerInfo
         {
-            public Type HandlerType;
-            public Type[] ConstructorParameters;
+            public Type HandlerType = null!;
+            public Type[] ConstructorParameters = Array.Empty<Type>();
         }
 
         static readonly Dictionary<Guid, CommandInitializerInfo> s_transactionInitializerInfos = new();
 
         class CommandInitializerInfo
         {
-            public Type InitializerType;
-            public Type[] ConstructorParameters;
+            public Type InitializerType = null!;
+            public Type[] ConstructorParameters = Array.Empty<Type>();
         }
 
         public static void Reset()
@@ -46,7 +46,7 @@ namespace orch.core
         {
             lock (s_transacticonTypes)
             {
-                var assemblyName = assembly.GetName().Name;
+                var assemblyName = assembly.GetName().Name ?? throw new InvalidOperationException("Assembly name is required.");
                 if (s_transactionTypesByAssembly.ContainsKey(assemblyName))
                 {
                     throw new InvalidOperationException($"Transaction Types for {assemblyName} have already registered.");
@@ -69,7 +69,7 @@ namespace orch.core
             if (cmdAtr == null) return;
 
             cmdAtr.ttInfo.Type = t;
-            cmdAtr.ttInfo.TypeName ??= t.FullName;
+            cmdAtr.ttInfo.TypeName ??= t.FullName ?? t.Name;
 
             ValidateAttribute(cmdAtr);
 
@@ -78,12 +78,12 @@ namespace orch.core
             s_transactionTypesByType[t] = cmdAtr.ttInfo;
             s_transactionTypesByKey[cmdAtr.ttInfo.Key] = cmdAtr.ttInfo;
 
-            if (cmdAtr.initializer != null && cmdAtr.initializer.GetInterface(typeof(ICommandInitializer).FullName) != null)
+            if (cmdAtr.initializer != null && cmdAtr.initializer.GetInterface(nameof(ICommandInitializer)) != null)
             {
                 ValidateInitializer(cmdAtr);
             }
 
-            if (cmdAtr.handler != null && cmdAtr.handler.GetInterface(typeof(ICommandHandler).FullName) != null)
+            if (cmdAtr.handler != null && cmdAtr.handler.GetInterface(nameof(ICommandHandler)) != null)
             {
                 ValidateHandler(cmdAtr);
             }
@@ -101,7 +101,7 @@ namespace orch.core
 
         private static void ValidateHandler(CommandTypeAttribute atr)
         {
-            var constructors = atr.handler.GetConstructors();
+            var constructors = atr.handler!.GetConstructors();
             if (constructors.Length == 0)
             {
                 throw new InvalidHandlerException($"Command handler {atr.handler} doesn't have a constructor");
@@ -121,7 +121,7 @@ namespace orch.core
         }
         private static void ValidateInitializer(CommandTypeAttribute atr)
         {
-            var constructors = atr.initializer.GetConstructors();
+            var constructors = atr.initializer!.GetConstructors();
             if (constructors.Length == 0)
             {
                 throw new InvalidInitializerException($"Command initializer {atr.initializer} doesn't have a constructor");
@@ -140,7 +140,7 @@ namespace orch.core
             };
         }
 
-        public ICommandHandler GetHandler(Guid typeId)
+        public ICommandHandler? GetHandler(Guid typeId)
         {
             if (!s_transactionHandlerInfos.ContainsKey(typeId)) return null;
 
@@ -156,10 +156,11 @@ namespace orch.core
 
             }).ToArray();
 
-            return Activator.CreateInstance(handlerInfo.HandlerType, parameters) as ICommandHandler;
+            return Activator.CreateInstance(handlerInfo.HandlerType, parameters) as ICommandHandler
+                ?? throw new InvalidOperationException($"Failed to create command handler for type id '{typeId}'.");
         }
 
-        public ICommandInitializer GetInitializer(Guid typeId)
+        public ICommandInitializer? GetInitializer(Guid typeId)
         {
             if (!s_transactionInitializerInfos.ContainsKey(typeId)) return null;
 
@@ -175,16 +176,17 @@ namespace orch.core
 
             }).ToArray();
 
-            return Activator.CreateInstance(initializerInfo.InitializerType, parameters) as ICommandInitializer;
+            return Activator.CreateInstance(initializerInfo.InitializerType, parameters) as ICommandInitializer
+                ?? throw new InvalidOperationException($"Failed to create command initializer for type id '{typeId}'.");
         }
 
-        public static CommandTypeInfo GetTypeIdByType(Type t)
+        public static CommandTypeInfo? GetTypeIdByType(Type t)
             => s_transactionTypesByType.GetValueOrDefault(t);
 
-        public static CommandTypeInfo GetTypeIdByKey(string key)
+        public static CommandTypeInfo? GetTypeIdByKey(string key)
             => s_transactionTypesByKey.GetValueOrDefault(key);
 
-        public static CommandTypeInfo GetTypeInfoById(Guid id)
+        public static CommandTypeInfo? GetTypeInfoById(Guid id)
             => s_transacticonTypes.GetValueOrDefault(id);
 
         public static IList<string> GetAllTransactionTypeKeys()

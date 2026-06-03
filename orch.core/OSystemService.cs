@@ -9,7 +9,7 @@ namespace orch.core
             string userName, string password, string clientInfo, int? maxTokens = null, long? expiryTime = null);
         AccessToken CreateAccessToken(
             string userName, string password, AccessTokenRequestContext requestContext, int? maxTokens = null, long? expiryTime = null);
-        AccessToken PingAccessToken(Guid? access_token, AccessTokenRequestContext requestContext = null);
+        AccessToken PingAccessToken(Guid? access_token, AccessTokenRequestContext? requestContext = null);
         void DeleteAccessToken(params Guid[] accessTokens);
         AccessToken GetAccessTokenInfo(Guid accessToken);
         ContentFile SaveFile(string fileName, Stream r, Guid? fileId = null);
@@ -46,9 +46,9 @@ namespace orch.core
             IOHost host,
             ISystemDatabase db,
             ITransactionDatabase command,
-            IPasswordHasher passwordHasher = null,
-            ILoginRateLimiter loginRateLimiter = null,
-            IOptions<LoginSecurityOptions> loginSecurityOptions = null)
+            IPasswordHasher? passwordHasher = null,
+            ILoginRateLimiter? loginRateLimiter = null,
+            IOptions<LoginSecurityOptions>? loginSecurityOptions = null)
         {
             this.host = host;
             this.sysDb = db;
@@ -82,7 +82,7 @@ namespace orch.core
             if (expiryTime <= now)
                 throw new ArgumentException("Access token expiry time must be in the future.");
 
-            _loginRateLimiter.CheckRateLimit(userName, requestContext?.RemoteIp);
+            _loginRateLimiter.CheckRateLimit(userName, requestContext?.RemoteIp ?? string.Empty);
             
             var user = tranDb.GetUserInfo(userName, true);
             var rootUser = tranDb.GetRootUser();
@@ -161,7 +161,7 @@ namespace orch.core
             return accessToken;
         }
 
-        public AccessToken PingAccessToken(Guid? access_token, AccessTokenRequestContext requestContext = null)
+        public AccessToken PingAccessToken(Guid? access_token, AccessTokenRequestContext? requestContext = null)
         {
             if (access_token == null)
                 throw new UnauthorizedAccessException();

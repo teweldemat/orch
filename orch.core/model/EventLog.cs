@@ -21,7 +21,7 @@ namespace orch.core.model
         public Guid? TransactionId { get; set; }
         public Guid? CommandId { get; set; }
         public string? JobId { get; set; }
-        public string Message { get; set; }
+        public string Message { get; set; } = string.Empty;
         public long Time { get; set; }
         public LogLevel Level { get; set; }
         public string Reference { get; set; } = string.Empty;

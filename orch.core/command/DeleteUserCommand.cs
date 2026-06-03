@@ -13,7 +13,7 @@ namespace orch.core.command
         public const string COMMAND_TYPE_KEY = "SYS_DELETE_USER";
         public const string TYPE_ID = "9daf010b-691c-4e31-a88b-42cbfb22c9bf";
         public Guid UserId { get; set; }
-        public UserInfo DeletedUser { get; set; }
+        public required UserInfo DeletedUser { get; set; }
     }
 
     public class DeleteUserCommandInitializer : CommandInitializerBase<DeleteUserCommand>
@@ -44,12 +44,12 @@ namespace orch.core.command
 
             var root = _services.TranDb.GetRootUser();
 
-            if (_commandData.DeletedUser.Id.Equals(root.Id))
+            if (root != null && _commandData.DeletedUser.Id.Equals(root.Id))
                 throw new InvalidOperationException("Root user cannot be deleted.");
 
             var systemUser = _services.TranDb.GetUserInfo(UserInfoProps.USER_NAME_SYSTEM);
 
-            if (_commandData.DeletedUser.Id.Equals(systemUser.Id))
+            if (systemUser != null && _commandData.DeletedUser.Id.Equals(systemUser.Id))
                 throw new InvalidOperationException("System user cannot be deleted.");
         }
 

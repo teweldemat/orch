@@ -7,7 +7,7 @@ namespace orch.core.model
         public AccessToken() { }
         public AccessToken(AccessTokenProps props)
             => this.MapFromBase(props);
-        public UserInfo UserInfo { get; set; }
+        public UserInfo UserInfo { get; set; } = null!;
     }
 
 

@@ -13,6 +13,6 @@ namespace orch.ef.workflow.entities
         public Guid TranId { get; set; }
         public int SeqNo { get; set; }
         public Guid FileId { get; set; }
-        public DALTaskNote Note { get; set; }
+        public DALTaskNote Note { get; set; } = null!;
     }
 }

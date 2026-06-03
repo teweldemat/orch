@@ -20,46 +20,52 @@ namespace orch.wf
             this._wfDb = wfDb;
         }
 
-        public void AssertAction(Guid wfTypeId, WfStateData wfStateData, UserInfo user, Guid actionTypeId, object action)
+        private static string ActionTypeName(Guid actionTypeId) =>
+            OTransactionService.GetTypeInfoById(actionTypeId)?.TypeName ?? actionTypeId.ToString();
+
+        public void AssertAction(Guid wfTypeId, WfStateData? wfStateData, UserInfo user, Guid actionTypeId, object? action)
         {
-            var task = wfStateData == null ? null : _wfDb.GetTask(wfStateData.TaskId);
+            OTask? task = wfStateData == null ? null : _wfDb.GetTask(wfStateData.TaskId);
             var wfHandler = GetWfHandler(wfTypeId);
-            var monitors = wfStateData == null ? null : _wfDb.GetTaskMonitors(task.Id)
-                .Select(x =>
-                {
-                    var mon = _wfDb.GetTask(x);
-                    return new { task = mon, handler = GetWfHandler(mon.TaskTypeId) };
-                }).Where(x => x.handler != null);
+            var actionTypeName = ActionTypeName(actionTypeId);
+            var monitors = task == null
+                ? null
+                : _wfDb.GetTaskMonitors(task.Id)
+                    .Select(x =>
+                    {
+                        var mon = _wfDb.GetTask(x);
+                        return new { task = mon, handler = mon == null ? null : GetWfHandler(mon.TaskTypeId) };
+                    })
+                    .Where(x => x.handler != null && x.task != null);
 
             //check action type applicability
             if (monitors != null)
                 foreach (var mon in monitors)
                 {
-
-                    var res = mon.handler.IsActionTypeAvialable(mon.task.Id, task, wfStateData, actionTypeId);
+                    var res = mon.handler!.IsActionTypeAvialable(mon.task!.Id, task, wfStateData, actionTypeId);
                     if (!res.Yes)
-                        throw new InvalidOperationException($"Action type '{OTransactionService.GetTypeInfoById(actionTypeId).TypeName}' is not applicable at this state.{res.Reason}");
+                        throw new InvalidOperationException($"Action type '{actionTypeName}' is not applicable at this state.{res.Reason}");
                 }
             if (wfHandler != null)
             {
                 var res = wfHandler.IsActionTypeAvialable(wfStateData?.TaskId, task, wfStateData, actionTypeId);
                 if (!res.Yes)
-                    throw new InvalidOperationException($"Action type '{OTransactionService.GetTypeInfoById(actionTypeId).TypeName}' is not applicable at this state. {res.Reason}");
+                    throw new InvalidOperationException($"Action type '{actionTypeName}' is not applicable at this state. {res.Reason}");
             }
 
             //check user access to the action type
             if (monitors != null)
                 foreach (var mon in monitors)
                 {
-                    var res = mon.handler.IsActionTypeAvialableForUser(mon.task.Id, task, wfStateData, user, actionTypeId);
+                    var res = mon.handler!.IsActionTypeAvialableForUser(mon.task!.Id, task, wfStateData, user, actionTypeId);
                     if (!res.Yes)
-                        throw new UnauthorizedAccessException($"You are not allowed to perform action '{OTransactionService.GetTypeInfoById(actionTypeId).TypeName}'. {res.Reason}");
+                        throw new UnauthorizedAccessException($"You are not allowed to perform action '{actionTypeName}'. {res.Reason}");
                 }
             if (wfHandler != null)
             {
                 var res = wfHandler.IsActionTypeAvialableForUser(wfStateData?.TaskId, task, wfStateData, user, actionTypeId);
                 if (!res.Yes)
-                    throw new UnauthorizedAccessException($"You are not allowed to perform action '{OTransactionService.GetTypeInfoById(actionTypeId).TypeName}'. {res.Reason}");
+                    throw new UnauthorizedAccessException($"You are not allowed to perform action '{actionTypeName}'. {res.Reason}");
             }
 
 
@@ -67,15 +73,15 @@ namespace orch.wf
             if (monitors != null)
                 foreach (var mon in monitors)
                 {
-                    var res = mon.handler.IsActionAvialableForUser(mon.task.Id, task, wfStateData, user, actionTypeId, action);
+                    var res = mon.handler!.IsActionAvialableForUser(mon.task!.Id, task, wfStateData, user, actionTypeId, action);
                     if (!res.Yes)
-                        throw new UnauthorizedAccessException($"You are not allowed to perform action '{OTransactionService.GetTypeInfoById(actionTypeId).TypeName}'. {res.Reason}");
+                        throw new UnauthorizedAccessException($"You are not allowed to perform action '{actionTypeName}'. {res.Reason}");
                 }
             if (wfHandler != null)
             {
                 var res = wfHandler.IsActionAvialableForUser(wfStateData?.TaskId, task, wfStateData, user, actionTypeId, action);
                 if (!res.Yes)
-                    throw new UnauthorizedAccessException($"You are not allowed to perform action '{OTransactionService.GetTypeInfoById(actionTypeId).TypeName}'. {res.Reason}");
+                    throw new UnauthorizedAccessException($"You are not allowed to perform action '{actionTypeName}'. {res.Reason}");
             }
         }
         public void AssignWorkflow(OCommand command, WfStateData wfStateData)
@@ -88,19 +94,27 @@ namespace orch.wf
             var wfType = WfModule.GetWfTypeInfo(wfStateData.GetType())
                 ?? throw new InvalidOperationException($"Workflow information for tyoe {wfStateData.GetType()} not found");
 
-            var task = _wfDb.GetTask(wfStateData.TaskId);
+            var task = _wfDb.GetTask(wfStateData.TaskId)
+                ?? throw new InvalidOperationException($"Task {wfStateData.TaskId} not found");
             var wfHandler = GetWfHandler(task.TaskTypeId);
 
             var monitors = _wfDb.GetTaskMonitors(task.Id)
                 .Select(x =>
                 {
                     var mon = _wfDb.GetTask(x);
-                    return new { task = mon, handler = GetWfHandler(mon.TaskTypeId) };
-                }).Where(x => x.handler != null);
+                    if (mon == null)
+                        return null;
+                    var handler = GetWfHandler(mon.TaskTypeId);
+                    return handler == null ? null : new { task = mon, handler };
+                })
+                .Where(x => x != null)
+                .Select(x => x!);
 
             foreach (var a in wfType.AllActions)
             {
-                var commandHandler = _tranService.GetHandler(OTransactionService.GetTypeInfoById(a).TypeId)
+                var actionType = OTransactionService.GetTypeInfoById(a)
+                    ?? throw new InvalidOperationException($"Action type {a} not found");
+                var commandHandler = _tranService.GetHandler(actionType.TypeId)
                     ?? throw new InvalidOperationException($"Tranasction handler information for for action {a} not found");
 
                 if (commandHandler is not IWfAction action)
@@ -166,7 +180,7 @@ namespace orch.wf
         {
             _wfDb.CreateTask<T>(command, task, data, note);
         }
-        public IWfHandler GetWfHandler(Guid typeId)
+        public IWfHandler? GetWfHandler(Guid typeId)
         {
             var typeInfo = WfModule.GetWfTypeInfo(typeId);
             if (typeInfo != null && typeInfo.handler != null)
@@ -185,8 +199,8 @@ namespace orch.wf
         public class WorkFlowAction
         {
             public Guid Id;
-            public string Key;
-            public string Description;
+            public string Key = string.Empty;
+            public string Description = string.Empty;
         }
 
         [OViewFunction]
@@ -198,7 +212,8 @@ namespace orch.wf
 
             return typeInfo.AllActions.Select(actionId =>
             {
-                var actionTypeInfo = OTransactionService.GetTypeInfoById(actionId);
+                var actionTypeInfo = OTransactionService.GetTypeInfoById(actionId)
+                    ?? throw new InvalidOperationException($"Action type {actionId} not found");
                 return new WorkFlowAction
                 {
                     Id = actionTypeInfo.TypeId,
@@ -226,13 +241,14 @@ namespace orch.wf
         public class TaskTypeInformation
         {
             public Guid Id;
-            public string Key;
-            public string TypeName;
+            public string Key = string.Empty;
+            public string TypeName = string.Empty;
         }
         [OViewFunction]
         public TaskTypeInformation GetTaskTypeInfo(Guid taskTypeId)
         {
-            var t = WfModule.GetWfTypeInfo(taskTypeId);
+            var t = WfModule.GetWfTypeInfo(taskTypeId)
+                ?? throw new InvalidOperationException($"Task type {taskTypeId} not found");
             return new TaskTypeInformation
             {
                 Id = t.Id,
@@ -256,8 +272,8 @@ namespace orch.wf
             if (type == null)
                 throw new InvalidOperationException($"Task type {taskType} is invalid");
 
-            var wfStateData = task == null ? (WfStateData)null : _wfDb.GetTaskData(type.Type, taskId.Value) as WfStateData;
-            List<Monitor> monitors = null;
+            var wfStateData = task == null ? null : _wfDb.GetTaskData(type.Type, taskId!.Value) as WfStateData;
+            List<Monitor>? monitors = null;
             var wfHandler = GetWfHandler(type.Id);
             if (task != null)
             {
@@ -265,8 +281,14 @@ namespace orch.wf
                     .Select(x =>
                     {
                         var mon = _wfDb.GetTask(x);
-                        return new Monitor(mon, GetWfHandler(mon.TaskTypeId));
-                    }).Where(x => x.Handler != null).ToList();
+                        if (mon == null)
+                            return null;
+                        var handler = GetWfHandler(mon.TaskTypeId);
+                        return handler == null ? null : new Monitor(mon, handler);
+                    })
+                    .Where(x => x != null)
+                    .Select(x => x!)
+                    .ToList();
 
                 //check action type applicability
                 foreach (var mon in monitors)
@@ -284,15 +306,18 @@ namespace orch.wf
             }
             if (user != null)
             {
-                if (_tranDb.GetRootUser().Id != user.Id)
+                var rootUser = _tranDb.GetRootUser();
+                if (rootUser != null && rootUser.Id != user.Id)
                 {
-                    ICommandHandler h = _tranService.GetHandler(actionInfo.TypeId);
+                    ICommandHandler? h = _tranService.GetHandler(actionInfo.TypeId);
                     if (h != null)
                     {
-                        if (h is IWfAction)
+                        if (h is IWfAction wfAction)
                         {
+                            if (!userId.HasValue)
+                                return false;
                             var perms = this._tranDb.GetUserPermissions(userId.Value);
-                            var required = ((IWfAction)h).RequiredPermissions(null, task == null ? null : (WfStateData)_wfDb.GetTaskData(type.Type, task.Id))
+                            var required = wfAction.RequiredPermissions(null, task == null ? null : (WfStateData)_wfDb.GetTaskData(type.Type, task.Id))
                                 .Select(x => _tranDb.GetPermission(x).Id);
                             foreach (var r in required)
                             {
@@ -302,7 +327,7 @@ namespace orch.wf
                         }
                     }
                 }
-                if (task != null)
+                if (task != null && monitors != null)
                 {
                     //check user access to the action type
                     foreach (var mon in monitors)
