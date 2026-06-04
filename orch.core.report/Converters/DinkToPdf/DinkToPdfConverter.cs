@@ -178,7 +178,7 @@ namespace orch.report.Generators
                             using (var stream = fileInfo.CreateReadStream())
                             {
                                 imageBytes = new byte[stream.Length];
-                                stream.Read(imageBytes, 0, imageBytes.Length);
+                                stream.ReadExactly(imageBytes);
                             }
                         }
                         else if (File.Exists(fullSrcPath))
