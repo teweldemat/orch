@@ -725,8 +725,8 @@ namespace orch.core.ef.System
                     (enabled == null || userInfo.Enabled == enabled.Value) &&
                     EF.Functions.ILike(userInfo.UserName, $"%{query}%") ||
                     EF.Functions.ILike(userInfo.FullName, $"%{query}%") ||
-                    EF.Functions.ILike(userInfo.Email, $"%{query}%") ||
-                    EF.Functions.ILike(userInfo.PhoneNo, $"%{query}%"));
+                    EF.Functions.ILike(userInfo.Email ?? "", $"%{query}%") ||
+                    EF.Functions.ILike(userInfo.PhoneNo ?? "", $"%{query}%"));
 
             var size = matchingUsers.Count();
 
@@ -768,7 +768,7 @@ namespace orch.core.ef.System
             if (!string.IsNullOrEmpty(query))
             {
                 rolePermissionsList = rolePermissionsList.Where(x =>
-                    EF.Functions.Like(x.Key.ToLower(), $"%{query.ToLower()}%") || EF.Functions.Like(x.RoleName.ToLower(), $"%{query.ToLower()}%") || EF.Functions.Like(x.Description.ToLower(), $"%{query.ToLower()}%"));
+                    EF.Functions.Like(x.Key.ToLower(), $"%{query.ToLower()}%") || EF.Functions.Like(x.RoleName.ToLower(), $"%{query.ToLower()}%") || EF.Functions.Like((x.Description ?? "").ToLower(), $"%{query.ToLower()}%"));
             }
 
             rolePermissionsList = rolePermissionsList.Include(role => role.Permissions);
@@ -832,7 +832,7 @@ namespace orch.core.ef.System
         [OViewFunction]
         public List<Permission> GetAllPermissionsByModule(string module)
         {
-            return _db.Permissions.Where(x => x.ModuleName.ToLower().Contains(module.ToLower()))
+            return _db.Permissions.Where(x => (x.ModuleName ?? "").ToLower().Contains(module.ToLower()))
                         .OrderBy(permission => permission.PermissionKey).AsEnumerable()
                         .Select(permission => new Permission(permission))
                         .ToList();

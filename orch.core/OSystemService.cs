@@ -93,7 +93,9 @@ namespace orch.core
             if (user != null && user.LockoutUntil is > 0 && user.LockoutUntil > now)
                 throw new InvalidOperationException(BuildAccountLockedMessage(user.LockoutUntil.Value, now));
 
-            if (user == null || !_passwordHasher.Verify(password, user.PasswordHash))
+            if (user == null ||
+                user.PasswordHash is not { } passwordHash ||
+                !_passwordHasher.Verify(password, passwordHash))
             {
                 if (user != null)
                 {

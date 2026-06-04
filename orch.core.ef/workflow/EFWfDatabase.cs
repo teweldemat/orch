@@ -279,9 +279,9 @@ namespace orch.ef.workflow
             if (!string.IsNullOrEmpty(query))
             {
                 queryable = queryable.Where(x =>
-                EF.Functions.ILike(x.Task.Reference, $"%{query}%")
-                || EF.Functions.ILike(x.Task.Name, $"%{query}%")
-                || EF.Functions.ILike(x.Task.Description, $"%{query}%"));
+                EF.Functions.ILike(x.Task.Reference ?? "", $"%{query}%")
+                || EF.Functions.ILike(x.Task.Name ?? "", $"%{query}%")
+                || EF.Functions.ILike(x.Task.Description ?? "", $"%{query}%"));
             }
 
             queryable = sortBy switch
@@ -661,9 +661,9 @@ namespace orch.ef.workflow
             if (!string.IsNullOrEmpty(query))
             {
                 queryable = queryable.Where(x =>
-                EF.Functions.ILike(x.Reference, $"%{query}%")
-                || EF.Functions.ILike(x.Name, $"%{query}%")
-                || EF.Functions.ILike(x.Description, $"%{query}%"));
+                EF.Functions.ILike(x.Reference ?? "", $"%{query}%")
+                || EF.Functions.ILike(x.Name ?? "", $"%{query}%")
+                || EF.Functions.ILike(x.Description ?? "", $"%{query}%"));
             }
 
             switch (sortBy)

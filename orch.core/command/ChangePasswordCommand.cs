@@ -56,7 +56,8 @@ namespace orch.core.command
                 _services.TranDb.GetUserInfo(userId, includePassword: true) is not { } userInfo)
                 throw new UnauthorizedAccessException("You are not authorized to change passwords");
 
-            if (!new Pbkdf2PasswordHasher().Verify(_commandData.OldPassword, userInfo.PasswordHash))
+            if (userInfo.PasswordHash is not { } passwordHash ||
+                !new Pbkdf2PasswordHasher().Verify(_commandData.OldPassword, passwordHash))
                 throw new ArgumentException("Old password does not match.");
 
             if (_commandData.OldPassword == _commandData.NewPassword)
