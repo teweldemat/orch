@@ -7,12 +7,12 @@ namespace orch.utils.web
         // TODO: Move to a global exception handler (middleware) for centralized error management.
         protected IActionResult Error(Exception ex)
         {
-            return StatusCode(500, new ErrorInfo(ex.Message, ex));
+            return StatusCode(HttpErrorStatusMapper.GetStatusCode(ex), new ErrorInfo(ex.Message, ex));
         }
 
         protected IActionResult Error(Exception ex, string message)
         {
-            return StatusCode(500, new ErrorInfo(message, ex));
+            return StatusCode(HttpErrorStatusMapper.GetStatusCode(ex), new ErrorInfo(message, ex));
         }
     }
 }
