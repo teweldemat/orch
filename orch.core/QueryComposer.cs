@@ -473,7 +473,7 @@ namespace orch.core
             return orch.common.Helpers.TimeToLong(date);
         }
 
-        [OViewFunction]
+        [OViewFunction(permissions: new[] { CoreModule.PERMISSION_SYSTEM_ROOT })]
         public object? JFile(string fileName)
         {
             if (!System.IO.File.Exists(fileName))
