@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Http;
+using System.Security.Authentication;
 
 namespace orch.utils.web
 {
@@ -6,7 +7,7 @@ namespace orch.utils.web
     {
         public static int GetStatusCode(Exception ex)
         {
-            if (ex is UnauthorizedAccessException)
+            if (ex is UnauthorizedAccessException or AuthenticationException)
                 return StatusCodes.Status401Unauthorized;
 
             if (ex is InvalidOperationException invalidOperation &&
@@ -35,6 +36,14 @@ namespace orch.utils.web
 
             if (message.Contains("Access Token", StringComparison.OrdinalIgnoreCase) &&
                 message.Contains("is not valid", StringComparison.OrdinalIgnoreCase))
+                return true;
+
+            if (message.Contains("Access token", StringComparison.OrdinalIgnoreCase) &&
+                message.Contains("has expired", StringComparison.OrdinalIgnoreCase))
+                return true;
+
+            if (message.Contains("Access token", StringComparison.OrdinalIgnoreCase) &&
+                message.Contains("doesn't exist", StringComparison.OrdinalIgnoreCase))
                 return true;
 
             if (message.StartsWith("User ", StringComparison.OrdinalIgnoreCase) &&
