@@ -10,6 +10,9 @@ namespace orch.utils.web
             if (ex is UnauthorizedAccessException or AuthenticationException)
                 return StatusCodes.Status401Unauthorized;
 
+            if (ex is FileNotFoundException or KeyNotFoundException)
+                return StatusCodes.Status404NotFound;
+
             if (ex is InvalidOperationException invalidOperation &&
                 IsAuthenticationFailure(invalidOperation.Message))
                 return StatusCodes.Status401Unauthorized;

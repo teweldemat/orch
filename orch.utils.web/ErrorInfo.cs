@@ -11,12 +11,22 @@
         public string Error { get; set; }
         public IList<ExceptionData> Exceptions { get; set; }
         public ErrorInfo(string Error, Exception ex)
+            : this(Error, ex, includeStackTrace: true)
+        {
+        }
+
+        public ErrorInfo(string Error, Exception ex, bool includeStackTrace)
         {
             this.Error = Error;
             var list = new List<ExceptionData>();
             while (ex != null)
             {
-                list.Insert(0,new ExceptionData() { ExceptionType = ex.GetType().FullName, Message = ex.Message, StackTrace = ex.StackTrace });
+                list.Insert(0,new ExceptionData()
+                {
+                    ExceptionType = ex.GetType().FullName,
+                    Message = ex.Message,
+                    StackTrace = includeStackTrace ? ex.StackTrace : string.Empty
+                });
                 ex = ex.InnerException;
             }
             Exceptions = list;
