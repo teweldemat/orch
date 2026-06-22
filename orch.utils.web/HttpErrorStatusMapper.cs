@@ -7,8 +7,17 @@ namespace orch.utils.web
     {
         public static int GetStatusCode(Exception ex)
         {
-            if (ex is UnauthorizedAccessException or AuthenticationException)
+            // Authentication failures (no/invalid/expired credentials) are 401.
+            // AuthenticationException is purely about proving identity.
+            if (ex is AuthenticationException)
                 return StatusCodes.Status401Unauthorized;
+
+            // Authorization failures (authenticated but not permitted, e.g. missing
+            // permission or workflow team role) are 403, not 401. Returning 401 here
+            // makes clients treat a permission denial as an expired session and bounce
+            // the user back to the login flow instead of surfacing the real message.
+            if (ex is UnauthorizedAccessException)
+                return StatusCodes.Status403Forbidden;
 
             if (ex is FileNotFoundException or KeyNotFoundException)
                 return StatusCodes.Status404NotFound;
