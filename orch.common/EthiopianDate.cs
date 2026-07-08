@@ -352,6 +352,7 @@ namespace orch.common
             var date2 = AnchorPagumeSixForYearDifference(ToEth(d2), nameof(d2));
             if (upperBoundInclusive)
                 date2 = AddDays(date2, 1);
+            date2 = AnchorPagumeSixForYearDifference(date2, nameof(d2));
 
 
             var dayNo1 = date1.Month * 30 + date1.Day;
