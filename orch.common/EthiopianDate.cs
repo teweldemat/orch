@@ -336,7 +336,12 @@ namespace orch.common
         {
             var date1 = ToEth(d1);
             if (date1.Month == 13 && date1.Day == 6)
-                throw new ArgumentOutOfRangeException("FullEthiopianYearDifference is not defined for date 1 set to Pagume 6");
+            {
+                if (!IsLeapYearEt(date1.Year))
+                    throw new ArgumentOutOfRangeException(nameof(d1), "Invalid Pagume 6 in non-leap Ethiopian year");
+                // Anchor Pagume 6 to Pagume 5, consistent with AddYears leap-day handling.
+                date1 = new EthiopianDate(5, 13, date1.Year);
+            }
 
             var date2 = ToEth(d2);
             if (upperBoundInclusive)
