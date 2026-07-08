@@ -4,12 +4,20 @@
     {
         public class ExceptionData
         {
-            public string ExceptionType { get; set; }
-            public string Message { get; set; }
-            public string StackTrace { get; set; }
+            public string ExceptionType { get; set; } = string.Empty;
+            public string Message { get; set; } = string.Empty;
+            public string StackTrace { get; set; } = string.Empty;
         }
+
+        public ErrorInfo()
+        {
+            Error = string.Empty;
+            Exceptions = new List<ExceptionData>();
+        }
+
         public string Error { get; set; }
         public IList<ExceptionData> Exceptions { get; set; }
+
         public ErrorInfo(string Error, Exception ex)
             : this(Error, ex, includeStackTrace: true)
         {
