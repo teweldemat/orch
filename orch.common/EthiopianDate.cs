@@ -332,18 +332,24 @@ namespace orch.common
             years += (dayNo2 - dayNo1) / 365.0;
             return years;
         }
-        public static int FullEthiopianYearDifference(long d1, long d2, bool upperBoundInclusive, out int remainder)
+        static EthiopianDate AnchorPagumeSixForYearDifference(EthiopianDate date, string paramName)
         {
-            var date1 = ToEth(d1);
-            if (date1.Month == 13 && date1.Day == 6)
+            if (date.Month == 13 && date.Day == 6)
             {
-                if (!IsLeapYearEt(date1.Year))
-                    throw new ArgumentOutOfRangeException(nameof(d1), "Invalid Pagume 6 in non-leap Ethiopian year");
+                if (!IsLeapYearEt(date.Year))
+                    throw new ArgumentOutOfRangeException(paramName, "Invalid Pagume 6 in non-leap Ethiopian year");
                 // Anchor Pagume 6 to Pagume 5, consistent with AddYears leap-day handling.
-                date1 = new EthiopianDate(5, 13, date1.Year);
+                return new EthiopianDate(5, 13, date.Year);
             }
 
-            var date2 = ToEth(d2);
+            return date;
+        }
+
+        public static int FullEthiopianYearDifference(long d1, long d2, bool upperBoundInclusive, out int remainder)
+        {
+            var date1 = AnchorPagumeSixForYearDifference(ToEth(d1), nameof(d1));
+
+            var date2 = AnchorPagumeSixForYearDifference(ToEth(d2), nameof(d2));
             if (upperBoundInclusive)
                 date2 = AddDays(date2, 1);
 
