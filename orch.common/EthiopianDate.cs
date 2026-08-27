@@ -347,12 +347,20 @@ namespace orch.common
 
         public static int FullEthiopianYearDifference(long d1, long d2, bool upperBoundInclusive, out int remainder)
         {
-            var date1 = AnchorPagumeSixForYearDifference(ToEth(d1), nameof(d1));
+            var rawDate1 = ToEth(d1);
+            var pagumeSixStart = rawDate1.Month == 13 && rawDate1.Day == 6;
+            var date1 = AnchorPagumeSixForYearDifference(rawDate1, nameof(d1));
 
-            var date2 = AnchorPagumeSixForYearDifference(ToEth(d2), nameof(d2));
+            // Pagume 6 is anchored only for the existing Pagume-6-start behavior.
+            // For other starts, an inclusive Pagume 6 end is the day before the
+            // next Ethiopian-year boundary and must first advance to Meskerem 1.
+            var date2 = ToEth(d2);
+            if (pagumeSixStart)
+                date2 = AnchorPagumeSixForYearDifference(date2, nameof(d2));
             if (upperBoundInclusive)
                 date2 = AddDays(date2, 1);
-            date2 = AnchorPagumeSixForYearDifference(date2, nameof(d2));
+            if (pagumeSixStart)
+                date2 = AnchorPagumeSixForYearDifference(date2, nameof(d2));
 
 
             var dayNo1 = date1.Month * 30 + date1.Day;
@@ -422,4 +430,3 @@ namespace orch.common
 
     }
 }
-
