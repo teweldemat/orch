@@ -1,6 +1,4 @@
-﻿using orch.core.model;
-
-namespace orch.core.command
+﻿namespace orch.core.command
 {
     [CommandType(
         TYPE_ID,
@@ -32,10 +30,7 @@ namespace orch.core.command
             if (string.IsNullOrEmpty(_commandData.Password))
                 throw new InvalidOperationException("Please specify a new password.");
             
-            if (!System.Text.RegularExpressions.Regex.IsMatch(_commandData.Password, UserInfoProps.PASSWORD_PATTERN))
-            {
-                throw new ArgumentException("New password must be at least 8 characters long and contain no spaces.");
-            }
+            PasswordPolicy.EnsureValid(_commandData.Password);
         }
     }
 

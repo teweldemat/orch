@@ -1,5 +1,3 @@
-using orch.core.model;
-
 namespace orch.core.command
 {
     [CommandType(
@@ -31,10 +29,7 @@ namespace orch.core.command
                 throw new InvalidOperationException("Passwords should not be empty.");
             }
 
-            if (!System.Text.RegularExpressions.Regex.IsMatch(_commandData.NewPassword, UserInfoProps.PASSWORD_PATTERN))
-            {
-                throw new ArgumentException("New password must be at least 8 characters long and contain no spaces.");
-            }
+            PasswordPolicy.EnsureValid(_commandData.NewPassword);
         }
     }
 

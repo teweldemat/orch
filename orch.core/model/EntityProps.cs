@@ -86,6 +86,7 @@ namespace orch.core.model
         public static readonly string USER_NAME_ROOT = "root";
         public static readonly string USER_NAME_SYSTEM = "system";
 
+        // Length and spaces only. New passwords are checked by PasswordPolicy.
         public static readonly string PASSWORD_PATTERN = @"^[^\s]{8,}$";
 
         public Guid Id { get; set; }

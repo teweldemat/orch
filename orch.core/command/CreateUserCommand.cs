@@ -35,6 +35,8 @@ namespace orch.core.command
             if (string.IsNullOrEmpty(_commandData.User.UserName))
                 throw new InvalidOperationException("User name can't be empty");
 
+            PasswordPolicy.EnsureValid(_commandData.Password);
+
             _commandData.User.Id = Host.NextGuid();
             _commandData.RootPermissionId = Host.NextGuid();
             _commandData.RootRoleId = Host.NextGuid();
