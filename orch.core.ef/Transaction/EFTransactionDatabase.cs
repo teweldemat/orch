@@ -6,6 +6,7 @@ using orch.common;
 using orch.core.ef.Transaction;
 using orch.core.ef.Transaction.Entities;
 using orch.core.errors;
+using orch.core.command;
 using orch.core.model;
 using orch.core.model.dto;
 using orch.ef.Core;
@@ -1601,15 +1602,48 @@ namespace orch.core.ef.System
             public string TypeName = string.Empty;
         }
 
-        [OViewFunction]
-        public IList<CommandType> GetAllCommandTypes()
+        private static readonly HashSet<string> RootOnlyCommandKeys = new(StringComparer.Ordinal)
         {
-            return OTransactionService.GetAllCommandTypes().Select(x => new CommandType
+            ExecuteRawDmlCommand.COMMAND_TYPE_KEY,
+            SetSystemIdCommand.COMMAND_TYPE_KEY,
+            CreatePermssionCommand.COMMAND_TYPE_KEY,
+            SetPermssionAdminInformationCommand.COMMAND_TYPE_KEY,
+            DeleteUserCommand.COMMAND_TYPE_KEY,
+        };
+
+        private static readonly HashSet<string> UserAdminCommandKeys = new(StringComparer.Ordinal)
+        {
+            SetPasswordCommand.COMMAND_TYPE_KEY,
+            CreateUserCommand.COMMAND_TYPE_KEY,
+            AssignRolesCommand.COMMAND_TYPE_KEY,
+            SetRoleCommand.COMMAND_TYPE_KEY,
+            UpdateUserInfoCommand.COMMAND_TYPE_KEY,
+            ChangeUserEnabledStatusCommand.COMMAND_TYPE_KEY,
+            CreateRolePermssionCommand.COMMAND_TYPE_KEY,
+        };
+
+        [OViewFunction(permissions: new[] { CoreModule.PERMISSION_VIEW_SUPER })]
+        public IList<CommandType> GetAllCommandTypes([OViewUser] Guid userId)
+        {
+            var types = OTransactionService.GetAllCommandTypes().Select(x => new CommandType
             {
                 Key = x.Key,
                 TypeName = x.TypeName,
                 TypeId = x.TypeId
             }).ToList();
+
+            var includeRootCommands = userId == GetRootUser()?.Id
+                || IsPermitted(userId, CoreModule.PERMISSION_SYSTEM_ROOT);
+            var includeUserAdminCommands = includeRootCommands
+                || IsPermitted(userId, CoreModule.PERMISSION_CHANGE_PASSWORD);
+
+            if (includeRootCommands && includeUserAdminCommands)
+                return types;
+
+            return types.Where(type =>
+                    (includeRootCommands || !RootOnlyCommandKeys.Contains(type.Key))
+                    && (includeUserAdminCommands || !UserAdminCommandKeys.Contains(type.Key)))
+                .ToList();
         }
 
         public class JobType

@@ -13,6 +13,7 @@ namespace orch.core
         public const string PERMISSION_ASSIGN_ROLE = "ASSIGN_ROLE";
         public const string PERMISSION_MANAGE_ROLES = "MANAGE_ROLES";
         public const string PERMISSION_CHANGE_PASSWORD = "CHANGE_PASSWORD";
+        public const string PERMISSION_VIEW_SUPER = "VIEW_SUPER";
 
         public static void InitializeModule()
         {
