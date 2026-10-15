@@ -23,5 +23,21 @@ namespace orch.common
         {
             return (long)Helpers.LongToTime(to).Subtract(Helpers.LongToTime(from)).TotalMilliseconds;
         }
+
+        /// <summary>
+        /// Selected calendar days, inclusive. The end instant is the start of the day after
+        /// <paramref name="toDate"/>, so an end-of-day timestamp does not pull in the next day.
+        /// </summary>
+        public static CalendarDayRange ToCalendarDayRange(long fromDate, long toDate)
+        {
+            var fromInclusive = Helpers.LongToTime(fromDate).Date.TimeToLong();
+            var toInclusive = Helpers.LongToTime(toDate).Date.TimeToLong();
+            if (toInclusive < fromInclusive)
+                throw new ArgumentException("toDate must be greater than or equal to fromDate");
+
+            return new CalendarDayRange(fromInclusive, toInclusive, AddDays(toInclusive, 1));
+        }
     }
+
+    public readonly record struct CalendarDayRange(long FromInclusive, long ToInclusive, long ToExclusive);
 }
